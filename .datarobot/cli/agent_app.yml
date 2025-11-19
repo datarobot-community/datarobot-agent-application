@@ -24,6 +24,7 @@ root:
     type: string
     default:
     optional: true
+    multiple: true
     help: |
       Which authorization servers do you want in the application?
     options:
