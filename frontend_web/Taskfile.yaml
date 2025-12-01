@@ -3,6 +3,8 @@ version: '3'
 tasks:
   install:
     desc: 🧱 Install React dependencies
+    status:
+      - test -d node_modules
     cmds:
       - npm install --loglevel=error
   lint:
@@ -23,9 +25,11 @@ tasks:
       - npm run test:watch
   build:
     desc: 🏗️ Build React code
+    deps: [install]
     cmds:
       - npm run build
   dev:
     desc: 🚀 Start React development server
+    deps: [install]
     cmds:
       - npm run dev

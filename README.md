@@ -234,25 +234,25 @@ The first step is to build the frontend once and run it as a static build, while
 1. Build the frontend:
 
 ```shell
-dr task run frontend_web:build
+dr run frontend_web:build
 ```
 
 1. In a new terminal window or tab, start the MCP server:
 
 ```shell
-dr task run mcp_server:dev
+dr run mcp_server:dev
 ```
 
 3. In a third terminal window or tab, start the application:
 
 ```shell
-dr task run web:dev
+dr run web:dev
 ```
 
 4. In a fourth terminal window or tab, start the writer agent:
 
 ```shell
-dr task run writer_agent:dev
+dr run writer_agent:dev
 ```
 
 5. Open your browser and navigate to http://localhost:8080.
@@ -266,7 +266,7 @@ This option enables autoreload for all components, including the frontend, which
 1. Start the frontend in development mode (instead of building it):
 
 ```shell
-dr task run frontend_web:dev
+dr run frontend_web:dev
 ```
 
 2. Start the MCP server, application, and writer agent as described in Option 1 (steps 2-4).
@@ -280,13 +280,13 @@ If you want to test just the agent without the full application, you can use the
 1. Start the writer agent:
 
 ```shell
-dr task run writer_agent:dev
+dr run writer_agent:dev
 ```
 
 2. In another terminal, start the Chainlit interface:
 
 ```shell
-dr task run writer_agent:chainlit
+dr run writer_agent:chainlit
 ```
 
 This will start a separate frontend application for your local agent at http://localhost:8083/.
@@ -314,7 +314,7 @@ If you do not have one, use `pulumi login --local` for local login or create a f
 Run the following command to deploy your agent:
 
 ```shell
-dr task run deploy
+dr run deploy
 ```
 
 # Get help
