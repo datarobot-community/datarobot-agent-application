@@ -27,8 +27,6 @@ tasks:
       - dr self update
       - dr dotenv setup --if-needed
       - dr dotenv update
-      - task install
-      - dr task run start
       - echo '✅ You are all set. Run `task dev` to start developing, or run `task deploy` to deploy to DataRobot.'
 
   {{- if .HasLint }}
@@ -81,6 +79,12 @@ tasks:
       AGENT_DEPLOY: "1"
     cmds:
       - task: infra:deploy
+  deploy-yes:
+    desc: "🚀 Deploy all services (non-interactive, auto-confirm)"
+    env:
+      AGENT_DEPLOY: "1"
+    cmds:
+      - task: infra:up-yes
   deploy-dev:
     desc: "🚀 Deploy infrastructure and services to development"
     cmds:

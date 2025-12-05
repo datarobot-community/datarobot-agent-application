@@ -136,6 +136,16 @@ tasks:
       - echo "🔨 Deploying the infrastructure.."
       - "export PULUMI_SKIP_UPDATE_CHECK=1 && {{.UV_CMD}} run pulumi up {{.CLI_ARGS}}"
 
+  up-yes:
+    silent: true
+    desc: "🔨 Deploy the infrastructure (non-interactive, auto-confirm)"
+    deps:
+      - auth-check
+    cmds:
+      - task: install-pulumi-plugin
+      - echo "🔨 Deploying the infrastructure (non-interactive).."
+      - export PULUMI_SKIP_UPDATE_CHECK=1 && uv run pulumi up -y
+
   info:
     silent: true
     desc: "ℹ️ Show Pulumi stack info"

@@ -57,7 +57,7 @@ print("\n.   - ".join(
     ]
 ))
 """
-default_model: str = "azure/gpt-4o-2024-11-20"
+default_model: str = "azure/gpt-5-2025-08-07"
 
 # Verify everything is configured properly for this configuration option.
 validate_feature_flags(REQUIRED_FEATURE_FLAGS)
