@@ -162,9 +162,40 @@ tasks:
       - pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || echo "No development server process found"
   chainlit:
     desc: "🛝 Run the ChainLit playground"
+    deps:
+      - auth-check
     cmds:
       - echo "🛝 Starting ChainLit playground"
       - "{{.UV_CMD}} sync --all-extras"
+      - |
+        # Kill any existing dev server processes
+        pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || true
+        # Start dev server in background
+        echo "🚀 Starting dev server in background..."
+        {{.UV_CMD}} run python dev.py &
+        DEV_SERVER_PID=$!
+        echo "Dev server started with PID: $DEV_SERVER_PID"
+        # Wait for server to be ready
+        echo "⏳ Waiting for dev server to be ready..."
+        _AGENT_ENDPOINT="http://localhost:8842"
+        if [ -n "$AGENT_ENDPOINT" ]; then
+          _AGENT_ENDPOINT="$AGENT_ENDPOINT"
+        fi
+        i=0
+        while [ $i -lt 30 ]; do
+          if curl --silent --fail --max-time 2 "$_AGENT_ENDPOINT/" >/dev/null 2>&1; then
+            echo "✅ Dev server is ready!"
+            break
+          fi
+          sleep 1
+          i=$((i + 1))
+          if [ $i -eq 30 ]; then
+            echo "❌ Dev server failed to start within 30 seconds"
+            pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || true
+            exit 1
+          fi
+        done
+      - echo "🎨 Starting ChainLit UI..."
       - "{{.UV_CMD}} run chainlit run --host 0.0.0.0 --port 8083 -w lit.py"
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image

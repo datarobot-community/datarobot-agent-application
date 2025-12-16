@@ -14,6 +14,7 @@ dependencies = [
     "langchain-litellm>=0.2.3",
     "opentelemetry-api>=1.33.0,<2.0.0",
     "opentelemetry-sdk>=1.33.0,<2.0.0",
+    "mypy>=1.15.0",
 
     "pdfminer.six>=20251107",  # CVE fix
     "langgraph-checkpoint>=3.0.0", # CVE fix
@@ -52,6 +53,8 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 pythonpath = ["custom_model"]
 asyncio_mode = "auto"
+# Exclude auto-generated MCP test file
+addopts = "--ignore=tests/test_mcp.py"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
