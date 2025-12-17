@@ -264,7 +264,7 @@ def verify_llm_gateway_model_availability(model_id: str) -> None:
     """
     model_id = model_id.removeprefix("datarobot/")
     dr_client = datarobot.Client()
-    response = dr_client.get("genai/llmgw/catalog/")
+    response = dr_client.get("genai/llmgw/catalog/?activeOnly=true")
     data = response.json()
     active_models_display = "\n.   - ".join(
         [model["model"] for model in data["data"] if model["isActive"]]
