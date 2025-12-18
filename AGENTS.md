@@ -25,7 +25,7 @@ dr task run agent:install
 
 ## Agent Structure
 
-Every agent must be implemented in the following location withing agent template directory (relative to the directory of AGENTS.md file) `agent/custom_model`. None of the other files outside of this directory are related.
+Every agent must be implemented in the following location withing agent template directory (relative to the directory of AGENTS.md file) `agent/agentic_workflow`. None of the other files outside of this directory are related.
 
 Every agent must implement the following components:
 
@@ -124,7 +124,7 @@ def agent_node(self) -> Any:
 
 ## Agent tools
 
-In case agent requires tools, they should be added in the `agent/custom_model` directory (relative to the directory of AGENTS.md file).
+In case agent requires tools, they should be added in the `agent/agentic_workflow` directory (relative to the directory of AGENTS.md file).
 
 **IMPORTANT**: Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
