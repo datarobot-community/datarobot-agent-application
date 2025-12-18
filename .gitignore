@@ -274,3 +274,6 @@ Taskfile.gen.yaml
 # Agent environment files
 */custom_model/pyproject.toml
 */custom_model/uv.lock
+
+# Agent assist spec
+agent_spec.md
