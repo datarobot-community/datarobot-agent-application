@@ -270,6 +270,7 @@ Taskfile.gen.yaml
 #  .dr/state contains user-specific history and audit-trail while working with the CLI
 .datarobot/state/
 .datarobot/cli/state.yaml
+.datarobot/cli/versions.yaml
 
 # Agent environment files
 */custom_model/pyproject.toml
