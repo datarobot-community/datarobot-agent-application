@@ -108,7 +108,6 @@ def prompt_template(self) -> ChatPromptTemplate:
 ### 3. Agent Nodes
 
 Agent nodes are typically created using `create_react_agent`.
-**Important**: `preferred_model` must be prefixed with `datarobot/`
 
 ```python
 @property
@@ -122,15 +121,22 @@ def agent_node(self) -> Any:
     )
 ```
 
-## Agent tools
+### 4. Agent tools
 
-In case agent requires tools, they should be added in the `agent/agentic_workflow` directory (relative to the directory of AGENTS.md file).
-
-**IMPORTANT**: Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
+**IMPORTANT**: Add required tools in the `agent/agentic_workflow` directory (relative to the directory of AGENTS.md file). Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
 dr task run agent:install
 ```
+
+**IMPORTANT**: Tools must be imported and used in `MyAgent` implementation.
+
+
+### 5. Preferred LLM model
+
+Preferred model should be set in each ```self.llm(preferred_model="{preffered_model_here}")``` invocation.
+**Important**: `preferred_model` parameter must be prefixed with `datarobot/`.
+
 
 ## Agent Testing
 
