@@ -93,7 +93,8 @@ def workflow(self) -> StateGraph[MessagesState]:
 ```
 
 #### `prompt_template` Property
-Defines how user input is formatted for the agent.
+
+Use it to define how user input is formatted for the agent.
 
 ```python
 @property
@@ -103,11 +104,12 @@ def prompt_template(self) -> ChatPromptTemplate:
     ])
 ```
 
-**Important**: The template must accept `{input}` to receive user prompts.
+**IMPORTANT**: The template must accept `{input}` to receive user prompts.
 
 ### 3. Agent Nodes
 
 Agent nodes are typically created using `create_react_agent`.
+**IMPORTANT**: Use `create_react_agent` call to create agent's node while passing the preferred LLM, system prompt and required tools into it.
 
 ```python
 @property
