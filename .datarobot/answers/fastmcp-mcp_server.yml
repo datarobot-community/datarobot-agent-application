@@ -1,0 +1,5 @@
+# Changes here will be overwritten by Copier
+_commit: 11.4.23
+_src_path: https://github.com/datarobot/af-component-fastmcp-backend.git
+base_answers_file: .datarobot/answers/base.yml
+fastmcp_app_name: mcp_server
