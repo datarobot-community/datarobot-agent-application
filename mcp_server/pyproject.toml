@@ -19,7 +19,6 @@ dev = [
     "pre-commit>=3.6.0",
     "openai>=1.12.0",
     "responses>=0.25.8",
-    "respx>=0.22.0",
 ]
 
 [build-system]
@@ -142,6 +141,3 @@ show_absolute_path = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
-
-[dependency-groups]
-extras = []

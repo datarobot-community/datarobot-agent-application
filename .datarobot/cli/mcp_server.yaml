@@ -27,12 +27,12 @@ root:
     help: "Whether to register predictive tools."
   - env: ENABLE_GDRIVE_TOOLS
     type: boolean
-    default: false
+    default: true
     optional: true
     help: "Whether to register Google Drive tools, requires Google OAuth provider configuration."
   - env: ENABLE_MICROSOFT_GRAPH_TOOLS
     type: boolean
-    default: false
+    default: true
     optional: true
     help: "Whether to register Microsoft Graph tools, requires Microsoft OAuth provider configuration."
   - env: ENABLE_JIRA_TOOLS

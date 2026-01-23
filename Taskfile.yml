@@ -47,7 +47,7 @@ tasks:
         --data agent_app_name=agent \
         --data agent_development_port=8842 \
         --data include_taskfile_infra=no \
-        --data fastmcp_answers_file=.datarobot/answers/fastmcp-mcp_server.yml \
+        --data mcp_answers_file=.datarobot/answers/drmcp-mcp_server.yml \
         --data llm_answers_file=.datarobot/answers/llm-llm.yml \
         -w --quiet
       - dr task compose

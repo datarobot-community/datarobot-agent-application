@@ -14,7 +14,7 @@ on:
 
 jobs:
   tests:
-    name: "FastMCP: mcp_server ${{ matrix.python-version }}"
+    name: "DataRobot MCP: mcp_server ${{ matrix.python-version }}"
     runs-on: "ubuntu-latest"
     defaults:
       run:

@@ -4,7 +4,7 @@
   </a>
 </p>
 <p align="center">
-    <span style="font-size: 1.5em; font-weight: bold; display: block;">FastMCP Server Template for DataRobot</span>
+    <span style="font-size: 1.5em; font-weight: bold; display: block;">MCP Server Template for DataRobot</span>
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@ The template includes pre-built tools for common DataRobot operations, a structu
 
 ---
 
-# FastMCP template navigation
+# DataRobot MCP template navigation
 
 - [Prerequisites](#prerequisites)
 - [Get started](#getting-started)
@@ -134,8 +134,8 @@ git config --global core.symlink true
 ## Clone the repository
 
 ```bash
-git clone https://github.com/datarobot/recipe-fastmcp-template.git
-cd recipe-fastmcp-template
+git clone https://github.com/datarobot-community/datarobot-mcp-template.git
+cd datarobot-mcp-template
 ```
 
 ## Install dependencies
@@ -222,9 +222,9 @@ task dev
 ```
 
 The server will start on `http://localhost:8080` with the MCP endpoint at `http://localhost:8080/mcp/`.
-Once the FastMCP logo appears, the server is running properly.
+Once the DataRobot logo appears, the server is running properly.
 
-<img src="./img/fastmcp-logo.png" width="300" />
+<img src="./img/mcp-logo.png" width="300" />
 
 > **Note**: When finished, press `Ctrl+C` to stop the server.
 

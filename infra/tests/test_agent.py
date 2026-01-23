@@ -651,13 +651,13 @@ name = "old-project"
 
 class TestMaybeImportFromModule:
     @pytest.fixture
-    def skip_if_no_fastmcp(self):
-        """Skip tests if fastmcp module is not available."""
+    def skip_if_no_mcp(self):
+        """Skip tests if mcp module is not available."""
         mcp_module = "mcp_server"
         if not mcp_module:
             pytest.skip("Skipping tests of existing MCP when module is not provided.")
 
-    @pytest.mark.usefixtures("skip_if_no_fastmcp")
+    @pytest.mark.usefixtures("skip_if_no_mcp")
     def test_maybe_import_from_module_success(self):
         """Test that maybe_import_from_module successfully imports an existing module."""
         import infra.agent as agent_infra

@@ -1,5 +1,5 @@
 defaults:
   https://github.com/datarobot-community/af-component-agent.git:
     base_answers_file: .datarobot/answers/base.yml
-    fastmcp_answers_file: .datarobot/answers/fastmcp-mcp_server.yml
+    mcp_answers_file: .datarobot/answers/drmcp-mcp_server.yml
     llm_answers_file: .datarobot/answers/llm-llm.yml

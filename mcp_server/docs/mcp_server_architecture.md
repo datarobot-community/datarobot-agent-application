@@ -3,8 +3,7 @@
 ## Project structure
 
 ```
-recipe-fastmcp-template/
-├── mcp_server/                    # Main application code
+├── mcp_server/        # Main application code
 │   ├── app/
 │   │   ├── core/              # Core server logic, config, telemetry
 │   │   │   ├── server_lifecycle.py
