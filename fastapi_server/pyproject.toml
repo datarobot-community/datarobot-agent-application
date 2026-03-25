@@ -48,7 +48,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-core = { path = "core", editable = true }
+core = { path = "../core", editable = true }
 
 [build-system]
 requires = ["hatchling>=1.18.0"]
