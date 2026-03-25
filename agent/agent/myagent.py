@@ -86,7 +86,7 @@ class MyAgent(LangGraphAgent):
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
 
-        with TrajectoryLogging(trajectory_subdir="myagent"):
+        with TrajectoryLogging():
             self._http_handler = AsyncHTTPHandler()
 
     @property
