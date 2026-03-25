@@ -24,6 +24,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
+from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+from tensile import TrajectoryLogging
 
 from agent.config import Config
 
@@ -83,6 +85,9 @@ class MyAgent(LangGraphAgent):
         self.default_model = self.config.llm_default_model
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
+
+        with TrajectoryLogging(trajectory_subdir="myagent"):
+            self._http_handler = AsyncHTTPHandler()
 
     @property
     def workflow(self) -> StateGraph[MessagesState]:
@@ -150,8 +155,11 @@ class MyAgent(LangGraphAgent):
             "max_retries": 3,
         }
 
+        model_kwargs = {"client": self._http_handler}
         if not self.config.use_datarobot_llm_gateway and self._identity_header:
-            config["model_kwargs"] = {"extra_headers": self._identity_header}  # type: ignore[assignment]
+            model_kwargs["extra_headers"] = self._identity_header
+
+        config["model_kwargs"] = model_kwargs  # type: ignore[assignment]
 
         return ChatLiteLLM(**config)
 
