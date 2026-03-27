@@ -16,7 +16,6 @@ from typing import Any, List, Optional, Union
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.tools import BaseTool as CrewAIBaseTool
 from datarobot_genai.crewai.agent import CrewAIAgent
-from litellm.llms.custom_httpx.http_handler import HTTPHandler
 
 from agent.config import Config
 
@@ -103,7 +102,6 @@ class MyAgent(CrewAIAgent):
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
 
-        self._http_handler = HTTPHandler()
 
     def llm(
         self,
@@ -137,7 +135,6 @@ class MyAgent(CrewAIAgent):
             "api_base": api_base,
             "api_key": self.api_key,
             "timeout": self.timeout,
-            "client": self._http_handler,
         }
 
         if not self.config.use_datarobot_llm_gateway and self._identity_header:
