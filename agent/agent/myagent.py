@@ -16,16 +16,15 @@ import json
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
-from datarobot_genai.core.agents import make_system_prompt
 from datarobot_genai.langgraph.agent import LangGraphAgent
-from langchain.agents import create_agent
+from deepagents import create_deep_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_litellm.chat_models import ChatLiteLLM
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.graph import MessagesState, StateGraph
 
 from agent.config import Config
 
@@ -162,7 +161,7 @@ class MyAgent(LangGraphAgent):
             self.model = self.default_model
 
     @property
-    def workflow(self) -> StateGraph[MessagesState]:
+    def workflow(self) -> StateGraph[MessagesState]:  # type: ignore[override]
         # Re-read soul on every invocation — soul is editable, pack is swappable,
         # agent rebuilds itself fresh each time.
         soul_name, soul_prompt, soul_tool_names = _load_active_soul()
@@ -176,20 +175,38 @@ class MyAgent(LangGraphAgent):
             print(f"[SOUL] Active: {soul_name}", flush=True)
             print(f"[SOUL] Tools ({len(loaded)}): {loaded}", flush=True)
 
-        soul_agent = create_agent(
-            self.llm(),
+        # create_deep_agent returns a CompiledStateGraph — already compiled.
+        # Built-in: write_todos, virtual filesystem, task (sub-agents),
+        # SummarizationMiddleware (context compaction).
+        return create_deep_agent(  # type: ignore[return-value]
+            model=self.llm(),
             tools=all_tools,
-            system_prompt=make_system_prompt(soul_prompt),
+            system_prompt=soul_prompt,
             name="soul_agent",
         )
 
-        langgraph_workflow = StateGraph[
-            MessagesState, None, MessagesState, MessagesState
-        ](MessagesState)
-        langgraph_workflow.add_node("soul_agent", soul_agent)
-        langgraph_workflow.add_edge(START, "soul_agent")
-        langgraph_workflow.add_edge("soul_agent", END)
-        return langgraph_workflow  # type: ignore[return-value]
+    async def _invoke(self, run_agent_input: Any) -> Any:
+        # Override parent's _invoke to skip .compile() — create_deep_agent
+        # returns a CompiledStateGraph which has no .compile() method.
+        graph = self.workflow
+        input_command = self.convert_input_message(run_agent_input)
+        # Command.update contains {"messages": [...]}; deepagents expects a dict.
+        graph_stream = cast(
+            AsyncGenerator[tuple[Any, str, Any], None],
+            graph.astream(
+                input=input_command.update,
+                config=cast(Any, self.langgraph_config),
+                debug=self.verbose,
+                stream_mode=["updates", "messages"],
+                subgraphs=True,
+            ),
+        )
+        usage_metrics: dict[str, int] = {
+            "completion_tokens": 0,
+            "prompt_tokens": 0,
+            "total_tokens": 0,
+        }
+        return self._stream_generator(graph_stream, usage_metrics, run_agent_input)
 
     @property
     def prompt_template(self) -> ChatPromptTemplate:
