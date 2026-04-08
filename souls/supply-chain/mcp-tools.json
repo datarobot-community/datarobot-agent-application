@@ -1,0 +1,19 @@
+{
+  "tools": [
+    "list_deployments",
+    "get_deployment_info",
+    "get_deployment_features",
+    "get_model_info_from_deployment",
+    "get_model_details",
+    "get_model_feature_impact",
+    "get_prediction_history",
+    "is_eligible_for_timeseries_training",
+    "predict_realtime",
+    "predict_by_ai_catalog",
+    "start_autopilot",
+    "perplexity_search",
+    "tavily_search",
+    "list_skills",
+    "search_service_api"
+  ]
+}

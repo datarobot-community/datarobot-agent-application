@@ -16,9 +16,10 @@ from fastapi import APIRouter
 
 from .auth import auth_router
 from .chat import chat_router
+from .soul import soul_router
 
 router = APIRouter(prefix="/v1")
 
-
 router.include_router(chat_router)
 router.include_router(auth_router)
+router.include_router(soul_router)

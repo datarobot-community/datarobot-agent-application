@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from datetime import datetime
+
+import json
+from pathlib import Path
 from typing import Any, Optional, Union
 
-from datarobot_genai.core.agents import (
-    make_system_prompt,
-)
+from datarobot_genai.core.agents import make_system_prompt
 from datarobot_genai.langgraph.agent import LangGraphAgent
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
@@ -27,12 +27,52 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 
 from agent.config import Config
 
+# souls/ lives at the repo root — two levels above agent/agent/
+SOULS_DIR = Path(__file__).parents[2] / "souls"
+DEFAULT_SOUL = "supply-chain"
+
+
+def _load_active_soul() -> tuple[str, str, list[str]]:
+    """Read active soul name, system prompt, and allowed tool names.
+
+    Returns
+    -------
+    tuple[str, str, list[str]]
+        (soul_name, system_prompt_text, list_of_allowed_tool_names)
+    """
+    active_file = SOULS_DIR / ".active"
+    name = active_file.read_text().strip() if active_file.exists() else DEFAULT_SOUL
+
+    soul_dir = SOULS_DIR / name
+    prompt_file = soul_dir / "SOUL.md"
+    tools_file = soul_dir / "mcp-tools.json"
+
+    prompt = prompt_file.read_text() if prompt_file.exists() else ""
+    tools: list[str] = (
+        json.loads(tools_file.read_text()).get("tools", [])
+        if tools_file.exists()
+        else []
+    )
+
+    return name, prompt, tools
+
 
 class MyAgent(LangGraphAgent):
-    """MyAgent is a custom agent that uses Langgraph to plan and write content.
-    It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 2 agents that handle content creation tasks, including planning
-    and writing blog posts.
+    """Soul-driven agent runtime.
+
+    On every invocation the agent reads souls/.active, loads the corresponding
+    SOUL.md as its system prompt, and filters self.mcp_tools to only the tools
+    declared in mcp-tools.json for that soul.
+
+    To swap domains: write a different soul name to souls/.active (or call
+    POST /api/v1/soul/swap/{name}). The next request will pick it up with no
+    restart required.
+
+    To edit a soul: modify souls/<name>/SOUL.md. Changes take effect on the
+    next request.
+
+    To add tools: add the tool name to souls/<name>/mcp-tools.json. The tool
+    must exist on the connected MCP server.
     """
 
     def __init__(
@@ -47,28 +87,6 @@ class MyAgent(LangGraphAgent):
         workflow_tools: Optional[list[BaseTool]] = None,
         **kwargs: Any,
     ):
-        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
-
-        Args:
-            api_key: Optional[str]: API key for authentication with DataRobot services.
-                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
-            api_base: Optional[str]: Base URL for the DataRobot API.
-                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
-            model: Optional[str]: The LLM model to use.
-                Defaults to None.
-            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
-                Accepts boolean or string values ("true"/"false"). Defaults to True.
-            timeout: Optional[int]: How long to wait for the agent to respond.
-                Defaults to 90 seconds.
-            llm: Optional[BaseChatModel]: Pre-configured LLM instance provided by NAT.
-                When set, llm() returns this directly instead of creating a ChatLiteLLM.
-            workflow_tools: Optional[list[BaseTool]]: Additional tools from the workflow config (e.g. A2A client tools). Keyword-only.
-            **kwargs: Any: Additional keyword arguments passed to the agent.
-                Contains any parameters received in the CompletionCreateParams.
-
-        Returns:
-            None
-        """
         super().__init__(
             api_key=api_key,
             api_base=api_base,
@@ -86,33 +104,39 @@ class MyAgent(LangGraphAgent):
 
     @property
     def workflow(self) -> StateGraph[MessagesState]:
+        # Re-read soul on every invocation — soul is editable, pack is swappable,
+        # agent rebuilds itself fresh each time.
+        soul_name, soul_prompt, soul_tool_names = _load_active_soul()
+
+        soul_tool_set = set(soul_tool_names)
+        filtered_tools = [t for t in self.mcp_tools if t.name in soul_tool_set]
+        all_tools = filtered_tools + self._workflow_tools
+
+        if self.verbose:
+            loaded = [t.name for t in filtered_tools]
+            print(f"[SOUL] Active: {soul_name}", flush=True)
+            print(f"[SOUL] Tools ({len(loaded)}): {loaded}", flush=True)
+
+        soul_agent = create_agent(
+            self.llm(),
+            tools=all_tools,
+            system_prompt=make_system_prompt(soul_prompt),
+            name="soul_agent",
+        )
+
         langgraph_workflow = StateGraph[
             MessagesState, None, MessagesState, MessagesState
         ](MessagesState)
-        langgraph_workflow.add_node("planner_node", self.agent_planner)
-        langgraph_workflow.add_node("writer_node", self.agent_writer)
-        langgraph_workflow.add_edge(START, "planner_node")
-        langgraph_workflow.add_edge("planner_node", "writer_node")
-        langgraph_workflow.add_edge("writer_node", END)
+        langgraph_workflow.add_node("soul_agent", soul_agent)
+        langgraph_workflow.add_edge(START, "soul_agent")
+        langgraph_workflow.add_edge("soul_agent", END)
         return langgraph_workflow  # type: ignore[return-value]
 
     @property
     def prompt_template(self) -> ChatPromptTemplate:
-        return ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    "You are a helpful assistant that plans and writes content based on the "
-                    "user's topic. Chat history is provided via {chat_history} (it may be empty). "
-                    "Use it when helpful to stay consistent across turns.",
-                ),
-                (
-                    "user",
-                    f"The topic is {{topic}}. Make sure you find any interesting and "
-                    f"relevant information given the current year is {datetime.now().year}.",
-                ),
-            ]
-        )
+        return ChatPromptTemplate.from_messages([
+            ("user", "{user_prompt_content}"),
+        ])
 
     def llm(
         self,
@@ -122,29 +146,16 @@ class MyAgent(LangGraphAgent):
 
         In NAT mode, returns the pre-configured LLM provided at construction.
         In DRUM mode, creates a ChatLiteLLM using the configured API credentials.
-
-        Args:
-            auto_model_override: Optional[bool]: If True, it will try and use the model
-                specified in the request but automatically back out if the LLM Gateway is
-                not available.
-
-        Returns:
-            BaseChatModel: The model to use.
         """
         if self._nat_llm is not None:
             return self._nat_llm
 
         if self.config.use_datarobot_llm_gateway:
-            # Route to the DataRobot LLM Gateway. Use "openai/" provider prefix so
-            # LiteLLM calls {api_base}/chat/completions (standard path) and sends
-            # the gateway model name (e.g. "azure/gpt-5-mini-2025-08-07") in the body.
             from urllib.parse import urlparse
             parsed = urlparse(self.api_base)
             base = f"{parsed.scheme}://{parsed.netloc}"
             api_base = f"{base}/api/v2/genai/llmgw"
             gateway_model = self.model or self.default_model
-            # Use "openai/" prefix so LiteLLM routes to {api_base}/chat/completions
-            # and sends the full gateway model name (e.g. "azure/gpt-5-mini-2025-08-07") in the body.
             model = f"openai/{gateway_model}"
         else:
             api_base = self.litellm_api_base(self.config.llm_deployment_id)
@@ -167,50 +178,3 @@ class MyAgent(LangGraphAgent):
             config["model_kwargs"] = {"extra_headers": self._identity_header}  # type: ignore[assignment]
 
         return ChatLiteLLM(**config)
-
-    @property
-    def agent_planner(self) -> Any:
-        return create_agent(
-            self.llm(),
-            tools=self.mcp_tools + self._workflow_tools,
-            system_prompt=make_system_prompt(
-                "You are a content planner. You create brief, structured outlines for blog articles. "
-                "You identify the most important points and cite relevant sources. Keep it simple and to the point - "
-                "this is just an outline for the writer.\n"
-                "\n"
-                "You have access to tools that can help you research and gather information. Use these tools when "
-                "required to collect accurate and up-to-date information about the topic for your planning and research.\n"
-                "\n"
-                "Create a simple outline with:\n"
-                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
-                "2. 2-3 relevant sources or references\n"
-                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
-                "\n"
-                "Do NOT write paragraphs or detailed explanations. Just provide a focused list.",
-            ),
-            name="planner_agent",
-        )
-
-    @property
-    def agent_writer(self) -> Any:
-        return create_agent(
-            self.llm(),
-            tools=self.mcp_tools + self._workflow_tools,
-            system_prompt=make_system_prompt(
-                "You are a content writer working with a planner colleague.\n"
-                "You write opinion pieces based on the planner's outline and context. You provide objective and "
-                "impartial insights backed by the planner's information. You acknowledge when your statements are "
-                "opinions versus objective facts.\n"
-                "\n"
-                "You have access to tools that can help you verify facts and gather additional supporting information. "
-                "Use these tools when required to ensure accuracy and find relevant details while writing.\n"
-                "\n"
-                "1. Use the content plan to craft a compelling blog post.\n"
-                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
-                "3. Sections/Subtitles are properly named in an engaging manner.\n"
-                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
-                "\n"
-                "Write in markdown format, ready for publication.",
-            ),
-            name="writer_agent",
-        )

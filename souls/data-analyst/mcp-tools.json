@@ -1,0 +1,18 @@
+{
+  "tools": [
+    "query_datastore",
+    "browse_datastore",
+    "list_datastores",
+    "analyze_dataset",
+    "get_exploratory_insights",
+    "suggest_use_cases",
+    "upload_dataset_to_ai_catalog",
+    "list_ai_catalog_items",
+    "get_dataset_details",
+    "search_service_api",
+    "list_services",
+    "tavily_search",
+    "tavily_extract",
+    "list_skills"
+  ]
+}
