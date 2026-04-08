@@ -134,8 +134,21 @@ class MyAgent(LangGraphAgent):
         if self._nat_llm is not None:
             return self._nat_llm
 
-        api_base = self.litellm_api_base(self.config.llm_deployment_id)
-        model = self.model or self.default_model
+        if self.config.use_datarobot_llm_gateway:
+            # Route to the DataRobot LLM Gateway. Use "openai/" provider prefix so
+            # LiteLLM calls {api_base}/chat/completions (standard path) and sends
+            # the gateway model name (e.g. "azure/gpt-5-mini-2025-08-07") in the body.
+            from urllib.parse import urlparse
+            parsed = urlparse(self.api_base)
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            api_base = f"{base}/api/v2/genai/llmgw"
+            gateway_model = self.model or self.default_model
+            # Use "openai/" prefix so LiteLLM routes to {api_base}/chat/completions
+            # and sends the full gateway model name (e.g. "azure/gpt-5-mini-2025-08-07") in the body.
+            model = f"openai/{gateway_model}"
+        else:
+            api_base = self.litellm_api_base(self.config.llm_deployment_id)
+            model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
         if self.verbose:

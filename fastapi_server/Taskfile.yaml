@@ -43,7 +43,7 @@ tasks:
     cmds:
       - echo "🔨 Starting development server"
       - cd ../frontend_web && task build
-      - "{{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload"
+      - "{{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --reload"
     env:
       TEST_USER_EMAIL: developer@example.com
   lint:
@@ -98,7 +98,7 @@ tasks:
       - migrate
     cmds:
       - echo "🔨 Starting development server"
-      - "PYTHONPATH=$CALCULATED_PYTHONPATH {{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload"
+      - "PYTHONPATH=$CALCULATED_PYTHONPATH {{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --reload"
   migrate:
     desc: 🛠️ Migrate the database
     cmds:
