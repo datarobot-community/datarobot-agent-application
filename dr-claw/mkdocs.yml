@@ -1,6 +1,6 @@
 site_name: Soul Factory Docs
 site_description: Launch, manage, and govern AI agents — without building the infrastructure.
-site_url: https://docs.soul-factory.ai
+site_url: https://claw.datarobot.com
 
 docs_dir: docs
 site_dir: site
