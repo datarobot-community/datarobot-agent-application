@@ -1,0 +1,103 @@
+site_name: Soul Factory Docs
+site_description: Launch, manage, and govern AI agents — without building the infrastructure.
+site_url: https://docs.soul-factory.ai
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Quickstart: getting-started/quickstart.md
+    - Core Concepts: getting-started/core-concepts.md
+  - Build:
+    - build/index.md
+    - App Flow: build/app-flow.md
+    - Configure Wizard: build/configure.md
+    - Domain Packs: build/domain-packs.md
+    - Pages: build/pages.md
+    - Skills Guide: build/skills-guide.md
+    - Soul Reference: build/soul-reference.md
+  - Run:
+    - run/index.md
+    - My Agents: run/my-agents.md
+    - Agent Detail: run/agent-detail.md
+    - Chat: run/chat.md
+    - Skills: run/skills.md
+    - Cron Jobs: run/cron-jobs.md
+  - Connect:
+    - connect/index.md
+    - Setup: connect/setup.md
+    - MCP Tools: connect/mcp-tools.md
+    - API Reference: connect/api-reference.md
+  - Govern:
+    - govern/index.md
+    - Architecture: govern/architecture.md
+    - Fleet: govern/fleet.md
+    - HITL Queue: govern/hitl-queue.md
+    - Logs: govern/logs.md
+    - Cost & Usage: govern/cost-usage.md
+    - Integration Governance: govern/integration-governance.md
+  - Advanced:
+    - advanced/index.md
+    - Get the Repo: advanced/get-the-repo.md
+    - Multi-Agent: advanced/multiagent.md
+    - Skills Pipeline: advanced/skills-pipeline.md
+    - Heartbeat Channels: advanced/heartbeat-channels.md
+  - Reference:
+    - Glossary: reference/glossary.md
+    - File Map: reference/file-map.md
+    - Cycle 2 Roadmap: reference/cycle-2.md
+    - Changelog: reference/changelog.md

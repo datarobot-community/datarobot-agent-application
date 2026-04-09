@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ super() }}
+
+  <!-- Floating "Ask Docs" button — dr_docs.md spec -->
+  <button class="sf-ask-docs" onclick="alert('Ask Docs feature coming in Cycle 2!')" aria-label="Ask Docs AI">
+    <span class="sf-ask-docs-icon">✦</span>
+    Ask Docs
+  </button>
+{% endblock %}
