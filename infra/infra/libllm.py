@@ -268,26 +268,38 @@ def validate_external_llm_id(llm_id: str) -> None:
 
     Override the default by setting ``LLM_DEFAULT_LLM_ID`` in your ``.env``.
     """
+    import requests
+
     dr_client = datarobot.Client()
     try:
         response = dr_client.get("genai/llms/")
         data = response.json()
-    except Exception as exc:
+    except requests.exceptions.ConnectionError as exc:
         pulumi.warn(
-            f"Could not validate LLM ID '{llm_id}' — unable to query the "
-            f"DataRobot API ({exc}).  Proceeding; the deployment may fail if "
-            "the LLM ID is not available in this instance."
+            f"Could not validate LLM ID '{llm_id}' — network error reaching "
+            f"the DataRobot API ({exc}).  Check DATAROBOT_ENDPOINT and network "
+            "connectivity.  Proceeding; the deployment may fail if the LLM ID "
+            "is not available in this instance."
+        )
+        return
+    except Exception as exc:
+        # Covers authentication failures, endpoint-not-found (older DR versions
+        # that pre-date genai/llms/), and any other unexpected HTTP errors.
+        pulumi.warn(
+            f"Could not validate LLM ID '{llm_id}' — unable to query "
+            f"genai/llms/ ({type(exc).__name__}: {exc}).  Proceeding; the "
+            "deployment may fail if the LLM ID is not available in this instance."
         )
         return
 
     available_llms = data.get("data", [])
     if not available_llms:
-        pulumi.warn(
-            f"Could not validate LLM ID '{llm_id}' — the DataRobot API "
-            "returned no LLMs.  Proceeding; the deployment may fail if the "
-            "LLM ID is not available in this instance."
+        raise ValueError(
+            f"Could not validate LLM ID '{llm_id}' — genai/llms/ returned no "
+            "LLMs.  This may indicate an authentication problem or that your "
+            "DataRobot instance has no LLMs provisioned.  Check "
+            "DATAROBOT_API_TOKEN and DATAROBOT_ENDPOINT, then try again."
         )
-        return
 
     available_ids = [llm.get("id", "") for llm in available_llms if llm.get("id")]
     if llm_id not in available_ids:
