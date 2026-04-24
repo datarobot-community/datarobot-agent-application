@@ -55,6 +55,21 @@ external_llm:
     default: "azure-openai-gpt-5-mini"
     optional: true
     help: "Enter the name of the external LLM model to use (e.g., gpt-5-mini)."
+  - env: LLM_DEFAULT_LLM_ID
+    type: string
+    default: "azure-openai-gpt-5-mini"
+    optional: true
+    help: >
+      Enter the DataRobot Playground catalog identifier for your LLM type
+      (e.g., azure-openai-gpt-5-mini). This must match an LLM provisioned in
+      your DataRobot region and may differ from the Azure deployment name. If
+      unsure, leave blank and run `pulumi up` once — the deploy will list
+      available IDs if the default is not found.
+  - env: LLM_DEFAULT_LLM_NAME
+    type: string
+    default: "Azure OpenAI GPT-5 Mini"
+    optional: true
+    help: "Enter a friendly display name for the LLM shown in the UI (e.g., Azure OpenAI GPT-5 Mini)."
   - key: external_llm_provider
     optional: false
     options:
@@ -88,7 +103,7 @@ azure_openai:
   - env: OPENAI_API_DEPLOYMENT_ID
     type: string
     optional: false
-    help: "Enter the OpenAI API deployment ID (e.g., gpt-5-mini)."
+    help: "Enter the Azure deployment name (e.g., llm-default). This is the name you gave your deployment in Azure, which may differ from the underlying model name."
   - env: OPENAI_API_VERSION
     type: string
     optional: false

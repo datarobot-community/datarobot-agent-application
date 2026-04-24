@@ -29,6 +29,7 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from . import use_case
 from .libllm import (
     get_runtime_values,
+    validate_external_llm_id,
     validate_feature_flags,
     verify_llm,
 )
@@ -67,13 +68,22 @@ default_llm_friendly_name: str = os.environ.get(
 
 validate_feature_flags(REQUIRED_FEATURE_FLAGS)
 llm_credential_runtime_params = get_runtime_values(default_llm_id)
-# This will ensure your credentials are working properly
-# https://docs.litellm.ai/docs/providers for more details
-# on what string to pass to `verify_llm` This default
-# example is assuming Azure OpenAI with a OPENAI_API_DEPLOYMENT_ID='azure-openai-gpt-5-mini'.
-# You combine that with azure/gpt-5-mini-2025-08-07 for LiteLLM to verify the model.
-# Similar instructions exist for Bedrock: https://docs.litellm.ai/docs/providers/bedrock
-# and Vertex: https://docs.litellm.ai/docs/providers/vertex
+# Validate that the LLM ID is available in this DataRobot instance before
+# attempting to create the LLM Blueprint.  The llm_id (e.g.
+# "azure-openai-gpt-5-mini") is a DataRobot Playground catalog identifier and
+# must be provisioned in your region.  If the ID is not found, set
+# LLM_DEFAULT_LLM_ID in your .env to a valid ID printed by this check.
+# Note: LLM_DEFAULT_LLM_ID is separate from OPENAI_API_DEPLOYMENT_ID.
+#   OPENAI_API_DEPLOYMENT_ID  – the name of your Azure deployment (e.g. "llm-default")
+#   LLM_DEFAULT_LLM_ID        – the DataRobot catalog identifier for the LLM type
+#                               (e.g. "azure-openai-gpt-5-mini")
+validate_external_llm_id(default_llm_id)
+# Verify that your external LLM credentials are working.
+# Pass the Azure deployment name (OPENAI_API_DEPLOYMENT_ID) so LiteLLM
+# resolves the correct Azure endpoint.  This is distinct from the model
+# version string (e.g. "gpt-5-mini-2025-08-07") — the deployment name is
+# what Azure uses in the URL, and may differ from the model name.
+# See https://docs.litellm.ai/docs/providers/azure for details.
 verify_llm(f"azure/{os.getenv('OPENAI_API_DEPLOYMENT_ID')}")
 
 playground = datarobot.Playground(

@@ -29,6 +29,7 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 from . import use_case
 from .libllm import (
+    validate_external_llm_id,
     validate_feature_flags,
     verify_llm,
     verify_llm_gateway_model_availability,
@@ -80,6 +81,13 @@ validate_feature_flags(REQUIRED_FEATURE_FLAGS)
 # by checking the LLM Gateway. If it isn't, it will raise an error
 # with the list of models that are available and active.
 verify_llm_gateway_model_availability(default_model)
+
+# Validate that the LLM ID is available in this DataRobot instance before
+# attempting to create the LLM Blueprint.  The llm_id (e.g.
+# "azure-openai-gpt-5-mini") is a DataRobot Playground catalog identifier and
+# must be provisioned in your region.  Override with LLM_DEFAULT_LLM_ID if
+# the default is not available.
+validate_external_llm_id(default_llm_id)
 
 # LiteLLM support DataRobot as a provider, so this validates
 # everything is working and the default LLM you've chosen is available

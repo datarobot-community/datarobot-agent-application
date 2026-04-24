@@ -255,6 +255,55 @@ def validate_feature_flags(flags: FeatureFlagSet) -> None:
         raise pulumi.RunError("Please correct feature flag settings and run again.")
 
 
+def validate_external_llm_id(llm_id: str) -> None:
+    """
+    Validate that the external LLM ID is available in this DataRobot instance.
+
+    The ``llm_id`` passed to ``datarobot.LlmBlueprint`` must match a DataRobot
+    Playground catalog identifier (e.g. ``azure-openai-gpt-5-mini``).  Available
+    identifiers differ between DataRobot regions and managed-tenant deployments.
+    This check surfaces a clear error — including the list of valid IDs — before
+    the blueprint resource creation call, rather than letting the DataRobot API
+    return a cryptic 422 "LLM not found" response.
+
+    Override the default by setting ``LLM_DEFAULT_LLM_ID`` in your ``.env``.
+    """
+    dr_client = datarobot.Client()
+    try:
+        response = dr_client.get("genai/llms/")
+        data = response.json()
+    except Exception as exc:
+        pulumi.warn(
+            f"Could not validate LLM ID '{llm_id}' — unable to query the "
+            f"DataRobot API ({exc}).  Proceeding; the deployment may fail if "
+            "the LLM ID is not available in this instance."
+        )
+        return
+
+    available_llms = data.get("data", [])
+    if not available_llms:
+        pulumi.warn(
+            f"Could not validate LLM ID '{llm_id}' — the DataRobot API "
+            "returned no LLMs.  Proceeding; the deployment may fail if the "
+            "LLM ID is not available in this instance."
+        )
+        return
+
+    available_ids = [llm.get("id", "") for llm in available_llms if llm.get("id")]
+    if llm_id not in available_ids:
+        available_display = "\n  - ".join(available_ids)
+        raise ValueError(
+            f"LLM ID '{llm_id}' was not found in this DataRobot instance.\n\n"
+            "Set the environment variable 'LLM_DEFAULT_LLM_ID' to one of the "
+            "available LLM IDs listed below, and optionally set "
+            "'LLM_DEFAULT_LLM_NAME' to a friendly display name.\n\n"
+            f"Available LLM IDs:\n  - {available_display}\n\n"
+            "Example:\n"
+            "  LLM_DEFAULT_LLM_ID=<one_of_the_ids_above>\n"
+            "  LLM_DEFAULT_LLM_NAME=<friendly_name_for_ui>"
+        )
+
+
 def verify_llm_gateway_model_availability(model_id: str) -> None:
     """
     Validate the model is in the catalog

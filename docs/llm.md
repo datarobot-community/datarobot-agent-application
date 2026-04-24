@@ -81,8 +81,14 @@ Use this option when you already have an LLM from Azure, Bedrock, Anthropic, Ver
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `<LLM>_DEFAULT_MODEL` | No | `azure-openai-gpt-5-mini` | External LLM model name |
-| `<LLM>_DEFAULT_LLM_ID` | No | `azure-openai-gpt-5-mini` | LLM ID used in the Playground |
+| `<LLM>_DEFAULT_LLM_ID` | No | `azure-openai-gpt-5-mini` | DataRobot Playground catalog identifier for the LLM type |
 | `<LLM>_DEFAULT_LLM_NAME` | No | `Azure OpenAI GPT-5 Mini` | Friendly name shown in the UI |
+
+> **Note — `LLM_DEFAULT_LLM_ID` and region availability.** The `LLM_DEFAULT_LLM_ID` value (e.g. `azure-openai-gpt-5-mini`) is a DataRobot-internal catalog identifier for the Playground. Available identifiers differ between DataRobot regions and managed-tenant (MTS) deployments. If you see a `422 Unprocessable Entity {"detail":"LLM not found"}` error when running `pulumi up`, set `LLM_DEFAULT_LLM_ID` to a valid ID for your instance. A preflight check will list the available IDs in your environment when the default is not found.
+>
+> **Note — `OPENAI_API_DEPLOYMENT_ID` vs `LLM_DEFAULT_LLM_ID`.** These are two different identifiers:
+> - `OPENAI_API_DEPLOYMENT_ID` — the name you gave your Azure deployment (e.g. `llm-default`). This can be any string and does not need to match the model name.
+> - `LLM_DEFAULT_LLM_ID` — the DataRobot Playground catalog ID for the LLM type (e.g. `azure-openai-gpt-5-mini`). This must match a value provisioned in your DataRobot region.
 
 You must also configure credentials for your chosen provider:
 
@@ -92,7 +98,7 @@ You must also configure credentials for your chosen provider:
 |---|---|
 | `OPENAI_API_KEY` | API key |
 | `OPENAI_API_BASE` | Base URL (e.g. `https://ENDPOINT.openai.azure.com`) |
-| `OPENAI_API_DEPLOYMENT_ID` | Deployment ID (e.g. `gpt-5-mini`) |
+| `OPENAI_API_DEPLOYMENT_ID` | Azure deployment name (e.g. `llm-default`). This is the name of your Azure deployment and may differ from the model name. |
 | `OPENAI_API_VERSION` | API version (e.g. `2024-08-01-preview`) |
 
 #### AWS Bedrock
@@ -259,8 +265,11 @@ INFRA_ENABLE_LLM=blueprint_with_external_llm.py
 LLM_DEFAULT_MODEL="azure/gpt-5-mini-2025-08-07"
 OPENAI_API_VERSION='2024-08-01-preview'
 OPENAI_API_BASE='https://<your_custom_endpoint>.openai.azure.com'
-OPENAI_API_DEPLOYMENT_ID='<your deployment_id>'
+OPENAI_API_DEPLOYMENT_ID='<your_azure_deployment_name>'   # e.g. llm-default
 OPENAI_API_KEY='<your_api_key>'
+# Optional: override only if the default LLM ID is not available in your region
+# LLM_DEFAULT_LLM_ID='azure-openai-gpt-5-mini'
+# LLM_DEFAULT_LLM_NAME='Azure OpenAI GPT-5 Mini'
 ```
 
 #### LLM Blueprint with LLM Gateway
