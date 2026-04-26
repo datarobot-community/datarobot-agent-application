@@ -3,11 +3,7 @@
 version: '3'
 env:
   ENV: testing
-  PYTHONWARNINGS: "ignore"
 dotenv: ['.env', '.env.{{.ENV}}']
-vars:
-  AGENT_VERSION:
-    sh: grep '^_commit:' .datarobot/answers/agent-agent.yml | awk '{print $2}'
 
 includes:
   common:
@@ -19,6 +15,9 @@ includes:
   core:
     taskfile: ./core/Taskfile.yaml
     dir: ./core
+  docs:
+    taskfile: ./docs/Taskfile.yaml
+    dir: ./docs
   fastapi_server:
     taskfile: ./fastapi_server/Taskfile.yaml
     dir: ./fastapi_server
@@ -39,27 +38,10 @@ tasks:
     cmds:
       - task --list --sort none
 
-  start-non-interactive:
-    cmds:
-      - task: start
-        vars:
-          COPIER_FLAGS: "-l"
-
   start:
     desc: "💻 Prepare local development environment"
     cmds:
       - dr self update
-      - "echo '✨ Choose your agentic framework.'"
-      - |
-        PYTHONWARNINGS=ignore uvx copier recopy -a .datarobot/answers/agent-agent.yml \
-        -r {{.AGENT_VERSION}} \
-        --data base_answers_file=.datarobot/answers/base.yml \
-        --data agent_app_name=agent \
-        --data agent_development_port=8842 \
-        --data include_taskfile_infra=no \
-        --data mcp_answers_file=.datarobot/answers/drmcp-mcp_server.yml \
-        --data llm_answers_file=.datarobot/answers/llm-llm.yml \
-        {{.COPIER_FLAGS}} -w --quiet
       - task build-agents-md
       - dr task compose
       - dr dotenv setup --if-needed

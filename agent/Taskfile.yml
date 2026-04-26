@@ -27,18 +27,23 @@ tasks:
     desc: 🛠️ Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for agent"
-      - '{{.UV_CMD}} sync --extra dev'
+      - "{{.UV_CMD}} sync --extra dev"
       - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
-    aliases: [req]
+    aliases:
+      - req
+
   update:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🛠️ Update local dependencies (refresh uv locks)
-    cmds: [echo "Updating local dependencies for agent", '{{.UV_CMD}} sync --extra dev -U']
+    cmds:
+      - echo "Updating local dependencies for agent"
+      - "{{.UV_CMD}} sync --extra dev -U"
     silent: true
+
   auth-check:
     silent: true
-    desc: 🔐 Check authentication prerequisites
+    desc: "🔐 Check authentication prerequisites"
     cmds:
       - |
         if command -v dr &> /dev/null && dr auth help 2>&1 | grep -q "check"; then
@@ -47,48 +52,57 @@ tasks:
         else
           echo "ℹ️  Skipping auth check (not available)"
         fi
+
   add-dependency:
     desc: 🛠️ Add provided packages as a new dependency to an agent
     cmds:
       - echo "Adding new dependency for agent into 'extras' dependency group"
-      - '{{.UV_CMD}} add --no-upgrade --group extras {{.CLI_ARGS}}'
+      - "{{.UV_CMD}} add --no-upgrade --group extras {{.CLI_ARGS}}"
     silent: true
+
   lint:
-    desc: 🧹 Run linters
+    desc: "🧹 Run linters"
     cmds:
       - task: req
       - echo "Linting the codebase"
-      - '{{.UV_CMD}} run ruff check . --fix'
-      - '{{.UV_CMD}} run ruff format .'
-      - '{{.UV_CMD}} run mypy --pretty .'
+      - "{{.UV_CMD}} run ruff check . --fix"
+      - "{{.UV_CMD}} run ruff format ."
+      - "{{.UV_CMD}} run mypy --pretty ."
       - "{{.UV_CMD}} run yamlfix . -e '.venv/**/*.yaml' -e '.venv/**/*.yml' -e 'build/**/*.yaml' -e 'build/**/*.yml'"
     silent: true
+
   lint-check:
-    desc: 🧹 Check whether the codebase is linted
+    desc: "🧹 Check whether the codebase is linted"
     cmds:
       - task: req
       - echo "Checking linting"
-      - '{{.UV_CMD}} run ruff format --check --diff .'
-      - '{{.UV_CMD}} run ruff check --diff .'
+      - "{{.UV_CMD}} run ruff format --check --diff ."
+      - "{{.UV_CMD}} run ruff check --diff ."
       - echo "Checking type hints"
-      - '{{.UV_CMD}} run mypy --pretty .'
+      - "{{.UV_CMD}} run mypy --pretty ."
     silent: true
+
   test:
-    desc: 🧪 Run tests
-    cmds: [echo "Running pytest on tests", '{{.UV_CMD}} run pytest -vv ./tests/']
+    desc: "🧪 Run tests"
+    cmds:
+      - echo "Running pytest on tests"
+      - "{{.UV_CMD}} run pytest -vv ./tests/"
     silent: true
+
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
-      - '{{.UV_CMD}} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/'
+      - "{{.UV_CMD}} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
+
   cli:
     desc: 🖥️ Run the CLI with provided arguments
     vars:
-      START_DEV: '{{.START_DEV}}'
-    deps: [auth-check]
+      START_DEV: "{{.START_DEV}}"
+    deps:
+      - auth-check
     cmds:
       - echo "Running CLI {{.CLI_ARGS}}"
       - |
@@ -159,11 +173,14 @@ tasks:
           fi
           echo "✅ Dev server stopped"
         fi
+
         exit $CLI_EXIT_CODE
     silent: true
+
   dev:
     desc: 🔨 Run the development server
-    deps: [auth-check]
+    deps:
+      - auth-check
     cmds:
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
@@ -172,6 +189,7 @@ tasks:
           {{.UV_CMD}} run python dev.py --autoreload
         fi
     silent: true
+
   dev-stop:
     desc: 🛑 Stop the development server
     cmds:
@@ -182,10 +200,11 @@ tasks:
         else
           pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || echo "No development server process found"
         fi
+
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image
     vars:
-      BRANCH: '{{.BRANCH}}'
+      BRANCH: "{{.BRANCH}}"
     cmds:
       - echo "Creating docker_context folder inside agent."
       - rm -rf ./docker_context
@@ -211,12 +230,14 @@ tasks:
       - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
       - echo "Docker context created inside agent/docker_context"
+
   build-docker-image:
     # desc: 🐳 Build the Docker image
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t agent:latest .
+
   build-docker-context:
     desc: 🐳 Build the Docker image
     cmds:
