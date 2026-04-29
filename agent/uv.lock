@@ -62,6 +62,13 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/dd/d5/51f4ee1bf3b736add42a542d3c8a3fd3fa85f3d36c17972127defc46c26f/a2a_sdk-0.3.26-py3-none-any.whl", hash = "sha256:754e0573f6d33b225c1d8d51f640efa69cbbed7bdfb06ce9c3540ea9f58d4a91", size = 151016, upload-time = "2026-04-09T15:21:12.35Z" },
 ]
 
+[package.optional-dependencies]
+http-server = [
+    { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "sse-starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
 [[package]]
 name = "absl-py"
 version = "2.4.0"
@@ -69,18 +76,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/64/c7/8de93764ad66968d19329a7e0c147a2bb3c7054c554d4a119111b8f9440f/absl_py-2.4.0.tar.gz", hash = "sha256:8c6af82722b35cf71e0f4d1d47dcaebfff286e27110a99fc359349b247dfb5d4", size = 116543, upload-time = "2026-01-28T10:17:05.322Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/18/a6/907a406bb7d359e6a63f99c313846d9eec4f7e6f7437809e03aa00fa3074/absl_py-2.4.0-py3-none-any.whl", hash = "sha256:88476fd881ca8aab94ffa78b7b6c632a782ab3ba1cd19c9bd423abc4fb4cd28d", size = 135750, upload-time = "2026-01-28T10:17:04.19Z" },
-]
-
-[[package]]
-name = "ag-ui-protocol"
-version = "0.1.15"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/57/71/96c21ae7e2fb9b610c1a90d38bd2de8b6e5b2900a63001f3882f43e519af/ag_ui_protocol-0.1.15.tar.gz", hash = "sha256:5e23c1042c7d4e364d685e68d2fb74d37c16bc83c66d270102d8eaedce56ad82", size = 6269, upload-time = "2026-04-01T15:44:33.136Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/a0/a73398d30bb0f9ad70cd70426151a4a19527a7296e48a3a16a50e1d5db05/ag_ui_protocol-0.1.15-py3-none-any.whl", hash = "sha256:85cde077023ccbc37b5ce2ad953537883c262d210320f201fc2ec4e85408b06a", size = 8661, upload-time = "2026-04-01T15:44:32.079Z" },
 ]
 
 [[package]]
@@ -127,7 +122,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent"], specifier = "==0.14.4" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent"], editable = "../../datarobot-genai" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -920,8 +915,7 @@ name = "datarobot"
 version = "3.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dateutil", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytz", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -953,8 +947,7 @@ dependencies = [
     { name = "jinja2", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "markupsafe", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "memory-profiler", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-instrumentation-aiohttp-client", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -983,8 +976,7 @@ name = "datarobot-early-access"
 version = "3.14.0.2026.3.18.162920"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dateutil", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytz", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1003,16 +995,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.14.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/04/99/c8913aa9ba7fea84ee3cadc323a4a6685b81ea06af4006ff4664aa4f6457/datarobot_genai-0.14.4.tar.gz", hash = "sha256:b6d07519930f66f00a7197295dd64b7e19f62898a6540eb6f5d2ee7883c79326", size = 239711, upload-time = "2026-04-14T14:18:48.385Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/87/a0923279860bb2d513fbd022b348d6fb9c5ec75a0a044e2fdb406b4d9dc5/datarobot_genai-0.14.4-py3-none-any.whl", hash = "sha256:ad6f5fb41ec09afef9b4cad84e1fd5b57585bd4a1d2e3db08eccf24d4c5cdff4", size = 354390, upload-time = "2026-04-14T14:18:46.74Z" },
-]
+version = "0.15.18"
+source = { editable = "../../datarobot-genai" }
 
 [package.optional-dependencies]
 dragent = [
-    { name = "ag-ui-protocol", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "anyio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1037,7 +1024,6 @@ dragent = [
     { name = "starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 langgraph = [
-    { name = "ag-ui-protocol", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1057,6 +1043,192 @@ langgraph = [
     { name = "pyjwt", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "ragas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "requests", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", marker = "extra == 'auth'", specifier = ">=3.13.3,<4.0.0" },
+    { name = "aiohttp", marker = "extra == 'drmcp'", specifier = ">=3.13.3,<4.0.0" },
+    { name = "aiohttp", marker = "extra == 'drtools'", specifier = ">=3.13.3,<4.0.0" },
+    { name = "aiohttp-retry", marker = "extra == 'drmcp'", specifier = ">=2.8.3,<3.0.0" },
+    { name = "anthropic", marker = "extra == 'crewai'", specifier = "~=0.71.0,<1.0.0" },
+    { name = "anyio", marker = "extra == 'dragent'", specifier = "==4.11.0" },
+    { name = "anyio", marker = "extra == 'nat'", specifier = "==4.11.0" },
+    { name = "azure-ai-inference", marker = "extra == 'crewai'", specifier = ">=1.0.0b9,<2.0.0" },
+    { name = "beautifulsoup4", marker = "extra == 'drmcp'", specifier = ">=4.12.0,<5.0.0" },
+    { name = "beautifulsoup4", marker = "extra == 'drtools'", specifier = ">=4.12.0,<5.0.0" },
+    { name = "boto3", marker = "extra == 'drmcp'", specifier = ">=1.34.0,<2.0.0" },
+    { name = "crewai", extras = ["litellm"], marker = "extra == 'crewai'", specifier = ">=1.11.0" },
+    { name = "crewai-tools", extras = ["mcp"], marker = "extra == 'crewai'", specifier = ">=0.69.0,<0.77.0" },
+    { name = "datarobot", marker = "extra == 'core'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'crewai'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'dragent'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'drmcp'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'drtools'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'langgraph'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'llamaindex'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", marker = "extra == 'nat'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", extras = ["auth"], marker = "extra == 'auth'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", extras = ["auth"], marker = "extra == 'drmcp'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot", extras = ["auth"], marker = "extra == 'drtools'", specifier = ">=3.10.0,<4.0.0" },
+    { name = "datarobot-asgi-middleware", marker = "extra == 'drmcp'", specifier = ">=0.2.0,<1.0.0" },
+    { name = "datarobot-early-access", marker = "extra == 'core'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-early-access", marker = "extra == 'crewai'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-early-access", marker = "extra == 'dragent'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-early-access", marker = "extra == 'drmcp'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-early-access", marker = "extra == 'langgraph'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-early-access", marker = "extra == 'llamaindex'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-early-access", marker = "extra == 'nat'", specifier = "==3.14.0.2026.3.18.162920" },
+    { name = "datarobot-predict", marker = "extra == 'core'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'crewai'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'dragent'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'drmcp'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'drtools'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'langgraph'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'llamaindex'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "datarobot-predict", marker = "extra == 'nat'", specifier = ">=1.13.2,<2.0.0" },
+    { name = "fastapi", marker = "extra == 'dragent'", specifier = "<0.133.0" },
+    { name = "fastmcp", marker = "extra == 'drmcp'", specifier = ">=3.2.0,<4.0.0" },
+    { name = "httpx", marker = "extra == 'drmcp'", specifier = ">=0.28.1,<1.0.0" },
+    { name = "httpx", marker = "extra == 'drtools'", specifier = ">=0.28.1,<1.0.0" },
+    { name = "langchain-mcp-adapters", marker = "extra == 'langgraph'", specifier = ">=0.1.12,<0.2.0" },
+    { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=1.0.0,<2.0.0" },
+    { name = "langgraph-prebuilt", marker = "extra == 'langgraph'", specifier = ">=1.0.0,<2.0.0" },
+    { name = "litellm", marker = "extra == 'crewai'", specifier = ">=1.83.0,<2.0.0" },
+    { name = "litellm", marker = "extra == 'dragent'", specifier = ">=1.83.0,<2.0.0" },
+    { name = "litellm", marker = "extra == 'langgraph'", specifier = ">=1.83.0,<2.0.0" },
+    { name = "litellm", marker = "extra == 'llamaindex'", specifier = ">=1.83.0,<2.0.0" },
+    { name = "litellm", marker = "extra == 'nat'", specifier = ">=1.83.0,<2.0.0" },
+    { name = "llama-index", marker = "extra == 'llamaindex'", specifier = ">=0.14.0,<0.15.0" },
+    { name = "llama-index-core", marker = "extra == 'llamaindex'", specifier = ">=0.14.0,<0.15.0" },
+    { name = "llama-index-llms-langchain", marker = "extra == 'llamaindex'", specifier = ">=0.6.1,<0.8.0" },
+    { name = "llama-index-llms-litellm", marker = "extra == 'llamaindex'", specifier = ">=0.4.1,<0.7.0" },
+    { name = "llama-index-llms-openai", marker = "extra == 'llamaindex'", specifier = ">=0.6.0,<0.7.0" },
+    { name = "llama-index-tools-mcp", marker = "extra == 'llamaindex'", specifier = ">=0.1.0,<0.5.0" },
+    { name = "mem0ai", marker = "extra == 'memory'", specifier = ">=1.0.4,<2.0.0" },
+    { name = "nvidia-nat", marker = "extra == 'dragent'", specifier = "==1.6.0" },
+    { name = "nvidia-nat", marker = "extra == 'nat'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-a2a", marker = "extra == 'dragent'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-a2a", marker = "extra == 'nat'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-crewai", marker = "extra == 'crewai'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-langchain", marker = "extra == 'dragent'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-langchain", marker = "extra == 'langgraph'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-langchain", marker = "extra == 'nat'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-llama-index", marker = "extra == 'llamaindex'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-mcp", marker = "extra == 'dragent'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-mcp", marker = "extra == 'nat'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-opentelemetry", marker = "extra == 'dragent'", specifier = "==1.6.0" },
+    { name = "nvidia-nat-opentelemetry", marker = "extra == 'nat'", specifier = "==1.6.0" },
+    { name = "openai", marker = "extra == 'core'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "openai", marker = "extra == 'crewai'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "openai", marker = "extra == 'dragent'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "openai", marker = "extra == 'drmcp'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "openai", marker = "extra == 'langgraph'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "openai", marker = "extra == 'llamaindex'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "openai", marker = "extra == 'nat'", specifier = ">=2.0.0,<3.0.0" },
+    { name = "opentelemetry-api", marker = "extra == 'drmcp'", specifier = ">=1.22.0,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp", marker = "extra == 'drmcp'", specifier = ">=1.22.0,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'drmcp'", specifier = ">=1.22.0,<2.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'core'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'crewai'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'dragent'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'drmcp'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'langgraph'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'llamaindex'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'nat'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-crewai", marker = "extra == 'crewai'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'core'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'crewai'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'dragent'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'drmcp'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'langgraph'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'llamaindex'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'nat'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-langchain", marker = "extra == 'langgraph'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-llamaindex", marker = "extra == 'llamaindex'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'core'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'crewai'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'dragent'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'langgraph'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'llamaindex'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'nat'", specifier = ">=0.40.5,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'core'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'crewai'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'dragent'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'drmcp'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'langgraph'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'llamaindex'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'nat'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-threading", marker = "extra == 'core'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-threading", marker = "extra == 'crewai'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-threading", marker = "extra == 'dragent'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-threading", marker = "extra == 'langgraph'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-threading", marker = "extra == 'llamaindex'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-threading", marker = "extra == 'nat'", specifier = ">=0.43b0,<1.0.0" },
+    { name = "opentelemetry-sdk", marker = "extra == 'drmcp'", specifier = ">=1.22.0,<2.0.0" },
+    { name = "perplexityai", marker = "extra == 'drmcp'", specifier = ">=0.27,<1.0" },
+    { name = "perplexityai", marker = "extra == 'drtools'", specifier = ">=0.27,<1.0" },
+    { name = "polars", marker = "extra == 'drmcp'", specifier = ">=1.0.0,<2.0.0" },
+    { name = "polars", marker = "extra == 'drtools'", specifier = ">=1.0.0,<2.0.0" },
+    { name = "pyarrow", marker = "extra == 'core'", specifier = "==21.0.0" },
+    { name = "pyarrow", marker = "extra == 'crewai'", specifier = "==21.0.0" },
+    { name = "pyarrow", marker = "extra == 'dragent'", specifier = "==21.0.0" },
+    { name = "pyarrow", marker = "extra == 'drmcp'", specifier = ">=21.0.0,<22.0.0" },
+    { name = "pyarrow", marker = "extra == 'drtools'", specifier = ">=21.0.0,<22.0.0" },
+    { name = "pyarrow", marker = "extra == 'langgraph'", specifier = "==21.0.0" },
+    { name = "pyarrow", marker = "extra == 'llamaindex'", specifier = "==21.0.0" },
+    { name = "pyarrow", marker = "extra == 'nat'", specifier = "==21.0.0" },
+    { name = "pybase64", marker = "extra == 'crewai'", specifier = ">=1.4.2,<2.0.0" },
+    { name = "pydantic", marker = "extra == 'auth'", specifier = ">=2.6.1,<3.0.0" },
+    { name = "pydantic", marker = "extra == 'drmcp'", specifier = ">=2.6.1,<3.0.0" },
+    { name = "pydantic", marker = "extra == 'drtools'", specifier = ">=2.6.1,<3.0.0" },
+    { name = "pydantic-settings", marker = "extra == 'drmcp'", specifier = ">=2.1.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'core'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'crewai'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'dragent'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'drmcp'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'langgraph'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'llamaindex'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pyjwt", marker = "extra == 'nat'", specifier = ">=2.12.0,<3.0.0" },
+    { name = "pypdf", marker = "extra == 'drmcp'", specifier = ">=6.10.1,<7.0.0" },
+    { name = "pypdf", marker = "extra == 'drtools'", specifier = ">=6.10.1,<7.0.0" },
+    { name = "pypdf", marker = "extra == 'llamaindex'", specifier = ">=6.10.1,<7.0.0" },
+    { name = "python-dateutil", marker = "extra == 'drmcp'", specifier = ">=2.9.0,<3.0.0" },
+    { name = "python-dateutil", marker = "extra == 'drtools'", specifier = ">=2.9.0,<3.0.0" },
+    { name = "python-dotenv", marker = "extra == 'drmcp'", specifier = ">=1.1.0,<2.0.0" },
+    { name = "ragas", marker = "extra == 'core'", specifier = ">=0.3.8,<0.4.0" },
+    { name = "ragas", marker = "extra == 'crewai'", specifier = ">=0.3.8,<0.4.0" },
+    { name = "ragas", marker = "extra == 'dragent'", specifier = ">=0.3.8,<0.4.0" },
+    { name = "ragas", marker = "extra == 'langgraph'", specifier = ">=0.3.8,<0.4.0" },
+    { name = "ragas", marker = "extra == 'llamaindex'", specifier = ">=0.3.8,<0.4.0" },
+    { name = "ragas", marker = "extra == 'nat'", specifier = ">=0.3.8,<0.4.0" },
+    { name = "requests", marker = "extra == 'core'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "requests", marker = "extra == 'crewai'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "requests", marker = "extra == 'dragent'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "requests", marker = "extra == 'drmcp'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "requests", marker = "extra == 'langgraph'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "requests", marker = "extra == 'llamaindex'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "requests", marker = "extra == 'nat'", specifier = ">=2.32.4,<3.0.0" },
+    { name = "rich", marker = "extra == 'drmcp'", specifier = ">=13.0.0,<16.0.0" },
+    { name = "starlette", marker = "extra == 'dragent'", specifier = "<1.0.0" },
+    { name = "tavily-python", marker = "extra == 'drmcp'", specifier = ">=0.7.20,<1.0.0" },
+    { name = "tavily-python", marker = "extra == 'drtools'", specifier = ">=0.7.20,<1.0.0" },
+]
+provides-extras = ["core", "crewai", "langgraph", "llamaindex", "nat", "auth", "drmcp", "drtools", "dragent", "memory"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "aioresponses", specifier = ">=0.7.8" },
+    { name = "ipdb", specifier = ">=0.13.13" },
+    { name = "mypy", specifier = ">=1.10.0" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio", specifier = ">=0.23.5" },
+    { name = "pytest-cov" },
+    { name = "responses", specifier = ">=0.25.8" },
+    { name = "respx", specifier = ">=0.22.0" },
+    { name = "ruff", specifier = ">=0.6.0" },
+    { name = "twine", specifier = ">=5.0.0" },
 ]
 
 [[package]]
@@ -1081,8 +1253,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "backoff", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-instrumentation", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-sdk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1161,8 +1332,7 @@ dependencies = [
     { name = "httpx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "huggingface-hub", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "multiprocess", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "packaging", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pyarrow", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1332,15 +1502,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/41/9e/ea78919dd88d06a4bf622717e0127c763d3017bdb550e42d9f4b3e4007b1/ecs_logging-2.3.0.tar.gz", hash = "sha256:be7f618e71e10c33a61165aea58813ebd702f6c0044538155871cb9a1609ab4e", size = 11498, upload-time = "2026-01-19T10:28:29.032Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/16/6f/187826c34511e73c7b9f9595465fd8a029ed467c8c2e57ef76f7dbc8a810/ecs_logging-2.3.0-py3-none-any.whl", hash = "sha256:42da72191a98bd724d105e126ca8d7c81fc82b0d7bbbe4bb1584c34e61042cfc", size = 14791, upload-time = "2026-01-19T10:28:27.408Z" },
-]
-
-[[package]]
-name = "et-xmlfile"
-version = "2.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d3/38/af70d7ab1ae9d4da450eeec1fa3918940a5fafb9055e934af8d6eb0c2313/et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54", size = 17234, upload-time = "2024-10-25T17:25:40.039Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa", size = 18059, upload-time = "2024-10-25T17:25:39.051Z" },
 ]
 
 [[package]]
@@ -2031,22 +2192,21 @@ wheels = [
 
 [[package]]
 name = "huggingface-hub"
-version = "1.10.2"
+version = "0.36.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fsspec", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "hf-xet", marker = "(platform_machine == 'AMD64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'darwin') or (platform_machine == 'amd64' and sys_platform == 'darwin') or (platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'AMD64' and sys_platform == 'linux') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'linux') or (platform_machine == 'arm64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'aarch64' and sys_platform == 'win32') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'win32')" },
-    { name = "httpx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "hf-xet", marker = "(platform_machine == 'aarch64' and sys_platform == 'darwin') or (platform_machine == 'amd64' and sys_platform == 'darwin') or (platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'linux') or (platform_machine == 'arm64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'aarch64' and sys_platform == 'win32') or (platform_machine == 'amd64' and sys_platform == 'win32') or (platform_machine == 'arm64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'win32')" },
     { name = "packaging", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pyyaml", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "requests", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tqdm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "typer", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "typing-extensions", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0c/4d/00734890c7fcfe2c7ff04f1c1a167186c42b19e370a2dd8cfd8c34fc92c4/huggingface_hub-1.10.2.tar.gz", hash = "sha256:4b276f820483b709dc86a53bcb8183ea496b8d8447c9f7f88a115a12b498a95f", size = 758428, upload-time = "2026-04-14T10:42:28.498Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7c/b7/8cb61d2eece5fb05a83271da168186721c450eb74e3c31f7ef3169fa475b/huggingface_hub-0.36.2.tar.gz", hash = "sha256:1934304d2fb224f8afa3b87007d58501acfda9215b334eed53072dd5e815ff7a", size = 649782, upload-time = "2026-02-06T09:24:13.098Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5e/c9/4c1e1216b24bcab140c83acdf8bc89a846ea17cd8a06cd18e3fd308a297f/huggingface_hub-1.10.2-py3-none-any.whl", hash = "sha256:c26c908767cc711493978dc0b4f5747ba7841602997cc98bfd628450a28cf9bc", size = 642581, upload-time = "2026-04-14T10:42:26.563Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/af/48ac8483240de756d2438c380746e7130d1c6f75802ef22f3c6d49982787/huggingface_hub-0.36.2-py3-none-any.whl", hash = "sha256:48f0c8eac16145dfce371e9d2d7772854a4f591bcb56c9cf548accf531d54270", size = 566395, upload-time = "2026-02-06T09:24:11.133Z" },
 ]
 
 [[package]]
@@ -2543,8 +2703,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/52/1d/bb306951b1c394b7a27effb8eb6c9ee65dd77fcc4be7c20f76e3299a9e1e/langchain_aws-1.1.0.tar.gz", hash = "sha256:1e2f8570328eae4907c3cf7e900dc68d8034ddc865d9dc96823c9f9d8cccb901", size = 393899, upload-time = "2025-11-24T14:35:24.216Z" }
@@ -2581,8 +2740,7 @@ dependencies = [
     { name = "langchain-classic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langsmith", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic-settings", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pyyaml", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "requests", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -2900,8 +3058,7 @@ dependencies = [
     { name = "nest-asyncio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "networkx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nltk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pillow", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "platformdirs", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -3563,45 +3720,8 @@ wheels = [
 
 [[package]]
 name = "numpy"
-version = "1.26.4"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.12' and sys_platform == 'darwin'",
-    "python_full_version < '3.12' and sys_platform == 'linux'",
-    "python_full_version < '3.12' and sys_platform == 'win32'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/65/6e/09db70a523a96d25e115e71cc56a6f9031e7b8cd166c1ac8438307c14058/numpy-1.26.4.tar.gz", hash = "sha256:2a02aba9ed12e4ac4eb3ea9421c420301a0c6460d9830d74a9df87efa4912010", size = 15786129, upload-time = "2024-02-06T00:26:44.495Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/57/baae43d14fe163fa0e4c47f307b6b2511ab8d7d30177c491960504252053/numpy-1.26.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:4c66707fabe114439db9068ee468c26bbdf909cac0fb58686a42a24de1760c71", size = 20630554, upload-time = "2024-02-05T23:51:50.149Z" },
-    { url = "https://files.pythonhosted.org/packages/1a/2e/151484f49fd03944c4a3ad9c418ed193cfd02724e138ac8a9505d056c582/numpy-1.26.4-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:edd8b5fe47dab091176d21bb6de568acdd906d1887a4584a15a9a96a1dca06ef", size = 13997127, upload-time = "2024-02-05T23:52:15.314Z" },
-    { url = "https://files.pythonhosted.org/packages/79/ae/7e5b85136806f9dadf4878bf73cf223fe5c2636818ba3ab1c585d0403164/numpy-1.26.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7ab55401287bfec946ced39700c053796e7cc0e3acbef09993a9ad2adba6ca6e", size = 14222994, upload-time = "2024-02-05T23:52:47.569Z" },
-    { url = "https://files.pythonhosted.org/packages/3a/d0/edc009c27b406c4f9cbc79274d6e46d634d139075492ad055e3d68445925/numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:666dbfb6ec68962c033a450943ded891bed2d54e6755e35e5835d63f4f6931d5", size = 18252005, upload-time = "2024-02-05T23:53:15.637Z" },
-    { url = "https://files.pythonhosted.org/packages/09/bf/2b1aaf8f525f2923ff6cfcf134ae5e750e279ac65ebf386c75a0cf6da06a/numpy-1.26.4-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:96ff0b2ad353d8f990b63294c8986f1ec3cb19d749234014f4e7eb0112ceba5a", size = 13885297, upload-time = "2024-02-05T23:53:42.16Z" },
-    { url = "https://files.pythonhosted.org/packages/df/a0/4e0f14d847cfc2a633a1c8621d00724f3206cfeddeb66d35698c4e2cf3d2/numpy-1.26.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:60dedbb91afcbfdc9bc0b1f3f402804070deed7392c23eb7a7f07fa857868e8a", size = 18093567, upload-time = "2024-02-05T23:54:11.696Z" },
-    { url = "https://files.pythonhosted.org/packages/d2/b7/a734c733286e10a7f1a8ad1ae8c90f2d33bf604a96548e0a4a3a6739b468/numpy-1.26.4-cp311-cp311-win32.whl", hash = "sha256:1af303d6b2210eb850fcf03064d364652b7120803a0b872f5211f5234b399f20", size = 5968812, upload-time = "2024-02-05T23:54:26.453Z" },
-    { url = "https://files.pythonhosted.org/packages/3f/6b/5610004206cf7f8e7ad91c5a85a8c71b2f2f8051a0c0c4d5916b76d6cbb2/numpy-1.26.4-cp311-cp311-win_amd64.whl", hash = "sha256:cd25bcecc4974d09257ffcd1f098ee778f7834c3ad767fe5db785be9a4aa9cb2", size = 15811913, upload-time = "2024-02-05T23:54:53.933Z" },
-    { url = "https://files.pythonhosted.org/packages/95/12/8f2020a8e8b8383ac0177dc9570aad031a3beb12e38847f7129bacd96228/numpy-1.26.4-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:b3ce300f3644fb06443ee2222c2201dd3a89ea6040541412b8fa189341847218", size = 20335901, upload-time = "2024-02-05T23:55:32.801Z" },
-    { url = "https://files.pythonhosted.org/packages/75/5b/ca6c8bd14007e5ca171c7c03102d17b4f4e0ceb53957e8c44343a9546dcc/numpy-1.26.4-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:03a8c78d01d9781b28a6989f6fa1bb2c4f2d51201cf99d3dd875df6fbd96b23b", size = 13685868, upload-time = "2024-02-05T23:55:56.28Z" },
-    { url = "https://files.pythonhosted.org/packages/79/f8/97f10e6755e2a7d027ca783f63044d5b1bc1ae7acb12afe6a9b4286eac17/numpy-1.26.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9fad7dcb1aac3c7f0584a5a8133e3a43eeb2fe127f47e3632d43d677c66c102b", size = 13925109, upload-time = "2024-02-05T23:56:20.368Z" },
-    { url = "https://files.pythonhosted.org/packages/0f/50/de23fde84e45f5c4fda2488c759b69990fd4512387a8632860f3ac9cd225/numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:675d61ffbfa78604709862923189bad94014bef562cc35cf61d3a07bba02a7ed", size = 17950613, upload-time = "2024-02-05T23:56:56.054Z" },
-    { url = "https://files.pythonhosted.org/packages/4c/0c/9c603826b6465e82591e05ca230dfc13376da512b25ccd0894709b054ed0/numpy-1.26.4-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:ab47dbe5cc8210f55aa58e4805fe224dac469cde56b9f731a4c098b91917159a", size = 13572172, upload-time = "2024-02-05T23:57:21.56Z" },
-    { url = "https://files.pythonhosted.org/packages/76/8c/2ba3902e1a0fc1c74962ea9bb33a534bb05984ad7ff9515bf8d07527cadd/numpy-1.26.4-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:1dda2e7b4ec9dd512f84935c5f126c8bd8b9f2fc001e9f54af255e8c5f16b0e0", size = 17786643, upload-time = "2024-02-05T23:57:56.585Z" },
-    { url = "https://files.pythonhosted.org/packages/28/4a/46d9e65106879492374999e76eb85f87b15328e06bd1550668f79f7b18c6/numpy-1.26.4-cp312-cp312-win32.whl", hash = "sha256:50193e430acfc1346175fcbdaa28ffec49947a06918b7b92130744e81e640110", size = 5677803, upload-time = "2024-02-05T23:58:08.963Z" },
-    { url = "https://files.pythonhosted.org/packages/16/2e/86f24451c2d530c88daf997cb8d6ac622c1d40d19f5a031ed68a4b73a374/numpy-1.26.4-cp312-cp312-win_amd64.whl", hash = "sha256:08beddf13648eb95f8d867350f6a018a4be2e5ad54c8d8caed89ebca558b2818", size = 15517754, upload-time = "2024-02-05T23:58:36.364Z" },
-]
-
-[[package]]
-name = "numpy"
 version = "2.4.4"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13' and sys_platform == 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
-    "python_full_version >= '3.13' and sys_platform == 'linux'",
-    "python_full_version == '3.12.*' and sys_platform == 'linux'",
-    "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'win32'",
-]
 sdist = { url = "https://files.pythonhosted.org/packages/d7/9f/b8cef5bffa569759033adda9481211426f12f53299629b410340795c2514/numpy-2.4.4.tar.gz", hash = "sha256:2d390634c5182175533585cc89f3608a4682ccb173cc9bb940b2881c8d6f8fa0", size = 20731587, upload-time = "2026-03-29T13:22:01.298Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/c6/4218570d8c8ecc9704b5157a3348e486e84ef4be0ed3e38218ab473c83d2/numpy-2.4.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:f983334aea213c99992053ede6168500e5f086ce74fbc4acc3f2b00f5762e9db", size = 16976799, upload-time = "2026-03-29T13:18:15.438Z" },
@@ -3658,25 +3778,59 @@ wheels = [
 
 [[package]]
 name = "nvidia-nat"
-version = "1.4.1"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nvidia-nat-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/28/a4253baba492b8124a6e9f6172fdcc4d7a47be28ecca849fd9b09e77461c/nvidia_nat-1.6.0-py3-none-any.whl", hash = "sha256:f1235ba563f537a535a2c98b2000a5d265c4acfdc4647004af442c9efcf552d8", size = 49729, upload-time = "2026-04-10T03:00:14.678Z" },
+]
+
+[[package]]
+name = "nvidia-nat-a2a"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "a2a-sdk", extra = ["http-server"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/13/a781f999b975836256182feaac201506546b5f7b32778a154abc1cd465c0/nvidia_nat_a2a-1.6.0-py3-none-any.whl", hash = "sha256:27ac8c9f481b0abf5f652547f354b6b5f7fd449bf3714cec82722916fda99556", size = 44204, upload-time = "2026-04-10T05:14:23.537Z" },
+]
+
+[[package]]
+name = "nvidia-nat-atif"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/61/13a83863c9cc75b18cfbe891118e1021d79bd7349fadcb04a53dec7d6f75/nvidia_nat_atif-1.6.0-py3-none-any.whl", hash = "sha256:0753b8b5f5eb5b01b0818a96697afed9e75fce6a266f6b06fa2dcff28c8d7b0f", size = 20635, upload-time = "2026-04-10T04:36:37.199Z" },
+]
+
+[[package]]
+name = "nvidia-nat-core"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioboto3", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "authlib", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "click", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "colorama", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datasets", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "expandvars", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "flask", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "httpx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "huggingface-hub", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jinja2", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jsonpath-ng", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nest-asyncio2", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "networkx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-atif", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "openinference-semantic-conventions", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "openpyxl", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "optuna", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pip", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -3685,39 +3839,42 @@ dependencies = [
     { name = "platformdirs", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "plotly", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pyjwt", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dotenv", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "python-multipart", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pyyaml", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "ragas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "rich", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tabulate", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "tzlocal", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "urllib3", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "uvicorn", extra = ["standard"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "wikipedia", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/09/ecf74efddba73cc5fcc9d177e37e23c487dc606d56051ff2ad6de915bdca/nvidia_nat-1.4.1-py3-none-any.whl", hash = "sha256:763422295df9a1771d882d4f5e266622b30eb9fc89864f1d4400f149521f9e2e", size = 1011974, upload-time = "2026-02-09T18:47:04.409Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/40/0c96cc52df85696d9c32653b984c3d782cebb1136609aab8456d936d1ecb/nvidia_nat_core-1.6.0-py3-none-any.whl", hash = "sha256:0b13c7289a31c401c208451683f47b9a16e052a315bd7782e22c50482ecfe355", size = 780358, upload-time = "2026-04-10T02:59:27.72Z" },
 ]
 
 [[package]]
-name = "nvidia-nat-a2a"
-version = "1.4.1"
+name = "nvidia-nat-eval"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "a2a-sdk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-atif", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/87/3131c074f5632d7575030bdee367a2cf771d2381e1b9813454d3d2b0bf12/nvidia_nat_a2a-1.4.1-py3-none-any.whl", hash = "sha256:328c46ed7b1462a0d63a2e86d82aa48818c6e2a1c7a72957d5776be524097738", size = 43954, upload-time = "2026-02-09T18:45:25.544Z" },
+    { url = "https://files.pythonhosted.org/packages/09/6f/ba0b59062e42ea604d91addf98cf74900feffc8bd865609fee6db27b1629/nvidia_nat_eval-1.6.0-py3-none-any.whl", hash = "sha256:8f68dffeb472d07ef218234e619bedf50a1ef589cdee77b7004c2ae151774ac0", size = 68288, upload-time = "2026-04-10T05:15:08.478Z" },
 ]
 
 [[package]]
 name = "nvidia-nat-langchain"
-version = "1.4.1"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-aws", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-classic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-community", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-huggingface", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -3725,37 +3882,40 @@ dependencies = [
     { name = "langchain-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-tavily", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langgraph", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-eval", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-opentelemetry", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "openevals", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/b3/6a5c9f292a58e033c10f419fd0502ee2dfdee86b8841d9ab8206ca9fa1b5/nvidia_nat_langchain-1.4.1-py3-none-any.whl", hash = "sha256:bf72d1eea2117805b95a3a3ab472bbe9466092e2832a25442202fa37363bdeeb", size = 64529, upload-time = "2026-02-09T18:44:09.555Z" },
+    { url = "https://files.pythonhosted.org/packages/04/1c/bfa3ebcc9409e66198eb64869c88503b587f0a2dff11df41d01621852854/nvidia_nat_langchain-1.6.0-py3-none-any.whl", hash = "sha256:26026f82abe4b1e736e43200d46110049a8cc09ca17c17236882a158316c5e84", size = 193316, upload-time = "2026-04-10T05:12:39.599Z" },
 ]
 
 [[package]]
 name = "nvidia-nat-mcp"
-version = "1.4.1"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiorwlock", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "mcp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/7d/0ceb057fe32919737f4846970c2182ad743b36224947d2c0a2d0d85faecf/nvidia_nat_mcp-1.4.1-py3-none-any.whl", hash = "sha256:23545b44d49bf7ea7290baf52dd7f82466ea8791d810716846dafe372ff08b91", size = 126169, upload-time = "2026-02-09T19:04:05.664Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/b4/f0e51bdd3d00f92890cd517c72af0b9e6fa277af8a06f596c10e5b7f69d0/nvidia_nat_mcp-1.6.0-py3-none-any.whl", hash = "sha256:efdbbb2c11ff5dcaf27de90a2ec2174887b6df00af055ff128a7fd3d15d51393", size = 129434, upload-time = "2026-04-10T03:02:54.644Z" },
 ]
 
 [[package]]
 name = "nvidia-nat-opentelemetry"
-version = "1.4.1"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nvidia-nat-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-exporter-otlp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-sdk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/60/4fc3b56ff58f64bdd7bbc223a0e5f217443d19e2fc382d5df46e36175e3a/nvidia_nat_opentelemetry-1.4.1-py3-none-any.whl", hash = "sha256:48ae3f0f2800cf990555e18110d96438f14551267fd1ad5b1c09bd77a10d91e9", size = 67397, upload-time = "2026-02-09T18:48:03.407Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/b4/54c29f536b498cfdfe00ebf4a52bdbc78db9af6b84c011c1c6ed4b647352/nvidia_nat_opentelemetry-1.6.0-py3-none-any.whl", hash = "sha256:5ae11e4acfc08e04bf3040a4cd69241f1c2c096b83061be15ee459d7c7c1b73d", size = 67843, upload-time = "2026-04-10T03:01:14.482Z" },
 ]
 
 [[package]]
@@ -3778,24 +3938,27 @@ wheels = [
 ]
 
 [[package]]
+name = "openevals"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langsmith", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "rich", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b0/b1/028a05846136805b29b7a3afb58a940c2d213fa2c3d0a7d7003c7fbaa115/openevals-0.2.0.tar.gz", hash = "sha256:7e95fa64625be53eaa8c657d7f69b842a52bda10bdf3bb91781c7d09a385b069", size = 140711, upload-time = "2026-04-07T19:45:22.749Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/8b/00f402b7f3475e235c339a9bc82d2eaf46cc08b53ecd85d4a117850170d3/openevals-0.2.0-py3-none-any.whl", hash = "sha256:2bce5964be9d162e3d38c2dfd026739156e1ac521536ade6b8e2f0a89b632f2c", size = 106958, upload-time = "2026-04-07T19:45:21.575Z" },
+]
+
+[[package]]
 name = "openinference-semantic-conventions"
 version = "0.1.28"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/df/32/c79bf8bd3ea5a00e492449b31ca600bbc2a8e88a301e42c872af925a156c/openinference_semantic_conventions-0.1.28.tar.gz", hash = "sha256:6388465174e8ab3f27ebc6a9e9bb2e1b804d30caefb57234e16db874da1c6a7b", size = 12893, upload-time = "2026-03-11T04:45:46.543Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/40/34b570462c3ce250277254bb0cca655eb39b64c0dffe63cd7751f103f8d6/openinference_semantic_conventions-0.1.28-py3-none-any.whl", hash = "sha256:a2fed5bb167aa56c1c7448cdb7a8d775f989339ba1f8b04a7b45d4f8388cccfb", size = 10522, upload-time = "2026-03-11T04:45:45.423Z" },
-]
-
-[[package]]
-name = "openpyxl"
-version = "3.1.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "et-xmlfile", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050", size = 186464, upload-time = "2024-06-28T14:03:44.161Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2", size = 250910, upload-time = "2024-06-28T14:03:41.161Z" },
 ]
 
 [[package]]
@@ -4046,8 +4209,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "colorlog", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "packaging", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pyyaml", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "sqlalchemy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -4169,8 +4331,7 @@ name = "pandas"
 version = "2.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dateutil", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytz", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tzdata", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -5047,8 +5208,7 @@ dependencies = [
     { name = "langchain-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nest-asyncio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "networkx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pillow", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -5241,8 +5401,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nltk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "six", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e2/c5/9136736c37022a6ad27fea38f3111eb8f02fe75d067f9a985cc358653102/rouge_score-0.1.2.tar.gz", hash = "sha256:c7d4da2683e68c9abf0135ef915d63a46643666f848e558a1b9f7ead17ff0f04", size = 17400, upload-time = "2022-07-22T22:46:22.909Z" }
@@ -5390,8 +5549,7 @@ name = "scikit-network"
 version = "0.33.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "scipy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/46/6d/28b00fbef9ff7d8ba31861bf16705a1a74a1696fb65aab2a7c584f966bec/scikit_network-0.33.5.tar.gz", hash = "sha256:ae2149d9a280fdc4bbadd5f8a7b17c8af61c054bc3f834792bc61483e6783c12", size = 1784205, upload-time = "2025-11-19T09:45:14.402Z" }
@@ -5418,8 +5576,7 @@ name = "scipy"
 version = "1.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
+    { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7a/97/5a3609c4f8d58b039179648e62dd220f89864f56f7357f5d4f45c29eb2cc/scipy-1.17.1.tar.gz", hash = "sha256:95d8e012d8cb8816c226aef832200b1d45109ed4464303e997c5b13122b297c0", size = 30573822, upload-time = "2026-02-23T00:26:24.851Z" }
 wheels = [
@@ -5933,6 +6090,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/19/f5/cd531b2d15a671a40c0f66cf06bc3570a12cd56eef98960068ebbad1bf5a/tzdata-2026.1.tar.gz", hash = "sha256:67658a1903c75917309e753fdc349ac0efd8c27db7a0cb406a25be4840f87f98", size = 197639, upload-time = "2026-04-03T11:25:22.002Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/70/d460bd685a170790ec89317e9bd33047988e4bce507b831f5db771e142de/tzdata-2026.1-py2.py3-none-any.whl", hash = "sha256:4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9", size = 348952, upload-time = "2026-04-03T11:25:20.313Z" },
+]
+
+[[package]]
+name = "tzlocal"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
 ]
 
 [[package]]
@@ -6538,5 +6707,3 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/82/b9c06c870f3bd8767c201f1edbdf9e8dc34be5b0fbc5682c4f80fe948475/zstandard-0.25.0-cp313-cp313-win_amd64.whl", hash = "sha256:1f830a0dac88719af0ae43b8b2d6aef487d437036468ef3c2ea59c51f9d55fd5", size = 506232, upload-time = "2025-09-14T22:17:50.402Z" },
     { url = "https://files.pythonhosted.org/packages/d4/57/60c3c01243bb81d381c9916e2a6d9e149ab8627c0c7d7abb2d73384b3c0c/zstandard-0.25.0-cp313-cp313-win_arm64.whl", hash = "sha256:85304a43f4d513f5464ceb938aa02c1e78c2943b29f44a750b48b25ac999a049", size = 462671, upload-time = "2025-09-14T22:17:51.533Z" },
 ]
-
-

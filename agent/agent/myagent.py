@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
-from datarobot_genai.core.chat import agent_chat_completion_wrapper
+from datarobot_genai.core.chat.completions import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.langgraph.agent import datarobot_agent_class_from_langgraph
 from datarobot_genai.langgraph.llm import get_llm
@@ -25,7 +25,11 @@ from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import AnyMessage, add_messages
+from langgraph.types import interrupt
+from typing_extensions import NotRequired, TypedDict
 from openai.types.chat import CompletionCreateParams
 
 if TYPE_CHECKING:
@@ -34,6 +38,10 @@ if TYPE_CHECKING:
 _PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 
+# One user message per turn: do not add a template "system" message on every request.
+# LangGraph merges via add_messages; duplicate system + user pairs each turn were breaking
+# create_agent() on the second+ user message (invalid history / model errors).
+# _now_year = datetime.now().year
 prompt_template = ChatPromptTemplate.from_messages(
     [
         (
@@ -51,9 +59,24 @@ prompt_template = ChatPromptTemplate.from_messages(
 )
 
 
+def _ui_interrupt_is_cancel(decision: object) -> bool:
+    """True when the resumed user input means cancel (matches ConfirmationWidget labels)."""
+    if isinstance(decision, str):
+        normalized = decision.strip().lower()
+        return normalized in ("no", "cancel", "n")
+    return False
+
+
+class HITLState(TypedDict):
+    """Planner/writer use ``messages``; human gate sets ``hitl_cancelled`` (no dummy assistant text)."""
+
+    messages: Annotated[list[AnyMessage], add_messages]
+    hitl_cancelled: NotRequired[bool]
+
+
 def graph_factory(
     llm: BaseChatModel, tools: list[BaseTool], verbose: bool = False
-) -> StateGraph[MessagesState]:
+) -> StateGraph[HITLState]:
     agent_planner = create_agent(
         llm,
         tools=tools,
@@ -99,16 +122,39 @@ def graph_factory(
         debug=verbose,
     )
 
-    langgraph_workflow = StateGraph(MessagesState)
+    def human_review(state: HITLState) -> dict[str, Any]:
+        # Resume value is the next user turn (e.g. "Confirm" / "Cancel" from ConfirmationWidget).
+        decision = interrupt({"e2e_prompt": "Do you approve?", "kind": "on_interrupt"})
+        return {"hitl_cancelled": _ui_interrupt_is_cancel(decision)}
+
+    def route_after_human_review(state: HITLState) -> str:
+        """Return the next node: END or writer_node.
+
+        Use graph node names / END directly (no path_map) so the branch does not
+        treat a state dict or other value as a routing key (avoids unhashable dict).
+        """
+        if state.get("hitl_cancelled"):
+            return END
+        return "writer_node"
+
+    langgraph_workflow = StateGraph(HITLState)
     langgraph_workflow.add_node("planner_node", agent_planner)
     langgraph_workflow.add_node("writer_node", agent_writer)
+    langgraph_workflow.add_node("human_review", human_review)
     langgraph_workflow.add_edge(START, "planner_node")
-    langgraph_workflow.add_edge("planner_node", "writer_node")
+    langgraph_workflow.add_edge("planner_node", "human_review")
+    langgraph_workflow.add_conditional_edges("human_review", route_after_human_review)
     langgraph_workflow.add_edge("writer_node", END)
     return langgraph_workflow
 
 
-MyAgent = datarobot_agent_class_from_langgraph(graph_factory, prompt_template)
+HITL_E2E_CHECKPOINTER = InMemorySaver()
+
+MyAgent = datarobot_agent_class_from_langgraph(
+    graph_factory,
+    prompt_template,
+    # new_turn_entry_node="planner_node",
+)
 
 
 async def custompy_adaptor(
@@ -129,6 +175,7 @@ async def custompy_adaptor(
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+        checkpointer=HITL_E2E_CHECKPOINTER,
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory

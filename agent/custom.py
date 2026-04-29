@@ -15,16 +15,31 @@
 # THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
 # REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
 # isort: off
+import os
+
 from datarobot_genai.core.telemetry_agent import instrument
 
-instrument(framework="langgraph")
+# `opentelemetry-instrumentation-langchain` wraps `Pregel.astream` and detaches context in a
+# `finally` after `yield`. If the stream is closed early (GeneratorExit) or the async
+# generator is torn down across task/thread boundaries, OpenTelemetry can log:
+#   ValueError: ... was created in a different Context
+#   Failed to detach context
+# This is a known rough edge; LangGraph span wiring is optional. Set to 1 in dev to
+# keep HTTP/LLM instrumentation but skip the langchain package's LangGraph wrapper.
+if os.environ.get("DR_AGENT_DISABLE_LANGGRAPH_OTEL", "").lower() in (
+    "1",
+    "true",
+    "yes",
+):
+    instrument()
+else:
+    instrument(framework="langgraph")
 # ruff: noqa: E402
 from agent import Config, custompy_adaptor
 
 # isort: on
 # ------------------------------------------------------------------------------
 import asyncio
-import os
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Iterator, Union

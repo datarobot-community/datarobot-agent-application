@@ -5,7 +5,8 @@ description = "Implementation of agent"
 readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[langgraph, dragent]==0.14.4",
+    # "datarobot-genai[langgraph, dragent]==0.14.4",
+    "datarobot-genai[langgraph, dragent]",
     "datarobot-moderations[all]==11.2.24",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -221,6 +222,10 @@ environments = [
   "sys_platform == 'linux'",
   "sys_platform == 'win32'"
 ]
+
+[tool.uv.sources]
+"datarobot-genai" = { path = "../../datarobot-genai", editable = true }
+
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]
