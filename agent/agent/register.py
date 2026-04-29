@@ -53,7 +53,7 @@ async def langgraph_agent(
     )
     from nat.builder.function_info import FunctionInfo, Streaming
 
-    from agent.myagent import MyAgent
+    from agent.myagent import MyAgent, HITL_E2E_CHECKPOINTER
 
     llm = await builder.get_llm(
         config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN
@@ -86,6 +86,7 @@ async def langgraph_agent(
                 verbose=config.verbose,
                 forwarded_headers=forwarded_headers,
                 tools=tools,
+                # checkpointer=HITL_E2E_CHECKPOINTER,
             )
 
             async for event, pipeline_interactions, usage_metrics in agent.invoke(

@@ -16,6 +16,7 @@ import {
   ThinkingEvent,
   ChatProvider,
   StartNewChat,
+  useAgUiTool,
 } from '@/components/block/chat';
 import {
   isErrorStateEvent,
@@ -26,7 +27,9 @@ import {
 import { type MessageResponse } from '@/api/chat/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMainLayout } from '@/components/block/chat/main-layout-context';
+import { ConfirmationWidget } from './confirmation-widget';
 
+import * as z from 'zod/v4';
 const initialMessages: MessageResponse[] = [
   {
     id: uuid(),
@@ -65,24 +68,19 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     isAgentRunning,
   } = useChatContext();
 
-  const { scrollContainerRef, onChatScroll } = useChatScroll({
-    chatId,
-    events: combinedEvents,
+  // Example for a tool with a handler
+  useAgUiTool({
+    name: 'alert',
+    description: 'Action. Display an alert to the user',
+    handler: ({ message }) => alert(message),
+    parameters: z.object({
+      message: z
+        .string()
+        .describe('The message that will be displayed to the user'),
+    }),
+    background: false,
   });
 
-  // Example for a tool with a handler
-  // useAgUiTool({
-  //   name: 'alert',
-  //   description: 'Action. Display an alert to the user',
-  //   handler: ({ message }) => alert(message),
-  //   parameters: z.object({
-  //     message: z
-  //       .string()
-  //       .describe('The message that will be displayed to the user'),
-  //   }),
-  //   background: false,
-  // });
-  //
   // Example for a custom UI widget
   //
   // useAgUiTool({
@@ -101,6 +99,23 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
   //     location: z.string(),
   //   }),
   // });
+  useAgUiTool({
+    name: 'confirmation',
+    description: 'Widget. Displays confirmation dialog',
+    render: ({ args }) => {
+      return <ConfirmationWidget {...args} />;
+    },
+    parameters: z.object({
+      message: z
+        .string()
+        .describe('The message which will be displayed to user'),
+    }),
+  });
+ 
+  const { scrollContainerRef, onChatScroll } = useChatScroll({
+    chatId,
+    events: combinedEvents,
+  });
 
   return (
     <Chat initialMessages={initialMessages}>

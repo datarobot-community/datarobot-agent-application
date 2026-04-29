@@ -178,11 +178,14 @@ class DataRobotAGUIAgent(AGUIAgent):
                 **self._prepare_chat_completions_input(input)
             )
             chunks = 0
+            saw_run_finished = False
             async for chunk in generator:
                 chunks += 1
                 # Event is already embedded in the chunk, so we don't need to convert it
-                if hasattr(chunk, "event"):
+                if hasattr(chunk, "event") and chunk.event is not None:
                     event = TypeAdapter[Event](Event).validate_python(chunk.event)
+                    if event.type == EventType.RUN_FINISHED:
+                        saw_run_finished = True
                     if event.type not in [
                         EventType.TEXT_MESSAGE_CONTENT,
                         EventType.THINKING_TEXT_MESSAGE_CONTENT,
@@ -227,7 +230,10 @@ class DataRobotAGUIAgent(AGUIAgent):
             if text_message_started:
                 yield TextMessageEndEvent(message_id=message_id)
 
-            yield RunFinishedEvent(thread_id=input.thread_id, run_id=input.run_id)
+            # Custom model (datarobot-genai) now emits RUN_FINISHED in-stream; only add a
+            # synthetic one if the OpenAI stream did not include it.
+            if not saw_run_finished:
+                yield RunFinishedEvent(thread_id=input.thread_id, run_id=input.run_id)
 
         except Exception as e:
             logger.exception("Error during agent run")
@@ -304,4 +310,10 @@ class DataRobotAGUIAgent(AGUIAgent):
             "messages": messages,
             "model": "unknown",
             "stream": True,
+            # LangGraph interrupt/resume keys the same chat id on every request; the custom
+            # model maps these from extra_body (or top-level) into RunAgentInput.thread_id.
+            "extra_body": {
+                "thread_id": getattr(input, "thread_id", ""),
+                "run_id": getattr(input, "run_id", ""),
+            },
         }

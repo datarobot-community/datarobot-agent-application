@@ -175,7 +175,7 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
-For LLM configuration details, see [LLM component](../llm.md).
+For LLM configuration details, see [LLM configuration](../llm-configuration.md).
 
 ## Front servers
 
