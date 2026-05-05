@@ -589,11 +589,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.2"
+version = "0.15.32"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e6/90/b36e9f7d9c07f5f374544475e1313bad1e90e9b810eddaed6054d8b20ccc/datarobot_genai-0.15.2.tar.gz", hash = "sha256:65611bc6d88c89670faecddda6fe015f79074023917a387c6355040aff0b20b5", size = 241051, upload-time = "2026-04-17T07:10:48.32Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/65/e05007eee9ac0bf8615c1ac463001ac1a1e8b6379f0b8d056c729db4c0ec/datarobot_genai-0.15.32.tar.gz", hash = "sha256:aa4c60deeebd059eea6806f59d39ba8636d6fe32473fed148015e8072a80445f", size = 271714, upload-time = "2026-05-01T17:17:34.193Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/70/dbd9e51c6aaaa2b2906f916fd9a5ff8c0954eb99b842771029f5a2728051/datarobot_genai-0.15.2-py3-none-any.whl", hash = "sha256:ee2060d0de26930d792c1e6c3bae729d9ef6e673ee984df3479df39677d86adc", size = 355984, upload-time = "2026-04-17T07:10:46.503Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/54/b816f46d22ba852bc1b8fcd1262d0781e9949dc333ba713effad9a3acedd/datarobot_genai-0.15.32-py3-none-any.whl", hash = "sha256:bc7b4ea797879736f7aedd999abfb827027d419702acd0c615e6a406d49e0549", size = 389734, upload-time = "2026-05-01T17:17:32.269Z" },
 ]
 
 [package.optional-dependencies]
@@ -1241,7 +1241,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", marker = "extra == 'dev'", specifier = ">=8.3.0" },
-    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.15.0,<0.16.0" },
+    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.15.30,<0.16.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.6.1" },
@@ -2114,11 +2114,11 @@ crypto = [
 
 [[package]]
 name = "pypdf"
-version = "6.9.2"
+version = "6.10.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/31/83/691bdb309306232362503083cb15777491045dd54f45393a317dc7d8082f/pypdf-6.9.2.tar.gz", hash = "sha256:7f850faf2b0d4ab936582c05da32c52214c2b089d61a316627b5bfb5b0dab46c", size = 5311837, upload-time = "2026-03-23T14:53:27.983Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/3f/9f2167401c2e94833ca3b69535bad89e533b5de75fefe4197a2c224baec2/pypdf-6.10.2.tar.gz", hash = "sha256:7d09ce108eff6bf67465d461b6ef352dcb8d84f7a91befc02f904455c6eea11d", size = 5315679, upload-time = "2026-04-15T16:37:36.978Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/7e/c85f41243086a8fe5d1baeba527cb26a1918158a565932b41e0f7c0b32e9/pypdf-6.9.2-py3-none-any.whl", hash = "sha256:662cf29bcb419a36a1365232449624ab40b7c2d0cfc28e54f42eeecd1fd7e844", size = 333744, upload-time = "2026-03-23T14:53:26.573Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/d6/1d5c60cc17bbdf37c1552d9c03862fc6d32c5836732a0415b2d637edc2d0/pypdf-6.10.2-py3-none-any.whl", hash = "sha256:aa53be9826655b51c96741e5d7983ca224d898ac0a77896e64636810517624aa", size = 336308, upload-time = "2026-04-15T16:37:34.851Z" },
 ]
 
 [[package]]

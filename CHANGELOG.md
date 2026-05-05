@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.8.5
+- Bumped `agent` component from 11.8.27 to 11.8.30
+  - Upgraded `datarobot-genai` from 0.15.24 to 0.15.34:
+    - Added `DataRobotLLMRouterConfig` (`datarobot-llm-router`) to NAT, plus `get_router_llm` for CrewAI and `RouterLLM` support for LangGraph and LlamaIndex, exposing `litellm.Router`-backed primary/fallback LLM behavior across all frameworks.
+  - Added new skill and documentation for configuring moderations for agent evaluation support
+  - Added LLM provider fallback support powered by `litellm.Router`: `workflow.yaml` snippets gain a `datarobot-llm-router` block with `primary` + `fallbacks`, and DRUM agents can use `get_router_llm()` in place of `get_llm()`. New doc page: `docs/agent/llm-fallback.md`.
+  - Added TTL to memory only if agent memory is enabled
+  - Streaming chat completion wrapper now emits a dedicated chunk for the `RUN_FINISHED` AG-UI event before the final stop chunk; agents asserting on streaming chunk counts must expect one extra chunk.
+- Upgraded MCP `datarobot-genai` from 0.15.2 to 0.15.32
+  - Improved predictive drtools for MCP agents: rich tool_metadata descriptions, robust batch download polling and async-safe waits, safer CSV/JSON parsing for realtime predict, and more resilient deployment CSV validation (importance + whitespace/empty rows).
+  - Categorized ToolErrors, OAuth access tokens with x-datarobot-*-access-token fallback, MCP logging that surfaces kinds to FastMCP, SDK ClientError → tool errors in predictive tools and improved third party APIs tool_metadata descriptions.
+  - Implemented pagination for predictive data MCP tools
+  - Improved MCP lineage sync logic and made it always run during user MCP startup.
+  - Implemented pagination for predictive model MCP tool
+
 ## 11.8.4
 - Bumped `agent` component from 11.8.11 to 11.8.22
   - Upgraded `datarobot-genai` from 0.14.4 to 0.15.15:

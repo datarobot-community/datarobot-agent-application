@@ -126,9 +126,9 @@ async def custompy_adaptor(
         llm=get_llm(
             model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
         ),
-        verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
-        timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
-        forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+        verbose=completion_create_params.get("verbose", True),
+        timeout=completion_create_params.get("timeout", 90),
+        forwarded_headers=forwarded_headers,
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory

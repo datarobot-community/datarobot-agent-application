@@ -30,5 +30,5 @@ def is_lineage_feature_enabled() -> bool:
         error_message = (
             "Feature flag retrieval error. Feature flag evaluation falls back to False."
         )
-        logger.exception(error_message)
+        logger.warning(error_message)
         return False

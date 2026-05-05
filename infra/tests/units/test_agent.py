@@ -21,6 +21,8 @@ from collections import namedtuple
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+AGENT_MEMORY_TTL_SECONDS = "AGENT_MEMORY_TTL_SECONDS"
+
 
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
@@ -434,6 +436,7 @@ def test_reset_environment_between_tests():
 def test_custom_model_created(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.delenv(AGENT_MEMORY_TTL_SECONDS, raising=False)
 
     import importlib
     import infra.agent as agent_infra
@@ -475,6 +478,11 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
+    memory_ttl_param = next(
+        (p for p in runtime_parameter_values if p.key == AGENT_MEMORY_TTL_SECONDS),
+        None,
+    )
+    assert memory_ttl_param is None
 
 
 def test_custom_model_created_pinned_version_id(monkeypatch):
@@ -1219,6 +1227,7 @@ class TestGenerateMetadataYaml:
 
         # Verify parameters maintain order and correct types
         params = metadata["runtimeParameterDefinitions"]
+
         assert len(params) == 5
 
         # String parameter - should NOT have defaultValue (not in allowlist)
@@ -1314,6 +1323,29 @@ class TestGenerateMetadataYaml:
         assert "old" not in metadata
         assert metadata["name"] == "agent"
         assert metadata["runtimeParameterDefinitions"][0]["fieldName"] == "NEW_PARAM"
+
+
+class TestAgentMemoryRuntimeParameter:
+    def test_ttl_runtime_parameter_excluded_when_memory_disabled(self, monkeypatch):
+        """Test that the agent memory TTL runtime parameter is excluded by default."""
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+        monkeypatch.setenv(AGENT_MEMORY_TTL_SECONDS, "86400")
+
+        import importlib
+        import infra.agent as agent_infra
+
+        importlib.reload(agent_infra)
+
+        memory_ttl_param = next(
+            (
+                param
+                for param in agent_infra.agent_runtime_parameter_values
+                if param.key == AGENT_MEMORY_TTL_SECONDS
+            ),
+            None,
+        )
+
+        assert memory_ttl_param is None
 
 
 class TestDrumRuntimeParameters:

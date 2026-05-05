@@ -42,6 +42,16 @@ general:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
+    # To enable LLM provider fallback/failover, remove the datarobot_llm block above and uncomment the following:
+    # datarobot_llm:
+    #   _type: datarobot-llm-router
+    #   primary:
+    #     use_datarobot_llm_gateway: true
+    #     llm_default_model: azure/gpt-5-mini-2025-08-07
+    #   fallbacks:
+    #     - use_datarobot_llm_gateway: true
+    #       llm_default_model: anthropic/claude-opus-4-20250514
+    #   num_retries: 1
 workflow:
   _type: langgraph_agent
   llm_name: datarobot_llm
