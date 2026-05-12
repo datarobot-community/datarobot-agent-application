@@ -38,10 +38,6 @@ if TYPE_CHECKING:
 _PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 
-# One user message per turn: do not add a template "system" message on every request.
-# LangGraph merges via add_messages; duplicate system + user pairs each turn were breaking
-# create_agent() on the second+ user message (invalid history / model errors).
-# _now_year = datetime.now().year
 prompt_template = ChatPromptTemplate.from_messages(
     [
         (
@@ -153,7 +149,6 @@ HITL_E2E_CHECKPOINTER = InMemorySaver()
 MyAgent = datarobot_agent_class_from_langgraph(
     graph_factory,
     prompt_template,
-    # new_turn_entry_node="planner_node",
 )
 
 
@@ -176,6 +171,7 @@ async def custompy_adaptor(
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
         checkpointer=HITL_E2E_CHECKPOINTER,
+        # use_datarobot_fs_checkpointer=True,
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory
