@@ -134,7 +134,7 @@ See the framework-specific documentation for detailed implementation guides:
 
 ## Tool integration
 
-Agents can use tools to extend their capabilities. Tools are injected at runtime from multiple sources — no static tool modules need to be defined in the repository.
+Agents can use tools to extend their capabilities. Tools are injected at runtime from multiple sources. The exact pattern depends on the framework: LangGraph, CrewAI, and LlamaIndex often use in-repo tool functions passed into the graph, crew, or workflow; **NAT** custom tools are registered with `nat_tool` in `register.py`, declared under `functions` in `workflow.yaml`, and rely on importing `agent.register` at startup&mdash;see [NAT custom local tools](./frameworks/nat.md#custom-local-tools).
 
 ### MCP tools
 
@@ -142,11 +142,13 @@ MCP tools are loaded from the MCP server via `mcp_tools_context()`. Each framewo
 
 ### Workflow tools (DRAgent only)
 
-When using the DRAgent front server, additional tools can be defined in `workflow.yaml` under `tool_names` and resolved by NAT at startup. This is primarily used for connecting to remote agents via A2A. See [Agent2Agent](./agent2agent.md).
+When using the DRAgent front server, tools listed in `workflow.yaml` under `tool_names` are resolved by the NeMo (NAT) builder at startup (workflow tools, MCP function groups, A2A clients, and NAT `functions`). Under **NAT as the agent framework** (`per_user_tool_calling_agent`), this YAML wiring is the primary way tools are exposed; LangGraph and other frameworks still use `workflow.yaml` for DRAgent-side workflow tools and MCP in addition to framework-native tools. See [Agent2Agent](./agent2agent.md).
 
 ### Custom local tools
 
-To add custom tools directly in the agent, create tool functions in the `agent/agent/` directory using your framework's tool API and pass them into the agent definition. For example, with LangGraph:
+**If you chose the [NAT](./frameworks/nat.md) framework:** read [NAT `workflow.yaml` requirements](./frameworks/nat.md#nat-workflowyaml-requirements-read-this-first) first. Do **not** use `_type: python_function` in `functions` for custom Python tools. Use `nat_tool` in `register.py`, a matching `functions.<name>` block with `_type` equal to that name, and include the name in `workflow.tool_names`. Every `nat_tool` name must appear in YAML or you will see `Function '…' not found in list of functions`. Follow the [checklist](./frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip).
+
+For **LangGraph** (and similar code-first frameworks), add tool functions under `agent/agent/` and pass them into your graph or agents, for example:
 
 ```python
 from langchain_core.tools import tool

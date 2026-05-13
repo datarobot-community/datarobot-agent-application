@@ -145,7 +145,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent"], specifier = "==0.15.34" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent"], specifier = "==0.15.43" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1019,11 +1019,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.34"
+version = "0.15.43"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/83/aa/fb6dae6a8d57e7b38594ba0b51a76b12fb0f21ca28f03686a84443cb2f4d/datarobot_genai-0.15.34.tar.gz", hash = "sha256:f2f10bb4a388f055c8c9e7ea09a53d294a86068017e80de29237a6afc1a91a19", size = 272282, upload-time = "2026-05-04T16:20:01.864Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/87/7621e99fcb23159282964e1e7190ee264f38b659a4d5176e64e98c0a2e57/datarobot_genai-0.15.43.tar.gz", hash = "sha256:ed05aa6413ec902a343fb22d639aab14bfed6e80028eb1b92f7df0e6f738a518", size = 298843, upload-time = "2026-05-11T12:33:54.23Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/2f/05b783e641318984da63f0b4f75330e70f54beb406c3634a380241263626/datarobot_genai-0.15.34-py3-none-any.whl", hash = "sha256:f1df5d51303c10f07f2f4846e84eac4dcace93bf569148dbceed94fdafe53e9a", size = 390280, upload-time = "2026-05-04T16:19:59.871Z" },
+    { url = "https://files.pythonhosted.org/packages/25/60/0316a19d08bcf3983c64a6be910fba77e7d46a9f6bad5fc2c78fb84309c9/datarobot_genai-0.15.43-py3-none-any.whl", hash = "sha256:772dfdd9982b9cf56b242f30b616718912319e8abd77302d4109413793f08d8c", size = 420572, upload-time = "2026-05-11T12:33:52.558Z" },
 ]
 
 [package.optional-dependencies]
@@ -1033,6 +1033,7 @@ dragent = [
     { name = "colorama", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-moderations", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -6608,3 +6609,5 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/82/b9c06c870f3bd8767c201f1edbdf9e8dc34be5b0fbc5682c4f80fe948475/zstandard-0.25.0-cp313-cp313-win_amd64.whl", hash = "sha256:1f830a0dac88719af0ae43b8b2d6aef487d437036468ef3c2ea59c51f9d55fd5", size = 506232, upload-time = "2025-09-14T22:17:50.402Z" },
     { url = "https://files.pythonhosted.org/packages/d4/57/60c3c01243bb81d381c9916e2a6d9e149ab8627c0c7d7abb2d73384b3c0c/zstandard-0.25.0-cp313-cp313-win_arm64.whl", hash = "sha256:85304a43f4d513f5464ceb938aa02c1e78c2943b29f44a750b48b25ac999a049", size = 462671, upload-time = "2025-09-14T22:17:51.533Z" },
 ]
+
+

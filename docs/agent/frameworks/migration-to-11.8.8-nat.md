@@ -92,4 +92,4 @@ The `model=` parameter is removed. NAT agents resolve LLMs from `workflow.yaml` 
 
 ## Complete before/after
 
-See the [full diff](https://github.com/datarobot-community/af-component-agent/pull/474) and the [NAT agent documentation](./frameworks/nat.md) for the complete new layout.
+See the [full diff](https://github.com/datarobot-community/af-component-agent/pull/474) and the [NAT agent documentation](./nat.md) for the complete new layout. Custom tools (`nat_tool`, `functions` in `workflow.yaml`, loading `register.py`) are covered under [Custom local tools](./nat.md#custom-local-tools).

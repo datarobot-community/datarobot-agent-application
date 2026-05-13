@@ -589,11 +589,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.32"
+version = "0.15.46"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a7/65/e05007eee9ac0bf8615c1ac463001ac1a1e8b6379f0b8d056c729db4c0ec/datarobot_genai-0.15.32.tar.gz", hash = "sha256:aa4c60deeebd059eea6806f59d39ba8636d6fe32473fed148015e8072a80445f", size = 271714, upload-time = "2026-05-01T17:17:34.193Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6e/5e/5c9b01a5691b89b023a755634d6357cb2211090e5cc98d02654036163d2a/datarobot_genai-0.15.46.tar.gz", hash = "sha256:54a5fbf41f445bd7e94eb8ed384be719f9d5b182d1fc7ce1ecc350f4efd0ef1f", size = 303231, upload-time = "2026-05-12T18:47:41.816Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/54/b816f46d22ba852bc1b8fcd1262d0781e9949dc333ba713effad9a3acedd/datarobot_genai-0.15.32-py3-none-any.whl", hash = "sha256:bc7b4ea797879736f7aedd999abfb827027d419702acd0c615e6a406d49e0549", size = 389734, upload-time = "2026-05-01T17:17:32.269Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/86/ce7ce43326763bff6957eb8804071aa44287adb1d8a6e65ba7210faccd9c/datarobot_genai-0.15.46-py3-none-any.whl", hash = "sha256:fecd0f01ea9b556cc190a1aa19f484afda058b06815b0a24523bf7028598302b", size = 424856, upload-time = "2026-05-12T18:47:39.943Z" },
 ]
 
 [package.optional-dependencies]
@@ -608,6 +608,7 @@ drmcp = [
     { name = "datarobot-predict" },
     { name = "fastmcp" },
     { name = "httpx" },
+    { name = "okta-client-python" },
     { name = "openai" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp" },
@@ -1241,7 +1242,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", marker = "extra == 'dev'", specifier = ">=8.3.0" },
-    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.15.30,<0.16.0" },
+    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.15.45,<0.16.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.6.1" },
@@ -1459,6 +1460,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/33/9b/9dd6e2db8d49eb24f86acaaa5258e5f4c8ed38209a4ee9de2d1a0ca25045/numpy-2.4.1-pp311-pypy311_pp73-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:2023ef86243690c2791fd6353e5b4848eedaa88ca8a2d129f462049f6d484696", size = 14538937, upload-time = "2026-01-10T06:44:51.498Z" },
     { url = "https://files.pythonhosted.org/packages/53/87/d5bd995b0f798a37105b876350d346eea5838bd8f77ea3d7a48392f3812b/numpy-2.4.1-pp311-pypy311_pp73-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:8361ea4220d763e54cff2fbe7d8c93526b744f7cd9ddab47afeff7e14e8503be", size = 16479830, upload-time = "2026-01-10T06:44:53.931Z" },
     { url = "https://files.pythonhosted.org/packages/5b/c7/b801bf98514b6ae6475e941ac05c58e6411dd863ea92916bfd6d510b08c1/numpy-2.4.1-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:4f1b68ff47680c2925f8063402a693ede215f0257f02596b1318ecdfb1d79e33", size = 12492579, upload-time = "2026-01-10T06:44:57.094Z" },
+]
+
+[[package]]
+name = "okta-client-python"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyjwt", extra = ["crypto"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/05/b3/70389869c4fae298a271db9e746539cea6342ab288347a37ffcf505dac6a/okta_client_python-0.2.0.tar.gz", hash = "sha256:c5b82dac1ab93b366e34a0c57b265ec0c43afb7ef65499f2bed4021412baec5e", size = 111396, upload-time = "2026-03-11T05:17:23.586Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/2a/f5f52239a932ba5093a45e4b978be99ba0c440ced850b0555f7f826b2fcc/okta_client_python-0.2.0-py3-none-any.whl", hash = "sha256:2c8ccf8b8e04d14f35322937e16d48b933da7e180817cc3d4ae248d8025b7984", size = 101640, upload-time = "2026-03-11T05:17:21.098Z" },
 ]
 
 [[package]]

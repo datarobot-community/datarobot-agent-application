@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Textarea } from '@/components/ui/textarea';
 import { type KeyboardEvent, useRef, useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 export interface ChatTextInputProps {
   onSubmit: (text: string) => Promise<unknown>;
@@ -23,26 +24,22 @@ export function ChatTextInput({
   const [isComposing, setIsComposing] = useState(false);
 
   function keyDownHandler(e: KeyboardEvent) {
-    if (
-      e.key === 'Enter' &&
-      !e.shiftKey &&
-      !isComposing &&
-      !runningAgent &&
-      userInput.trim().length
-    ) {
+    const draft = (ref.current?.value ?? userInput).trim();
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing && !runningAgent && draft.length) {
       if (e.ctrlKey || e.metaKey) {
         const el = ref.current;
         e.preventDefault();
         if (el) {
           const start = el.selectionStart;
           const end = el.selectionEnd;
-
-          const newValue = userInput.slice(0, start) + '\n' + userInput.slice(end);
+          const val = el.value;
+          const newValue = val.slice(0, start) + '\n' + val.slice(end);
           setUserInput(newValue);
         }
       } else {
         e.preventDefault();
-        onSubmit(userInput);
+        const raw = ref.current?.value ?? userInput;
+        void onSubmit(raw);
       }
     }
   }
@@ -51,6 +48,7 @@ export function ChatTextInput({
     <div className="relative shrink-0">
       <Textarea
         ref={ref}
+        data-testid="chat-message-input"
         value={userInput}
         onChange={e => setUserInput(e.target.value)}
         onCompositionStart={() => setIsComposing(true)}
@@ -71,12 +69,19 @@ export function ChatTextInput({
         </Tooltip>
       ) : (
         <Button
-          type="submit"
-          onClick={() => onSubmit(userInput)}
-          className="absolute right-2 bottom-2"
+          type="button"
+          onClick={() => {
+            const raw = ref.current?.value ?? userInput;
+            if (!raw.trim()) return;
+            void onSubmit(raw);
+          }}
+          className={cn(
+            'absolute right-2 bottom-2',
+            !runningAgent && !userInput.trim() && 'opacity-50'
+          )}
           size="icon"
           testId="send-message-btn"
-          disabled={!userInput.trim().length}
+          disabled={runningAgent}
         >
           <Send />
         </Button>

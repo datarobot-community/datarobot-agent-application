@@ -66,10 +66,11 @@ class TestMyAgentLangGraph:
 
     def test_prompt_template_formats_with_variables(self):
         """Test that prompt_template can be formatted with chat_history and topic."""
-        messages = prompt_template.format_messages(
-            chat_history="User asked about AI trends.",
-            topic="artificial intelligence",
-        )
+        format_kwargs = {
+            "chat_history": "User asked about AI trends.",
+            "topic": "artificial intelligence",
+        }
+        messages = prompt_template.format_messages(**format_kwargs)
         assert len(messages) == 2
         assert "{chat_history}" not in messages[0].content
         assert "{topic}" not in messages[1].content

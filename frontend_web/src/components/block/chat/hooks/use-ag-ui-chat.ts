@@ -97,7 +97,7 @@ export function useAgUiChat({
     data,
     isLoading: isLoadingHistory,
     refetch: refetchHistory,
-  } = useFetchHistory({ chatId, enabled: !isAgentRunning && !isNewChat });
+  } = useFetchHistory({ chatId, enabled: !isAgentRunning && !isNewChat && !events.length });
 
   const history = isNewChat ? [] : data;
 
@@ -136,6 +136,9 @@ export function useAgUiChat({
   }
 
   async function sendMessage(message: string) {
+    if (!message.trim()) {
+      return;
+    }
     const messageId = uuid();
     agent.messages = [{ id: messageId, role: 'user', content: message }];
 

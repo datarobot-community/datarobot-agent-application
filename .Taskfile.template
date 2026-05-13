@@ -24,6 +24,10 @@ tasks:
     cmds:
       - task --list --sort none
 
+  start-non-interactive:
+    cmds:
+      - task: start
+
   start:
     desc: "💻 Prepare local development environment"
     cmds:

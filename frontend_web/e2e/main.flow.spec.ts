@@ -3,6 +3,15 @@ import { test, expect } from '@playwright/test';
 import { baseURL } from '../playwright.config';
 const TIMEOUT = 5 * 60 * 1000;
 
+/** Types like a user so React controlled state stays in sync (fill alone can flake on deployed builds). */
+async function typeComposerMessage(page: Page, text: string) {
+  const input = page.getByTestId('chat-message-input');
+  await input.click();
+  await input.fill('');
+  await input.pressSequentially(text, { delay: 15 });
+  await expect(input).toHaveValue(text, { timeout: 60_000 });
+}
+
 test.describe('Main flow test', () => {
   let context: BrowserContext;
   let page: Page;
@@ -33,7 +42,7 @@ test.describe('Main flow test', () => {
 
     await page.getByTestId('start-new-chat-btn').click();
     await expect(page.locator('[data-testid^="initial-assistant-message-"]')).toBeVisible();
-    await page.getByRole('textbox').fill('tell me small story');
+    await typeComposerMessage(page, 'tell me small story');
     await expect(page.getByTestId('send-message-btn')).toBeEnabled();
     await page.getByTestId('send-message-btn').click();
     const spinner = await page.getByTestId('thinking-loading');
@@ -49,7 +58,7 @@ test.describe('Main flow test', () => {
     let contentCount = 0;
     await page.getByTestId('start-new-chat-btn').click();
     await expect(page.locator('[data-testid^="initial-assistant-message-"]')).toBeVisible();
-    await page.getByRole('textbox').fill('tell some fun fact');
+    await typeComposerMessage(page, 'tell some fun fact');
     await expect(page.getByTestId('send-message-btn')).toBeEnabled();
     await page.getByTestId('send-message-btn').click();
     // Wait for the message to be sent and the chat to appear in the sidebar

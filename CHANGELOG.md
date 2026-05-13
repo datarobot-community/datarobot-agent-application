@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+- Upgraded MCP `datarobot-genai` from 0.15.32 to 0.15.46
+  - Improved predictive drtools for MCP by avoiding blocking calls.
+
+## 11.9.0
+- Bumped `agent` component from 11.8.30 to 11.8.36
+  - Added documentation for NAT tools
+  - Upgraded `datarobot-genai` from 0.15.34 to 0.15.43:
+    - Fixed per user workflow for A2A
+    - Added `datarobot_mem0_memory` to NAT to be used with `auto_memory_agent`
+    - Added A2A agent card support
+    - Added documentation for configuring auth options for A2A agents
+    - Fixed NAT tool calls
+    - Added named parameters for agent class initialization
+    - Fixed AG-UI tool call lifecycle
+    - Added support for Okta cross-application access (XAA) in A2A
 
 ## 11.8.5
 - Bumped `agent` component from 11.8.27 to 11.8.30
