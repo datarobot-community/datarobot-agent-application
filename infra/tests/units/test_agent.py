@@ -478,6 +478,7 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
+
     memory_ttl_param = next(
         (p for p in runtime_parameter_values if p.key == AGENT_MEMORY_TTL_SECONDS),
         None,

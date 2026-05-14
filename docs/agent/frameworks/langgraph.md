@@ -26,11 +26,19 @@ def graph_factory(llm, tools, verbose=False):
         system_prompt=make_system_prompt("You are a content writer. ..."),
         name="writer_agent", debug=verbose)
 
+    def planner_to_writer_relay(state: MessagesState) -> MessagesState:
+        last = state["messages"][-1]
+        if isinstance(last, AIMessage):
+            return {"messages": [HumanMessage(content=last.content)]}
+        return {"messages": []}
+
     workflow = StateGraph(MessagesState)
     workflow.add_node("planner_node", planner)
+    workflow.add_node("planner_to_writer_relay", planner_to_writer_relay)
     workflow.add_node("writer_node", writer)
     workflow.add_edge(START, "planner_node")
-    workflow.add_edge("planner_node", "writer_node")
+    workflow.add_edge("planner_node", "planner_to_writer_relay")
+    workflow.add_edge("planner_to_writer_relay", "writer_node")
     workflow.add_edge("writer_node", END)
     return workflow
 ```

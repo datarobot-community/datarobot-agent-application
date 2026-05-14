@@ -32,8 +32,24 @@ general:
           examples:
             - Write a blog post about the future of AI in healthcare
             - Create an article about sustainable energy trends
+            # Optional: Okta cross-application access (XAA) authentication for this agent's A2A endpoints.
+            # Uncomment to advertise XAA requirements on the agent card. See docs/agent/agent2agent-auth.md.
+            # cross_application_access:
+            #   token_exchange:
+            #     trusted_issuer: "https://your-org.okta.com"
+            #     audience: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX"
+            #   token_request:
+            #     token_url: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX/v1/token"
+            #     audience: "https://example.com/agents/my-agent-id"
+            #     scopes:
+            #       - "dr.impersonation"
+            # Optional: external identity and URL overrides published on the agent card.
+            # external:
+            #   id: "my-agent-id"
+            #   url: "https://my-agent-id.example.com/a2a/"
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
 # function group name to the workflow's tool_names list.
+# For Okta XAA auth, use auth_provider: okta_auth instead of datarobot_auth.
 # function_groups:
 #   remote_agent:
 #     _type: authenticated_a2a_client
@@ -61,3 +77,6 @@ workflow:
 authentication:
   datarobot_auth:
     _type: datarobot_api_key
+  # Uncomment for Okta XAA authentication (requires PRINCIPAL_ID and PRIVATE_JWK env vars):
+  # okta_auth:
+  #   _type: okta_cross_app_access

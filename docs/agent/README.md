@@ -28,7 +28,7 @@ See the [AG-UI integration guide](./ag-ui.md) for details on each event type and
 
 ### Agent-to-Agent (A2A)
 
-Agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol. This requires the DRAgent front server (`ENABLE_DRAGENT_SERVER=true`). See [Agent2Agent](./agent2agent.md) for configuration and usage.
+Agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol. This requires the DRAgent front server (`ENABLE_DRAGENT_SERVER=true`). See [Agent2Agent](./agent2agent.md) for configuration and usage, and [A2A Authentication](./agent2agent-auth.md) for DataRobot API key and Okta XAA auth setup.
 
 ## Agent file structure
 
@@ -266,6 +266,7 @@ The following topics are covered in the official DataRobot documentation:
 | [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html) | Add custom OpenTelemetry tracing to agent tools for monitoring and debugging deployed agents. |
 | [Deploy agentic tools](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tools.html) | Deploy global tools from the DataRobot Registry (search datasets, make predictions, render charts). |
 | [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install modular skill packages for coding agents (Cursor, Claude Code, Codex, and others). |
+| [A2A authentication](./agent2agent-auth.md) | DataRobot API key and Okta cross-application access (XAA) for agent-to-agent authentication. |
 | [Agent authentication](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-authentication.html) | API tokens, OAuth 2.0, authorization context, and MCP server authentication. |
 | [Add Python packages](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-python-packages.html) | Add dependencies via `uv`, runtime dependencies for fast iteration, and custom Docker images. |
 | [Access request headers](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-request-headers.html) | Extract `X-Untrusted-*` headers in deployed agents for auth forwarding and request tracking. |

@@ -10,6 +10,6 @@ root:
     help: "Enter the default execution environment for the agent's custom model."
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID
     type: string
-    default: "69e2134aa5df12076d70afe7"
+    default: "6a059a7610ca88076d3f6164"
     optional: true
     help: "Enter the default execution environment version ID for the agent's custom model."

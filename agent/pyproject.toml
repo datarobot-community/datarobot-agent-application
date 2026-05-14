@@ -5,7 +5,7 @@ description = "Implementation of agent"
 readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[langgraph, dragent]==0.15.43",
+    "datarobot-genai[langgraph, dragent, auth]==0.15.47",
     "datarobot-moderations[all]==11.2.24",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -225,6 +225,15 @@ override-dependencies = [
     "python-docx; sys_platform == 'never'",  # Word doc parser pulled in by crewai-tools; not used
     "llama-index-cli; sys_platform == 'never'",  # CLI tool pulled in by llama-index; not needed at runtime
     "scikit-network; sys_platform == 'never'",  # graph analysis pulled in by ragas; not used
+    # nemoguardrails — server / CLI stack pulled in via datarobot-moderations[all]; not used at runtime
+    "watchdog; sys_platform == 'never'",  # file watcher for guardrails hot-reload; not used
+    # prompt-toolkit and wcwidth are intentionally NOT excluded: IPython (via ipykernel / agentic_playground)
+    # has a hard import-time dependency on prompt-toolkit; excluding it causes ModuleNotFoundError at runtime.
+    "typer; sys_platform == 'never'",  # CLI framework for guardrails CLI; not used
+    "shellingham; sys_platform == 'never'",  # shell detection; sole dependent was typer
+    # deepeval — CLI / reporting stack pulled in via datarobot-moderations[all]; not used at runtime
+    "pyfiglet; sys_platform == 'never'",  # ASCII banner renderer for deepeval CLI; not used
+    "wheel; sys_platform == 'never'",  # build-time packaging tool; not a runtime dependency
 ]
 package = true
 environments = [

@@ -1,6 +1,6 @@
 # Agent-to-Agent (A2A)
 
-Template agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol.
+Template agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol. For authentication configuration, see [A2A Authentication](./agent2agent-auth.md).
 
 To expose an agent via A2A:
 
@@ -20,6 +20,24 @@ When the `ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT` feature flag is enabled and you d
 
 - **List deployments with agent cards**&mdash;`GET deployments/?isA2AAgent=true`.
 - **Retrieve an agent card**&mdash;`GET deployments/DEPLOYMENT_ID/agentCard`.
+
+## Agent card identity: `external`
+
+Optional fields under `general.front_end.a2a.external` publish additional identity metadata on the agent card and allow overriding the auto-generated agent card URL.
+
+| Field | Purpose |
+|-------|---------|
+| `external.id` | Catalog discovery identifier. Emitted as the `urn:datarobot:agent:identity:external` extension on the agent card. |
+| `external.url` | Overrides the auto-generated agent card endpoint URL. |
+
+```yaml
+general:
+  front_end:
+    a2a:
+      external:
+        id: "my-agent-id"
+        url: "https://my-agent-id.example.com/a2a/"
+```
 
 ## A2A agents hosted outside of DataRobot
 

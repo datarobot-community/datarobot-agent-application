@@ -6,7 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
-- Upgraded MCP `datarobot-genai` from 0.15.32 to 0.15.46
+
+## 11.9.1
+- Upgraded `agent` component from 11.8.36 to 11.9.0:
+  - Fixed issue with executing agents in Agentic Playground
+  - Fixed assistant message prefill for Anthropic models
+  - Excluded unnecessary dependencies
+  - Support cross-application access (XAA) in A2A
+- Upgraded MCP `datarobot-genai` from 0.15.32 to 0.15.46:
   - Improved predictive drtools for MCP by avoiding blocking calls.
 
 ## 11.9.0

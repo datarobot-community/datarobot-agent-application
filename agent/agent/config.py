@@ -36,7 +36,6 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     use_datarobot_llm_gateway: bool = False
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
-
     local_dev_port: int = Field(
         default=8842, validation_alias="AGENT_PORT", ge=1, le=65535
     )

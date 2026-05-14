@@ -24,6 +24,7 @@ from datarobot_genai.langgraph.llm import get_llm
 from datarobot_genai.langgraph.mcp import mcp_tools_context
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -102,11 +103,19 @@ def graph_factory(
         debug=verbose,
     )
 
+    def planner_to_writer_relay(state: MessagesState) -> MessagesState:
+        last = state["messages"][-1]
+        if isinstance(last, AIMessage):
+            return {"messages": [HumanMessage(content=last.content)]}
+        return {"messages": []}
+
     langgraph_workflow = StateGraph(MessagesState)
     langgraph_workflow.add_node("planner_node", agent_planner)
+    langgraph_workflow.add_node("planner_to_writer_relay", planner_to_writer_relay)
     langgraph_workflow.add_node("writer_node", agent_writer)
     langgraph_workflow.add_edge(START, "planner_node")
-    langgraph_workflow.add_edge("planner_node", "writer_node")
+    langgraph_workflow.add_edge("planner_node", "planner_to_writer_relay")
+    langgraph_workflow.add_edge("planner_to_writer_relay", "writer_node")
     langgraph_workflow.add_edge("writer_node", END)
     return langgraph_workflow
 
