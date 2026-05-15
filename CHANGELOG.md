@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.9.2
+- Upgraded `agent` component from 11.9.0 to 11.9.2
+  - Upgraded `datarobot-genai` from 0.15.47 to 0.15.53
+    - FilesAPI implementation for Langgraph Checkpointer
+    - Fix the invalid message event crashes for Langgraph Agents
+    - Fix crewai agent failure to read MCP tools
+- Fixed order of ag-ui events
+
 ## 11.9.1
 - Upgraded `agent` component from 11.8.36 to 11.9.0:
   - Fixed issue with executing agents in Agentic Playground

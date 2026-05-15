@@ -345,6 +345,93 @@ async def test_run_complex_slow_stream(
         ]
 
 
+def _make_event_chunk(event_dict: dict[str, Any]) -> ChatCompletionChunk:
+    """Create a ChatCompletionChunk with an embedded AG-UI event."""
+    chunk = ChatCompletionChunk(
+        id="", model="", created=0, object="chat.completion.chunk", choices=[]
+    )
+    object.__setattr__(chunk, "event", event_dict)
+    return chunk
+
+
+async def test_embedded_run_finished_normalises_ids_and_suppresses_duplicate(
+    set_completions: Callable[[list[ChatCompletionChunk]], None],
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """When the agent stream contains a RUN_FINISHED with wrong IDs, the wrapper
+    normalises thread_id/run_id and does NOT emit a second RunFinishedEvent."""
+    set_completions(
+        [
+            *chat_completions(("Hi", [])),
+            _make_event_chunk(
+                {
+                    "type": "RUN_FINISHED",
+                    "threadId": "wrong-thread",
+                    "runId": "wrong-run",
+                }
+            ),
+        ]
+    )
+
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID("8825aa49-97ce-4fdf-9807-2ad9b4158acc")
+        result = await run(dr_agui_agent)
+
+    run_finished = [e for e in result if isinstance(e, RunFinishedEvent)]
+    assert len(run_finished) == 1, (
+        f"Expected exactly 1 RunFinishedEvent, got {[type(e).__name__ for e in result]}"
+    )
+    assert run_finished[0].thread_id == "thread"
+    assert run_finished[0].run_id == "run"
+
+
+async def test_embedded_run_started_normalises_ids(
+    set_completions: Callable[[list[ChatCompletionChunk]], None],
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """An embedded RUN_STARTED from the agent stream has its IDs normalised
+    to match the wrapper's input thread_id/run_id."""
+    set_completions(
+        [
+            _make_event_chunk(
+                {
+                    "type": "RUN_STARTED",
+                    "threadId": "wrong-thread",
+                    "runId": "wrong-run",
+                }
+            ),
+            *chat_completions(("Hi", [])),
+        ]
+    )
+
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID("8825aa49-97ce-4fdf-9807-2ad9b4158acc")
+        result = await run(dr_agui_agent)
+
+    run_started = [e for e in result if isinstance(e, RunStartedEvent)]
+    for evt in run_started:
+        assert evt.thread_id == "thread"
+        assert evt.run_id == "run"
+
+
+async def test_fallback_run_finished_when_agent_does_not_emit_one(
+    set_completions: Callable[[list[ChatCompletionChunk]], None],
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """When the agent stream contains no embedded RUN_FINISHED, the wrapper
+    emits its own so the client always receives exactly one."""
+    set_completions(chat_completions(("Hi", [])))
+
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID("8825aa49-97ce-4fdf-9807-2ad9b4158acc")
+        result = await run(dr_agui_agent)
+
+    run_finished = [e for e in result if isinstance(e, RunFinishedEvent)]
+    assert len(run_finished) == 1
+    assert run_finished[0].thread_id == "thread"
+    assert run_finished[0].run_id == "run"
+
+
 class TestPrepareChatCompletionsInput:
     """Tests for DataRobotAGUIAgent._prepare_chat_completions_input (assistant tool_calls and tool messages)."""
 

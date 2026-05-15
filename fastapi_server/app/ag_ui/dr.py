@@ -169,6 +169,7 @@ class DataRobotAGUIAgent(AGUIAgent):
             message_id = str(uuid.uuid4())
 
             text_message_started = False
+            run_finished_emitted = False
 
             logger.debug("Sending request to agent's chat completion endpoint")
 
@@ -183,6 +184,12 @@ class DataRobotAGUIAgent(AGUIAgent):
                 # Event is already embedded in the chunk, so we don't need to convert it
                 if hasattr(chunk, "event"):
                     event = TypeAdapter[Event](Event).validate_python(chunk.event)
+                    if isinstance(event, (RunStartedEvent, RunFinishedEvent)):
+                        # Normalise IDs to match the wrapper's thread/run context
+                        event.thread_id = input.thread_id
+                        event.run_id = input.run_id
+                        if isinstance(event, RunFinishedEvent):
+                            run_finished_emitted = True
                     if event.type not in [
                         EventType.TEXT_MESSAGE_CONTENT,
                         EventType.THINKING_TEXT_MESSAGE_CONTENT,
@@ -227,7 +234,8 @@ class DataRobotAGUIAgent(AGUIAgent):
             if text_message_started:
                 yield TextMessageEndEvent(message_id=message_id)
 
-            yield RunFinishedEvent(thread_id=input.thread_id, run_id=input.run_id)
+            if not run_finished_emitted:
+                yield RunFinishedEvent(thread_id=input.thread_id, run_id=input.run_id)
 
         except Exception as e:
             logger.exception("Error during agent run")
