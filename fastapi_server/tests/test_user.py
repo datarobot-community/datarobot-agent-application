@@ -15,7 +15,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.users.user import User, UserCreate
+from app.users.user import LanguageEnum, ThemeEnum, User, UserCreate
 
 
 class TestUserCreate:
@@ -46,3 +46,44 @@ class TestUser:
     def test_none_last_name_allowed(self) -> None:
         user = User(email="test@example.com", last_name=None)
         assert user.last_name is None
+
+
+class TestLanguageEnum:
+    @pytest.mark.parametrize(
+        "locale,expected",
+        [
+            (None, LanguageEnum.en),
+            ("en", LanguageEnum.en),
+            ("en-US", LanguageEnum.en),
+            ("EN", LanguageEnum.en),
+            ("ja", LanguageEnum.ja),
+            ("ja-JP", LanguageEnum.ja),
+            ("fr", LanguageEnum.fr),
+            ("fr-FR", LanguageEnum.fr),
+            ("ko", LanguageEnum.ko),
+            ("ko-KR", LanguageEnum.ko),
+            ("pt-BR", LanguageEnum.pt),
+            ("pt_BR", LanguageEnum.pt),
+            ("es-419", LanguageEnum.es),
+            ("es-ES", LanguageEnum.es),
+            ("zh", LanguageEnum.en),  # unsupported → default
+            ("xx", LanguageEnum.en),  # unknown → default
+        ],
+    )
+    def test_from_locale(self, locale: str | None, expected: LanguageEnum) -> None:
+        assert LanguageEnum.from_locale(locale) == expected
+
+
+class TestThemeEnum:
+    @pytest.mark.parametrize(
+        "theme,expected",
+        [
+            (None, ThemeEnum.system),
+            ("dark", ThemeEnum.dark),
+            ("light", ThemeEnum.light),
+            ("system", ThemeEnum.system),
+            ("invalid", ThemeEnum.system),  # unknown → default
+        ],
+    )
+    def test_from_theme(self, theme: str | None, expected: ThemeEnum) -> None:
+        assert ThemeEnum.from_theme(theme) == expected

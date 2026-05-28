@@ -13,8 +13,10 @@
 # limitations under the License.
 import uuid as uuidpkg
 from datetime import datetime, timezone
+from enum import Enum
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from datarobot.auth.session import AuthCtx
 from datarobot.auth.typing import Metadata
 from datarobot.auth.users import User as UserData
@@ -25,6 +27,49 @@ from app.db import DBCtx
 
 if TYPE_CHECKING:
     from app.users.identity import Identity
+
+
+class ThemeEnum(str, Enum):
+    """User UI theme preference."""
+
+    dark = "dark"
+    light = "light"
+    system = "system"
+
+    @classmethod
+    def from_theme(cls, theme: str | None) -> "ThemeEnum":
+        """
+        Map DataRobot theme string to ThemeEnum, defaulting to system if failed.
+        Currently, account/info does not return theme.
+        """
+        if not theme:
+            return cls.system
+        try:
+            return cls(theme)
+        except ValueError:
+            return cls.system
+
+
+class LanguageEnum(str, Enum):
+    """User UI language. Values must match frontend i18n (use-translation.ts)."""
+
+    en = "en"
+    es = "es"
+    fr = "fr"
+    ja = "ja"
+    ko = "ko"
+    pt = "pt"
+
+    @classmethod
+    def from_locale(cls, locale: str | None) -> "LanguageEnum":
+        """Map DataRobot locale string to LanguageEnum, defaulting to English if failed."""
+        if not locale:
+            return cls.en
+        lang_code = locale.split("-")[0].split("_")[0].lower()
+        try:
+            return cls(lang_code)
+        except ValueError:
+            return cls.en
 
 
 class User(SQLModel, table=True):
@@ -40,6 +85,14 @@ class User(SQLModel, table=True):
     last_name: str | None = Field(None)
     email: str = Field(..., unique=True, min_length=2, max_length=255)
     profile_image_url: str | None = None
+    theme: ThemeEnum = Field(
+        default=ThemeEnum.system,
+        sa_column=Column(sa.Enum(ThemeEnum, name="theme"), nullable=False),
+    )
+    language: LanguageEnum = Field(
+        default=LanguageEnum.en,
+        sa_column=Column(sa.Enum(LanguageEnum, name="language"), nullable=False),
+    )
 
     identities: list["Identity"] = Relationship(
         back_populates="user",
@@ -74,6 +127,8 @@ class UserCreate(SQLModel):
     last_name: str | None = Field(None, max_length=50)
     email: str = Field(..., unique=True, min_length=2, max_length=255)
     profile_image_url: str | None = None
+    theme: ThemeEnum = Field(default=ThemeEnum.system)
+    language: LanguageEnum = Field(default=LanguageEnum.en)
 
 
 class UserRepository:
@@ -114,6 +169,31 @@ class UserRepository:
         user = User(**user_data.model_dump())
 
         async with self._db.session(writable=True) as session:
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+        return user
+
+    async def update_user_settings(
+        self,
+        user_id: int,
+        theme: ThemeEnum | None = None,
+        language: LanguageEnum | None = None,
+    ) -> User:
+        """Update user display preferences (theme and language)."""
+        async with self._db.session(writable=True) as session:
+            query = await session.exec(select(User).where(User.id == user_id))
+            user = query.first()
+
+            if not user:
+                raise ValueError(f"User with id {user_id} not found")
+
+            if theme is not None:
+                user.theme = theme
+            if language is not None:
+                user.language = language
+
             session.add(user)
             await session.commit()
             await session.refresh(user)

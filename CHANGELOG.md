@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.9.3
+- Updated `agent` component from 11.9.2 to 11.9.10:
+  - *Breaking changes*: moved `agent/workflow.yaml` to `workflow.yaml` as the top level configuration entity of an agent.
+  - Allow running agent with `dragent` in Agentic Playground.
+  - Upgraded `datarobot-genai` from 0.15.53 to 0.15.71
+    - Fixed `extra_body` passthrough for workflow.yaml LLM configs
+    - A2A: Added agent card registry support
+    - A2A: Fixes to XAA token exchange flow; added `okta_sdk`/`http` implementations; renamed XAA env vars
+    - `dr_mem0_memory`: added DataRobot Memory Service routing and config fields
+    - Improved user identity resolution in `dragent`
+    - mem0 client User ID is now per-user
+    - Registered `datarobot_moderation` NAT middleware; updated moderation config structure in `workflow.yaml`
+    - DR FS checkpointing is now opt-in; checkpoint files use length-prefixed binary format
+    - Fixed `pulumi up` memory space when the user opts in.
+    - Fixed issue with CrewAI streaming when model returns an empty chunk.
+- [Experimental] Added optional DataRobot Memory Space persistence for chat history, OAuth identities, and user profiles in the FastAPI backend. Set `USE_MEMORY_SPACE=true` in `.env` and run `task deploy-dev` to provision a Memory Space via Pulumi and wire `USE_MEMORY_SPACE` / `MEMORY_SPACE_ID` on the custom application (not the agent deployment). Rerun `task deploy-dev` after changing `USE_MEMORY_SPACE` before `task dev`. Stores chats, messages, identities, and users as memory-service sessions and events instead of SQLite. Requires agentic memory API access on the organization (`ENABLE_AGENTIC_MEMORY_API`). See `docs/fastapi_server/README.md` and `.env.template`.
+- Updated `@dr-ui/chat` component
+  - Added start, end time for tool
+  - Improved tool rendering on UI
+  - Improved Chat performance on UI
+- Added user display settings: theme and language preferences
+
 ## 11.9.2
 - Upgraded `agent` component from 11.9.0 to 11.9.2
   - Upgraded `datarobot-genai` from 0.15.47 to 0.15.53

@@ -19,14 +19,18 @@ import {
   type StepStartedEvent,
   type StepFinishedEvent,
 } from '@ag-ui/core';
-import type { AgentSubscriberParams, ToolCallResultEvent } from '@ag-ui/client';
+import type {
+  AgentSubscriberParams,
+  Message,
+  RunAgentResult,
+  ToolCallResultEvent,
+} from '@ag-ui/client';
 
 import {
-  createCustomMessageWidget,
   createReasoningMessage,
   createTextMessageFromAgUiEvent,
   createTextMessageFromUserInput,
-  createToolMessageFromAgUiEvent,
+  createToolMessageFromToolCallStartEvent,
   messageToStateEvent,
 } from '@/components/block/chat/mappers';
 import type { MessageResponse } from '@/api/chat/types';
@@ -54,6 +58,7 @@ export function useAgUiChat({
   runInBackground,
   refetchChats = () => Promise.resolve(),
   subscriber,
+  forwardedProps,
 }: UseAgUiChatParams) {
   const {
     agent,
@@ -63,6 +68,7 @@ export function useAgUiChat({
     setEvents,
     finishStepEvent,
     addEvent,
+    addToolArgs,
     addToolResult,
     message,
     setMessage,
@@ -135,13 +141,11 @@ export function useAgUiChat({
     };
   }
 
-  async function sendMessage(message: string) {
-    if (!message.trim()) {
+  async function sendTextMessage(message: string): Promise<RunAgentResult | undefined> {
+    if (!message?.trim?.()) {
       return;
     }
     const messageId = uuid();
-    agent.messages = [{ id: messageId, role: 'user', content: message }];
-
     const historyMessage = createTextMessageFromUserInput({
       message,
       chatId,
@@ -152,6 +156,14 @@ export function useAgUiChat({
       value: historyMessage,
     });
     setUserInput('');
+    return sendMessage([{ id: messageId, role: 'user', content: message }]);
+  }
+
+  /**
+   * Use this method to send messages to the agent.
+   */
+  async function sendMessage(messages: Message[]): Promise<RunAgentResult | undefined> {
+    agent.messages = messages;
     setIsAgentRunning(true);
     setIsThinking(true);
 
@@ -170,7 +182,10 @@ export function useAgUiChat({
         }
         const message = createTextMessageFromAgUiEvent(params.event);
         setIsThinking(false);
-        setMessage(message);
+        setMessage({
+          ...message,
+          metadata: { startTime: params.event.timestamp ?? Date.now() },
+        });
       },
       async onTextMessageContentEvent(
         params: {
@@ -186,7 +201,11 @@ export function useAgUiChat({
           if (ctx.defaultPrevented) return;
         }
         const { event, textMessageBuffer } = params;
-        const message = createTextMessageFromAgUiEvent(event, textMessageBuffer);
+        const message = createTextMessageFromAgUiEvent(
+          event,
+          textMessageBuffer,
+          chat.message?.metadata
+        );
         setIsThinking(false);
         setMessage(message);
       },
@@ -209,7 +228,13 @@ export function useAgUiChat({
         }
         addEvent({
           type: 'message',
-          value: chat.message as ChatMessageEvent,
+          value: {
+            ...chat.message,
+            metadata: {
+              ...chat.message.metadata,
+              endTime: params.event.timestamp ?? Date.now(),
+            },
+          } as ChatMessageEvent,
         });
         setMessage(null);
       },
@@ -282,6 +307,11 @@ export function useAgUiChat({
           await subscriberRef.current.onToolCallStartEvent(params, ctx);
           if (ctx.defaultPrevented) return;
         }
+        const startTime = params.event.timestamp ?? Date.now();
+        addEvent({
+          type: 'message',
+          value: createToolMessageFromToolCallStartEvent(params.event, chatId, startTime),
+        });
         setIsThinking(false);
       },
       async onToolCallEndEvent(
@@ -301,42 +331,21 @@ export function useAgUiChat({
         const tool = toolsRef.current[params.toolCallName];
         const toolHandler = toolHandlersRef.current[params.toolCallName];
         const isBackground = chat.isBackground;
+
+        addToolArgs({
+          toolCallId: params.event.toolCallId,
+          args: params.toolCallArgs,
+        });
+
         if (tool && toolHandler?.handler && params.toolCallArgs) {
           const canRun = !isBackground || (isBackground && tool.background);
           if (isBackground) {
             // eslint-disable-next-line no-console
             console.debug('Background tool invocation', params, tool);
           }
-
           if (canRun) {
             toolHandler.handler(params.toolCallArgs);
-            addEvent({
-              type: 'message',
-              value: createToolMessageFromAgUiEvent(
-                params.event,
-                params.toolCallName,
-                params.toolCallArgs
-              ),
-            });
           }
-        } else if (tool && toolHandler?.render && params.toolCallArgs) {
-          addEvent({
-            type: 'message',
-            value: createCustomMessageWidget({
-              toolCallArgs: params.toolCallArgs,
-              toolCallName: params.toolCallName,
-              threadId: chatId,
-            }),
-          });
-        } else {
-          addEvent({
-            type: 'message',
-            value: createToolMessageFromAgUiEvent(
-              params.event,
-              params.toolCallName,
-              params.toolCallArgs
-            ),
-          });
         }
       },
       async onToolCallResultEvent(
@@ -354,6 +363,7 @@ export function useAgUiChat({
         addToolResult({
           toolCallId: params.event.toolCallId,
           result: params.event.content,
+          endTime: params.event.timestamp ?? Date.now(),
         });
       },
       async onStateSnapshotEvent(params: { event: StateSnapshotEvent } & AgentSubscriberParams) {
@@ -507,9 +517,11 @@ export function useAgUiChat({
           .filter(tool => tool.enabled !== false)
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           .map(({ background, ...tool }) => tool),
+        forwardedProps,
       });
       // eslint-disable-next-line no-console
       console.debug('runAgent result', result);
+      return result;
     } catch (error) {
       setIsAgentRunning(false);
       setIsThinking(false);
@@ -626,6 +638,7 @@ export function useAgUiChat({
     setIsBackground,
     /*methods*/
     sendMessage,
+    sendTextMessage,
     registerOrUpdateTool,
     updateToolHandler,
     removeTool,

@@ -32,7 +32,8 @@ export const ChatContext = createContext<AgUiChatReturn>({
   setIsThinking: () => {},
   setIsBackground: () => {},
   /*methods*/
-  sendMessage: () => Promise.resolve(),
+  sendMessage: () => Promise.resolve(undefined),
+  sendTextMessage: () => Promise.resolve(undefined),
   registerOrUpdateTool: () => {},
   updateToolHandler: () => {},
   removeTool: () => {},

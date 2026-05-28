@@ -1,16 +1,17 @@
 import { createStore, type StateCreator } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
-import type { MessageResponse } from '@/api/chat/types';
-import type {
-  ToolSerialized,
-  ChatStateEvent,
-  ChatStateEventByType,
-  ProgressState,
-  ToolInvocationUIPart,
+import type { MessageResponse, ToolInvocationData } from '@/api/chat/types';
+import {
+  type ToolSerialized,
+  type ChatStateEvent,
+  type ChatStateEventByType,
+  type ProgressState,
+  isToolInvocationPart,
 } from '@/components/block/chat/types';
 import { useStore } from 'zustand/react';
 import { HttpAgent } from '@ag-ui/client';
 import { createAgent } from '@/components/block/chat/agent';
+import type { Draft } from 'immer';
 
 export interface CreateChatArgs {
   id: string;
@@ -32,7 +33,22 @@ export interface ChatState {
   setEvents: (events: ChatStateEvent[]) => void;
   finishStepEvent: (name: string) => void;
   addEvent: (event: ChatStateEvent) => void;
-  addToolResult: ({ toolCallId, result }: { toolCallId: string; result: string }) => void;
+  addToolArgs: ({
+    toolCallId,
+    args,
+  }: {
+    toolCallId: string;
+    args: Record<string, unknown>;
+  }) => void;
+  addToolResult: ({
+    toolCallId,
+    result,
+    endTime,
+  }: {
+    toolCallId: string;
+    result: string;
+    endTime?: number;
+  }) => void;
   setState: (nextState: Record<string, unknown>) => void;
   setMessage: (message: MessageResponse | null) => void;
   setReasoningMessage: (message: MessageResponse | null) => void;
@@ -57,6 +73,28 @@ interface ChatsState {
   initialMessages: MessageResponse[];
   tools: Record<string, ToolSerialized>;
   addChat: (chatId: string) => ChatState;
+}
+
+function updateToolPart(
+  state: Draft<ChatsState>,
+  chatId: string,
+  toolCallId: string,
+  cb: (inv: ToolInvocationData) => void
+) {
+  if (!state.chats[chatId]) return;
+  for (const ev of state.chats[chatId].events) {
+    const parts = (ev.value as MessageResponse).content?.parts;
+    if (!parts?.length) continue;
+    for (const part of parts) {
+      if (isToolInvocationPart(part)) {
+        const inv = part.toolInvocation;
+        if (inv?.toolCallId === toolCallId) {
+          cb(inv);
+          return;
+        }
+      }
+    }
+  }
 }
 
 const createChatSliceFactory = ({ id }: CreateChatArgs) => {
@@ -110,24 +148,40 @@ const createChatSliceFactory = ({ id }: CreateChatArgs) => {
             state.chats[id].events.push(event);
           }
         }),
-      addToolResult: ({ toolCallId, result }: { toolCallId: string; result: string }) => {
+      addToolArgs: ({
+        toolCallId,
+        args,
+      }: {
+        toolCallId: string;
+        args: Record<string, unknown>;
+      }) => {
         set(state => {
-          if (state.chats[id]) {
-            let toolInvocationPart: ToolInvocationUIPart | null = null;
-            state.chats[id].events.some(event => {
-              return (event.value as MessageResponse).content?.parts.some(part => {
-                if ((part as ToolInvocationUIPart).toolInvocation?.toolCallId === toolCallId) {
-                  toolInvocationPart = part as ToolInvocationUIPart;
-                  return true;
-                }
-                return false;
-              });
-            });
-            if (toolInvocationPart) {
-              (toolInvocationPart as ToolInvocationUIPart).toolInvocation.result = result;
-              (toolInvocationPart as ToolInvocationUIPart).toolInvocation.state = 'result';
+          updateToolPart(state, id, toolCallId, invocationData => {
+            invocationData.args = args;
+            invocationData.state = 'call';
+          });
+        });
+      },
+      addToolResult: ({
+        toolCallId,
+        result,
+        endTime,
+      }: {
+        toolCallId: string;
+        result: string;
+        endTime?: number;
+      }) => {
+        set(state => {
+          updateToolPart(state, id, toolCallId, invocationData => {
+            invocationData.result = result;
+            invocationData.state = 'result';
+            if (endTime !== undefined) {
+              invocationData.metadata = {
+                ...invocationData.metadata,
+                endTime,
+              };
             }
-          }
+          });
         });
       },
       setState: (nextState: Record<string, unknown>) =>

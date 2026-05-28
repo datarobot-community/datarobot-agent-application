@@ -16,7 +16,8 @@ import logging
 from datarobot.auth.identity import Identity as IdentityData
 from datarobot.auth.oauth import AsyncOAuthComponent, OAuthToken
 
-from app.users.identity import IdentityRepository, IdentityUpdate
+from app.repo_types import IdentityRepositoryLike
+from app.users.identity import IdentityUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class Tokens:
     def __init__(
         self,
         oauth: AsyncOAuthComponent,
-        identity_repo: IdentityRepository,
+        identity_repo: IdentityRepositoryLike,
         leeway_secs: int = 60,
     ) -> None:
         self._leeway_secs = leeway_secs

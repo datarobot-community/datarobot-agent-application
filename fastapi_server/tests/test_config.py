@@ -121,3 +121,15 @@ def test__config__oauth_provider_fallback(
 
     with patch.dict(os.environ, base_env, clear=True):
         assert Config().oauth_impl == expected_impl
+
+
+def test__config__allows_use_memory_space_before_memory_space_id_is_wired() -> None:
+    config = Config(
+        session_secret_key="test-secret",
+        datarobot_endpoint="https://api.test.datarobot.com",
+        datarobot_api_token="test-token",
+        USE_MEMORY_SPACE=True,
+        MEMORY_SPACE_ID=None,
+    )
+    assert config.use_memory_space is True
+    assert config.memory_space_id is None

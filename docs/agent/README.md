@@ -59,7 +59,7 @@ agent/
 | `agent/myagent.py` | **Framework-specific.** Contains the main agent implementation. Defines the `MyAgent` class and a `custompy_adaptor` function for DRUM compatibility. The implementation varies by framework — see [Agent types](#agent-types) for details. |
 | `agent/config.py` | Manages configuration loading from environment variables, runtime parameters, and DataRobot credentials. |
 | `agent/register.py` | **Framework-specific.** NAT registration module used by the DRAgent front server. Wires LLM, MCP tools, workflow tools, and the agent together. |
-| `agent/workflow.yaml` | **Framework-specific.** Declarative workflow configuration for the DRAgent front server: front-end type, A2A metadata, LLM component, and workflow type. |
+| `workflow.yaml` | **Framework-specific.** Declarative workflow configuration for the DRAgent front server: front-end type, A2A metadata, LLM component, and workflow type. |
 | `custom.py` | Implements DataRobot DRUM integration hooks (`load_model`, `chat`) for agent execution. |
 | `cli.py` | CLI for testing the agent locally and validating deployments. |
 | `dev.py` | Local development prediction server using DRUM. |

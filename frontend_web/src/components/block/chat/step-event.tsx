@@ -12,11 +12,7 @@ export function StepEvent({ id, name, createdAt, isRunning, threadId }: StepEven
   const date = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
 
   return (
-    <div
-      className={cn('flex gap-3 rounded-lg bg-card p-4')}
-      data-step-id={id}
-      data-thread-id={threadId}
-    >
+    <div className={cn('flex gap-3 rounded-lg p-4')} data-step-id={id} data-thread-id={threadId}>
       <div className="shrink-0">
         <div
           className={cn(

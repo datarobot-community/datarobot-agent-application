@@ -57,7 +57,7 @@ export function useChatScroll({
 export function Chat({ initialMessages, children }: ChatProps) {
   const {
     chatId,
-    sendMessage,
+    sendTextMessage,
     userInput,
     setUserInput,
     combinedEvents,
@@ -101,7 +101,7 @@ export function Chat({ initialMessages, children }: ChatProps) {
           <ChatTextInput
             userInput={userInput}
             setUserInput={setUserInput}
-            onSubmit={sendMessage}
+            onSubmit={sendTextMessage}
             runningAgent={isAgentRunning}
           />
         </>

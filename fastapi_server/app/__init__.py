@@ -29,6 +29,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api import router as api_router
 from app.config import Config
 from app.deps import Deps, create_deps
+from app.memory import MemoryParticipantMiddleware
 from app.telemetry import configure_uvicorn_logging, init_logging, otel
 
 base_router = APIRouter()
@@ -174,6 +175,7 @@ def create_app(
         https_only=config.session_https_only,
         path=cookie_path,
     )
+    app.add_middleware(MemoryParticipantMiddleware)
 
     app.include_router(base_router)
 

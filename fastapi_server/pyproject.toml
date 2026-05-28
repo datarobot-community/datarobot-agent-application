@@ -14,7 +14,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "core",
     "datarobot-asgi-middleware>=0.2.0",
-    "datarobot[auth-authlib,core]>=3.9.1",
+    "datarobot[auth-authlib,core]>=3.15.0",
     "fastapi[standard]>=0.115.11",
     "greenlet>=3.2.1",
     "httpx>=0.28.1",
@@ -49,22 +49,17 @@ dev = [
     "httpx-sse>=0.4.3",
 ]
 
-[tool.uv.sources]
-core = { path = "core", editable = true }
+[tool.uv]
+package = false
 
-[build-system]
-requires = ["hatchling>=1.18.0"]
-build-backend = "hatchling.build"
+[tool.uv.sources]
+core = { path = "../core", editable = true }
 
 [dependency-groups]
 dev = [
     "ipdb>=0.13.13",
     "pytest-asyncio>=1.2.0",
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["app"]
-include = ["static", "templates"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

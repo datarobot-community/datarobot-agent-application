@@ -32,6 +32,7 @@ export type MessageResponse = {
   type?: string;
   content: MessageContent;
   encryptedValue?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type MessageContent = {

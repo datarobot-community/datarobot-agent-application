@@ -43,20 +43,20 @@ Use this when calling an agent protected by Okta's federated identity model. The
 
 - An Okta organization with Cross-Application Access enabled.
 - A registered AI agent principal in Okta with a private key pair.
-- `PRINCIPAL_ID` and `PRIVATE_JWK` environment variables in your `.env` file (default), or the same values supplied via `principal_id` / `private_jwk` in `workflow.yaml` as described under [Environment variables](#environment-variables).
+- `IDP_AGENT_ID` and `IDP_AGENT_PRIVATE_KEY_JWK` environment variables in your `.env` file (default), or the same values supplied via `principal_id` / `private_jwk` in `workflow.yaml` as described under [Environment variables](#environment-variables).
 
 ### Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `PRINCIPAL_ID` | Okta AI agent principal ID (used as `iss`/`sub` in JWT client assertions). |
-| `PRIVATE_JWK` | Base64-encoded or raw-JSON private JWK (signs JWT client assertions). |
+| `IDP_AGENT_ID` | Okta AI agent principal ID used in the XAA token exchange flow (as `iss`/`sub` in JWT client assertions). Also used by the API gateway to enforce audience matching when an external IDP is configured. |
+| `IDP_AGENT_PRIVATE_KEY_JWK` | Base64-encoded or raw-JSON private JWK. Required for the XAA token exchange flow — the agent uses it to sign JWT client assertions for authentication and grant generation. |
 
 Both are loaded automatically from env vars, `.env`, or DataRobot Runtime Parameters when you do not set `principal_id` or `private_jwk` on the `okta_cross_app_access` block.
 
 You can instead define **`principal_id`** and **`private_jwk`** directly under `authentication.okta_auth` (or whichever key holds `_type: okta_cross_app_access`) in `workflow.yaml`:
 
-- **Static values** — Use a plain string for the Okta principal ID or for the private JWK (same formats as the `PRINCIPAL_ID` / `PRIVATE_JWK` environment variables).
+- **Static values** — Use a plain string for the Okta principal ID or for the private JWK (same formats as the `IDP_AGENT_ID` / `IDP_AGENT_PRIVATE_KEY_JWK` environment variables).
 - **Dynamic values** — Use placeholders of the form `${VAR_NAME}` so the value is read from an environment variable at **runtime** when the workflow is loaded. This requires the **ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS** feature flag to be enabled in DataRobot so `${VAR_NAME}` entries in `workflow.yaml` are substituted from the environment.
 
 ### Installation
@@ -108,10 +108,10 @@ function_groups:
 
 ### Infrastructure: automatic runtime parameter provisioning
 
-When authentication (with `_type: okta_cross_app_access`) is declared in the `authentication` section of `workflow.yaml`, the infra module automatically detects it and provisions the required runtime parameters on deployment:
+The infra module provisions `IDP_AGENT_ID` and `IDP_AGENT_PRIVATE_KEY_JWK` as runtime parameters automatically whenever the corresponding environment variables are set at `dr run deploy` time:
 
-- `PRINCIPAL_ID` — Injected as a plain string runtime parameter from the `PRINCIPAL_ID` environment variable.
-- `PRIVATE_JWK` — Stored securely as a DataRobot credential (`ApiTokenCredential`) and injected as a `credential`-type runtime parameter from the `PRIVATE_JWK` environment variable.
+- `IDP_AGENT_ID` — Injected as a plain string runtime parameter from the `IDP_AGENT_ID` environment variable.
+- `IDP_AGENT_PRIVATE_KEY_JWK` — Stored securely as a DataRobot credential (`ApiTokenCredential`) and injected as a `credential`-type runtime parameter from the `IDP_AGENT_PRIVATE_KEY_JWK` environment variable.
 
 Set both in your `.env` file before running `dr run deploy`.
 
@@ -122,7 +122,7 @@ The XAA flow operates in two steps:
 1. **Token Exchange (RFC 8693)** — The caller's incoming Okta access token is exchanged for an ID-JAG (Identity Assertion Authorization Grant) via the org-level Authorization Server (`token_exchange.trusted_issuer`).
 2. **JWT Bearer Grant (RFC 7523)** — The ID-JAG is exchanged for a scoped access token at the resource AS token endpoint (`token_request.token_url`), granting access to the target agent with the requested scopes.
 
-Both steps authenticate the client using a private JWT key, signing assertions with the key from `PRIVATE_JWK`.
+Both steps authenticate the client using a private JWT key, signing assertions with the key from `IDP_AGENT_PRIVATE_KEY_JWK`.
 
 ## Server-side configuration reference: `cross_application_access`
 
@@ -138,10 +138,9 @@ Both steps authenticate the client using a private JWT key, signing assertions w
 
 | Field | Default | Purpose |
 |-------|---------|---------|
-| `okta_token_header` | `x-datarobot-okta-access-token` | Incoming request header carrying the caller's Okta access token. |
-| `principal_id` | If omitted: `PRINCIPAL_ID` (runtime parameter / env). If set: static string or `${VAR_NAME}` (substituted at runtime when **ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS** is enabled). | Okta AI agent principal ID used in JWT client assertions for the XAA exchange. |
-| `private_jwk` | If omitted: `PRIVATE_JWK` (runtime parameter / env). If set: static JWK or `${VAR_NAME}` (substituted at runtime when **ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS** is enabled). | Private JWK used to sign JWT client assertions for the XAA exchange. |
-| `id_jag_scopes` | `["read_data"]` | Scopes for the Step 1 ID-JAG request. |
+| `okta_token_header` | `x-datarobot-external-access-token` | Incoming request header carrying the caller's Okta access token. |
+| `principal_id` | `IDP_AGENT_ID` env var | Okta AI agent principal ID used in JWT client assertions for the XAA exchange. |
+| `private_jwk` | `IDP_AGENT_PRIVATE_KEY_JWK` env var | Private JWK used to sign JWT client assertions for the XAA exchange. |
 
 Example with non-default options:
 
@@ -150,19 +149,17 @@ authentication:
   okta_auth:
     _type: okta_cross_app_access
     okta_token_header: "x-custom-header"
-    id_jag_scopes: ["openid", "profile"]
-    # Optional: literals or ${VAR_NAME}; ${...} substitution at runtime requires ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS in DataRobot
-    # principal_id: "${EXAMPLE_PRINCIPAL_ID}"
-    # private_jwk: "${EXAMPLE_PRIVATE_JWK}"
+    # principal_id: "my-agent-principal-id"  # Optional: override IDP_AGENT_ID env var
+    # private_jwk: "..."                     # Optional: override IDP_AGENT_PRIVATE_KEY_JWK env var
 ```
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `RuntimeError: Header 'x-datarobot-okta-access-token' not found` | The incoming request doesn't carry the Okta token. | Ensure the upstream caller forwards the Okta access token in the expected header. |
-| `ValueError: principal_id is required` | `PRINCIPAL_ID` not available, or `principal_id` in `workflow.yaml` unset / `${VAR_NAME}` not substituted. | Set `PRINCIPAL_ID` in `.env` or Runtime Parameters, set `principal_id` explicitly, or enable **ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS** so `${VAR_NAME}` resolves at runtime. |
-| `ValueError: Could not parse private_jwk` | `PRIVATE_JWK` is neither valid base64-encoded JSON nor raw JSON. | Verify your JWK — try `echo $PRIVATE_JWK | base64 -d | python -m json.tool`. |
+| `RuntimeError: Header 'x-datarobot-external-access-token' not found` | The incoming request doesn't carry the Okta token. | Ensure the upstream caller forwards the Okta access token in the expected header. |
+| `ValueError: principal_id is required` | `IDP_AGENT_ID` env var not set. | Set `IDP_AGENT_ID` in your `.env` file or Runtime Parameters. |
+| `ValueError: Could not parse private_jwk` | `IDP_AGENT_PRIVATE_KEY_JWK` is neither valid base64-encoded JSON nor raw JSON. | Verify your JWK — try `echo $IDP_AGENT_PRIVATE_KEY_JWK | base64 -d | python -m json.tool`. |
 | `ValueError: Agent card ... missing required fields` | Remote agent card doesn't have the XAA extension. | Verify the remote agent has `cross_application_access` configured in its `workflow.yaml`. |
 | `RuntimeError: Failed to fetch agent card` | Network/auth issue reaching the agent card URL. | Check the `url` in your `function_groups` config and network connectivity. |
-| PRIVATE_JWK not provisioned to runtime | `okta_auth` with `_type: okta_cross_app_access` not present in the `authentication` section of `workflow.yaml` at deploy time. | Ensure the `okta_auth` block is uncommented in `workflow.yaml` before deploying. |
+| `IDP_AGENT_PRIVATE_KEY_JWK` not provisioned to runtime | The variable was not set in `.env` at deploy time. | Set `IDP_AGENT_PRIVATE_KEY_JWK` in your `.env` file and redeploy. |

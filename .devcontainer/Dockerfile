@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/devcontainers/python:3.12
 
 # Until we have a mirror for GitHub releases, we can't use the latest versions
 # https://datarobot.atlassian.net/browse/CFX-4255
-ENV PULUMI_DATAROBOT_PLUGIN_VERSION=v0.10.30
+ENV PULUMI_DATAROBOT_PLUGIN_VERSION=v0.10.36
 ENV DR_VERSION=0.2.55
 
 # Install GDB to enable PyCharm -> Attach to Process...

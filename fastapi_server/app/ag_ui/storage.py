@@ -47,20 +47,20 @@ from ag_ui.core import (
 from app.ag_ui.base import AGUIAgent
 from app.ag_ui.error_codes import ErrorCodes
 from app.ag_ui.translate import translate_messages
-from app.chats import Chat, ChatCreate, ChatRepository
+from app.chats import Chat, ChatCreate
 from app.messages import (
     Message,
     MessageCreate,
     MessageReasoning,
     MessageReasoningCreate,
     MessageReasoningUpdate,
-    MessageRepository,
     MessageToolCall,
     MessageToolCallCreate,
     MessageToolCallUpdate,
     MessageUpdate,
     Role,
 )
+from app.repo_types import ChatRepositoryLike, MessageRepositoryLike
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +90,8 @@ class AGUIAgentWithStorage(AGUIAgent):
         name: str,
         user_id: UUID,
         inner: AGUIAgent,
-        chat_repo: ChatRepository,
-        message_repo: MessageRepository,
+        chat_repo: ChatRepositoryLike,
+        message_repo: MessageRepositoryLike,
         minimal_chunk_to_persist: int = 5000,
         max_queue_size: int = 10_000,
         put_timeout: float = 0.1,
@@ -103,8 +103,8 @@ class AGUIAgentWithStorage(AGUIAgent):
             name (str): The name of this agent.
             user_id (UUID): The ID of the user creating this message
             inner (AGUIAgent): The agent this wraps. Only requirement is that the agent uses UUIDs as its message id format.
-            chat_repo (ChatRepository): The repository of chats
-            message_repo (MessageRepository): The repository of messages.
+            chat_repo: Chat repository (SQLite or memory-service implementation).
+            message_repo: Message repository (SQLite or memory-service implementation).
             max_queue_size (int): Maximum number of events buffered in the storage queue. Defaults to 10,000.
             put_timeout (float): Maximum seconds to wait when enqueuing an event. Defaults to 0.1.
         """
@@ -144,7 +144,8 @@ class AGUIAgentWithStorage(AGUIAgent):
         )
 
         if maybe_chat := await self._chat_repo.get_chat_by_thread_id(
-            self._user_id, input.thread_id
+            self._user_id,
+            input.thread_id,
         ):
             existing_chat = maybe_chat
         else:
@@ -164,7 +165,9 @@ class AGUIAgentWithStorage(AGUIAgent):
 
             existing_chat = await self._chat_repo.create_chat(
                 ChatCreate(
-                    user_uuid=self._user_id, name=chat_name, thread_id=input.thread_id
+                    user_uuid=self._user_id,
+                    name=chat_name,
+                    thread_id=input.thread_id,
                 )
             )
 

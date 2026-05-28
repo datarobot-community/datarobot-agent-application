@@ -78,6 +78,11 @@ class Config(DataRobotAppFrameworkBaseSettings):
 
     database_uri: str = "sqlite+aiosqlite:///.data/database.sqlite"
 
+    use_memory_space: bool = Field(default=False, validation_alias="USE_MEMORY_SPACE")
+    memory_space_id: str | None = Field(
+        default=None, validation_alias="MEMORY_SPACE_ID"
+    )
+
     # The number of characters to stream before persisting
     minimal_chunks_to_persist: int = 5000
 

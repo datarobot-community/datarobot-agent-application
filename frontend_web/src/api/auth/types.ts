@@ -12,5 +12,7 @@ export interface IUser {
   first_name: string;
   last_name: string;
   profile_image_url?: string | null;
+  theme: 'light' | 'dark' | 'system';
+  language: string;
   identities: IIdentity[];
 }

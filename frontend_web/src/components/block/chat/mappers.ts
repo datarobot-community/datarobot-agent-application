@@ -9,7 +9,7 @@ import type {
   TextMessageContentEvent,
   TextMessageEndEvent,
   TextMessageStartEvent,
-  ToolCallEndEvent,
+  ToolCallStartEvent,
 } from '@ag-ui/core';
 import { EventType } from '@ag-ui/core';
 import type { MessageResponse } from '@/api/chat/types';
@@ -27,11 +27,10 @@ type AgUiReasoningEvent =
   | ReasoningMessageChunkEvent
   | ReasoningMessageEndEvent;
 
-type AgUiToolEvent = ToolCallEndEvent;
-
 export function createTextMessageFromAgUiEvent(
   event: AgUiTextEvent,
-  textMessageBuffer?: string
+  textMessageBuffer?: string,
+  metadata?: Record<string, unknown>
 ): MessageResponse {
   const baseMessage: MessageResponse = {
     id: event.messageId || '',
@@ -44,6 +43,7 @@ export function createTextMessageFromAgUiEvent(
     createdAt: event.timestamp ? new Date(event.timestamp) : new Date(),
     threadId: '',
     resourceId: '',
+    metadata,
   };
 
   // Map role, converting 'developer' to 'system' for compatibility
@@ -108,12 +108,13 @@ export function createTextMessageFromAgUiEvent(
   }
 }
 
-export function createToolMessageFromAgUiEvent(
-  event: AgUiToolEvent,
-  toolCallName: string,
-  toolCallArgs: Record<string, unknown>
+/** Partial tool row at TOOL_CALL_START (args filled in on tool call end). */
+export function createToolMessageFromToolCallStartEvent(
+  event: ToolCallStartEvent,
+  threadId: string,
+  startTime: number
 ): MessageResponse {
-  const baseMessage: MessageResponse = {
+  return {
     id: uuid(),
     content: {
       format: 2,
@@ -121,21 +122,24 @@ export function createToolMessageFromAgUiEvent(
         {
           type: 'tool-invocation',
           toolInvocation: {
-            state: 'call',
-            args: toolCallArgs || event.rawEvent?.args || {},
+            state: 'start',
             toolCallId: event.toolCallId,
-            toolName: toolCallName,
+            toolName: event.toolCallName,
+            metadata: {
+              startTime,
+              ...(event.parentMessageId != null && event.parentMessageId !== ''
+                ? { parentMessageId: event.parentMessageId }
+                : {}),
+            },
           },
         },
       ],
     },
     role: 'assistant',
     createdAt: event.timestamp ? new Date(event.timestamp) : new Date(),
-    threadId: '',
+    threadId,
     resourceId: uuid(),
   };
-
-  return baseMessage;
 }
 
 export function createTextMessageFromUserInput({
@@ -166,39 +170,6 @@ export function createTextMessageFromUserInput({
   };
 
   return baseMessage;
-}
-
-export function createCustomMessageWidget({
-  toolCallName,
-  toolCallArgs,
-  threadId,
-}: {
-  toolCallName: string;
-  toolCallArgs: Record<string, unknown>;
-  threadId: string;
-}): MessageResponse {
-  const toolInvocation = {
-    state: 'call',
-    toolCallId: `call_${uuid()}`,
-    toolName: toolCallName,
-    args: toolCallArgs,
-  };
-  return {
-    id: uuid(),
-    content: {
-      format: 2,
-      parts: [
-        {
-          type: 'tool-invocation',
-          toolInvocation,
-        },
-      ],
-    },
-    role: 'assistant',
-    createdAt: new Date(),
-    threadId: threadId,
-    resourceId: uuid(),
-  } as MessageResponse;
 }
 
 export function messageToStateEvent(message: MessageResponse): ChatStateEventByType<'message'> {

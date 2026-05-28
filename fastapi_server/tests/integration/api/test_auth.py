@@ -13,7 +13,13 @@
 # limitations under the License.
 from unittest.mock import AsyncMock, patch
 
-from datarobot.auth.oauth import OAuthData, OAuthFlowSession, OAuthProvider, OAuthToken
+from datarobot.auth.oauth import (
+    OAuthData,
+    OAuthFlowSession,
+    OAuthProvider,
+    OAuthToken,
+    Profile,
+)
 from datarobot.auth.session import AuthCtx
 from datarobot.auth.typing import Metadata
 from fastapi import FastAPI
@@ -33,8 +39,8 @@ from app.auth.ctx import get_auth_ctx, must_get_auth_ctx
 from app.auth.session import get_oauth_sess_key
 from app.users.identity import AuthSchema, IdentityCreate
 from app.users.identity import Identity as AppIdentity
+from app.users.user import LanguageEnum, ThemeEnum, UserCreate
 from app.users.user import User as AppUser
-from app.users.user import UserCreate
 from tests.conftest import dep
 from tests.session import sess_client
 
@@ -488,3 +494,229 @@ async def test__auth__validate_oauth_identities__revoked_deletes_identity(
     # Verify identity was deleted
     deleted_identity = await db_deps.identity_repo.get_identity_by_id(identity.id)
     assert deleted_identity is None
+
+
+# ── PUT /user/settings/ ──────────────────────────────────────────────────────
+
+
+def test__update_user_settings__language_only(
+    deps: Deps,
+    webapp: FastAPI,
+    client: TestClient,
+    auth_ctx: AuthCtx[Metadata],
+    app_user: AppUser,
+) -> None:
+    app_user.language = LanguageEnum.ja
+    deps.user_repo.update_user_settings.return_value = app_user  # type: ignore[attr-defined]
+    webapp.dependency_overrides[must_get_auth_ctx] = dep(auth_ctx)
+
+    resp = client.put("/api/v1/user/settings/", json={"language": "ja"})
+    assert resp.status_code == 200, resp.text
+
+    data = UserSchema(**resp.json())
+    assert data.language == LanguageEnum.ja
+
+    deps.user_repo.update_user_settings.assert_called_once_with(  # type: ignore[attr-defined]
+        user_id=int(auth_ctx.user.id),
+        language=LanguageEnum.ja,
+        theme=None,
+    )
+
+
+def test__update_user_settings__theme_only(
+    deps: Deps,
+    webapp: FastAPI,
+    client: TestClient,
+    auth_ctx: AuthCtx[Metadata],
+    app_user: AppUser,
+) -> None:
+    app_user.theme = ThemeEnum.dark
+    deps.user_repo.update_user_settings.return_value = app_user  # type: ignore[attr-defined]
+    webapp.dependency_overrides[must_get_auth_ctx] = dep(auth_ctx)
+
+    resp = client.put("/api/v1/user/settings/", json={"theme": "dark"})
+    assert resp.status_code == 200, resp.text
+
+    data = UserSchema(**resp.json())
+    assert data.theme == ThemeEnum.dark
+
+    deps.user_repo.update_user_settings.assert_called_once_with(  # type: ignore[attr-defined]
+        user_id=int(auth_ctx.user.id),
+        language=None,
+        theme=ThemeEnum.dark,
+    )
+
+
+def test__update_user_settings__both_fields(
+    deps: Deps,
+    webapp: FastAPI,
+    client: TestClient,
+    auth_ctx: AuthCtx[Metadata],
+    app_user: AppUser,
+) -> None:
+    app_user.language = LanguageEnum.fr
+    app_user.theme = ThemeEnum.light
+    deps.user_repo.update_user_settings.return_value = app_user  # type: ignore[attr-defined]
+    webapp.dependency_overrides[must_get_auth_ctx] = dep(auth_ctx)
+
+    resp = client.put(
+        "/api/v1/user/settings/", json={"language": "fr", "theme": "light"}
+    )
+    assert resp.status_code == 200, resp.text
+
+    data = UserSchema(**resp.json())
+    assert data.language == LanguageEnum.fr
+    assert data.theme == ThemeEnum.light
+
+
+def test__update_user_settings__requires_auth(
+    client: TestClient,
+) -> None:
+    resp = client.put("/api/v1/user/settings/", json={"language": "ja"})
+    assert resp.status_code == 401, resp.text
+
+
+async def test__update_user_settings__db__persists_language(
+    db_deps: Deps,
+    auth_ctx: AuthCtx[Metadata],
+) -> None:
+    app_user = await db_deps.user_repo.create_user(
+        UserCreate(email=auth_ctx.user.email, first_name="Test", last_name="User")
+    )
+    auth_ctx.user.id = str(app_user.id)
+
+    webapp = create_app(config=db_deps.config, deps=db_deps)
+    webapp.dependency_overrides[must_get_auth_ctx] = dep(auth_ctx)
+
+    with TestClient(webapp) as client:
+        resp = client.put("/api/v1/user/settings/", json={"language": "ja"})
+        assert resp.status_code == 200, resp.text
+
+        data = UserSchema(**resp.json())
+        assert data.language == LanguageEnum.ja
+        assert data.theme == ThemeEnum.system  # default unchanged
+
+    updated = await db_deps.user_repo.get_user(user_id=app_user.id)
+    assert updated
+    assert updated.language == LanguageEnum.ja
+    assert updated.theme == ThemeEnum.system
+
+
+async def test__update_user_settings__db__persists_theme(
+    db_deps: Deps,
+    auth_ctx: AuthCtx[Metadata],
+) -> None:
+    app_user = await db_deps.user_repo.create_user(
+        UserCreate(email=auth_ctx.user.email, first_name="Test", last_name="User")
+    )
+    auth_ctx.user.id = str(app_user.id)
+
+    webapp = create_app(config=db_deps.config, deps=db_deps)
+    webapp.dependency_overrides[must_get_auth_ctx] = dep(auth_ctx)
+
+    with TestClient(webapp) as client:
+        resp = client.put("/api/v1/user/settings/", json={"theme": "dark"})
+        assert resp.status_code == 200, resp.text
+
+        data = UserSchema(**resp.json())
+        assert data.theme == ThemeEnum.dark
+        assert data.language == LanguageEnum.en  # default unchanged
+
+    updated = await db_deps.user_repo.get_user(user_id=app_user.id)
+    assert updated
+    assert updated.theme == ThemeEnum.dark
+    assert updated.language == LanguageEnum.en
+
+
+async def test__update_user_settings__db__partial_update_preserves_other(
+    db_deps: Deps,
+    auth_ctx: AuthCtx[Metadata],
+) -> None:
+    """Updating one field must not reset the other."""
+    app_user = await db_deps.user_repo.create_user(
+        UserCreate(
+            email=auth_ctx.user.email,
+            first_name="Test",
+            last_name="User",
+            language=LanguageEnum.ko,
+            theme=ThemeEnum.light,
+        )
+    )
+    auth_ctx.user.id = str(app_user.id)
+
+    webapp = create_app(config=db_deps.config, deps=db_deps)
+    webapp.dependency_overrides[must_get_auth_ctx] = dep(auth_ctx)
+
+    with TestClient(webapp) as client:
+        resp = client.put("/api/v1/user/settings/", json={"theme": "dark"})
+        assert resp.status_code == 200, resp.text
+
+        data = UserSchema(**resp.json())
+        assert data.theme == ThemeEnum.dark
+        assert data.language == LanguageEnum.ko  # must be preserved
+
+
+# ── New user language from OAuth locale ──────────────────────────────────────
+
+
+async def test__auth__oauth_callback__new_user_language_from_locale(
+    db_deps: Deps,
+    oauth_sess: OAuthFlowSession,
+    oauth_provider: OAuthProvider,
+    oauth_token: OAuthToken,
+) -> None:
+    """Language is inferred from the locale in the OAuth user profile."""
+    oauth_token.refresh_token = None
+    oauth_data = OAuthData(
+        authorization_id="authz_id",
+        token_data=oauth_token,
+        provider=oauth_provider,
+        user_profile=Profile(
+            id="locale-user-id",
+            email="locale@example.com",
+            email_verified=True,
+            locale="ja-JP",
+        ),
+    )
+    db_deps.auth.exchange_code.return_value = oauth_data  # type: ignore[attr-defined]
+
+    webapp = create_app(config=db_deps.config, deps=db_deps)
+    webapp.dependency_overrides[get_auth_ctx] = dep(None)
+
+    with TestClient(webapp) as client:
+        set_sess, _ = sess_client(client)
+        set_sess({get_oauth_sess_key(oauth_sess.state): oauth_sess.model_dump()})
+
+        resp = client.post(
+            "/api/v1/oauth/callback/",
+            params={"code": "test-code", "state": oauth_sess.state},
+        )
+        assert resp.status_code == 200, resp.text
+
+        data = UserSchema(**resp.json())
+        assert data.language == LanguageEnum.ja
+
+
+async def test__auth__oauth_callback__new_user_no_locale_defaults_to_en(
+    db_deps: Deps,
+    dr_oauth_data: OAuthData,
+    oauth_sess: OAuthFlowSession,
+) -> None:
+    """No locale in profile → language defaults to English."""
+    db_deps.auth.exchange_code.return_value = dr_oauth_data  # type: ignore[attr-defined]
+
+    webapp = create_app(config=db_deps.config, deps=db_deps)
+    webapp.dependency_overrides[get_auth_ctx] = dep(None)
+
+    with TestClient(webapp) as client:
+        set_sess, _ = sess_client(client)
+        set_sess({get_oauth_sess_key(oauth_sess.state): oauth_sess.model_dump()})
+
+        resp = client.post(
+            "/api/v1/oauth/callback/",
+            params={"code": "test-code", "state": oauth_sess.state},
+        )
+        assert resp.status_code == 200, resp.text
+
+        data = UserSchema(**resp.json())
+        assert data.language == LanguageEnum.en

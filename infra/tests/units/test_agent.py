@@ -64,7 +64,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", MagicMock()
     )
-
+    monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
     # Namedtuples are YAML-safe and have the attributes we need
     RuntimeParam = namedtuple(

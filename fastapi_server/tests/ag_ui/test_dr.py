@@ -185,6 +185,23 @@ def chat_completions(
     ]
 
 
+def refusal_chunk(content: str | None) -> ChatCompletionChunk:
+    """Build the upstream genai outer-fallback chunk shape: refusal='error' + str(exc) in content."""
+    return ChatCompletionChunk(
+        id="",
+        model="",
+        created=0,
+        object="chat.completion.chunk",
+        choices=[
+            Choice(
+                finish_reason="stop",
+                index=0,
+                delta=ChoiceDelta(role="assistant", content=content, refusal="error"),
+            )
+        ],
+    )
+
+
 async def test_run_empty_response(
     set_completions: Callable[[list[ChoiceDelta]], None],
     dr_agui_agent: DataRobotAGUIAgent,
@@ -215,6 +232,98 @@ async def test_run_failed_response(
         assert result == [
             RunStartedEvent(thread_id="thread", run_id="run"),
             RunErrorEvent(message="Error"),
+        ]
+
+
+async def test_run_failed_response_after_text(
+    monkeypatch: pytest.MonkeyPatch,
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """A mid-stream exception closes the open text message before RunErrorEvent
+    so the AG-UI state machine stays valid (symmetric with the refusal path)."""
+    chunks = chat_completions(("Partial", []))
+
+    def mock_create(
+        *args: Any, **kwargs: Any
+    ) -> Coroutine[None, None, AsyncIterator[ChatCompletionChunk]]:
+        async def foo() -> AsyncIterator[ChatCompletionChunk]:
+            async def gen() -> AsyncIterator[ChatCompletionChunk]:
+                for c in chunks:
+                    yield c
+                raise RuntimeError("Boom")
+
+            return gen()
+
+        return foo()
+
+    monkeypatch.setattr(
+        "openai.resources.chat.completions.AsyncCompletions.create", mock_create
+    )
+    stub_uuid = "8825aa49-97ce-4fdf-9807-2ad9b4158acc"
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID(stub_uuid)
+        result = await run(dr_agui_agent)
+        assert result == [
+            RunStartedEvent(thread_id="thread", run_id="run"),
+            TextMessageStartEvent(message_id=stub_uuid),
+            TextMessageContentEvent(message_id=stub_uuid, delta="Partial"),
+            TextMessageEndEvent(message_id=stub_uuid),
+            RunErrorEvent(message="Boom"),
+        ]
+
+
+async def test_run_refusal_error_chunk(
+    set_completions: Callable[[list[ChatCompletionChunk]], None],
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """A bare upstream refusal chunk surfaces as RunErrorEvent, never as text."""
+    set_completions([refusal_chunk("Invalid message event: (HumanMessage(...))")])
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID("8825aa49-97ce-4fdf-9807-2ad9b4158acc")
+        result = await run(dr_agui_agent)
+        assert result == [
+            RunStartedEvent(thread_id="thread", run_id="run"),
+            RunErrorEvent(message="Invalid message event: (HumanMessage(...))"),
+        ]
+
+
+async def test_run_refusal_error_chunk_after_text(
+    set_completions: Callable[[list[ChatCompletionChunk]], None],
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """When a refusal chunk follows streamed text, the open text message is
+    closed before RunErrorEvent so the AG-UI state machine stays valid."""
+    set_completions(
+        [
+            *chat_completions(("Hello", [])),
+            refusal_chunk("generator didn't stop after athrow()"),
+        ]
+    )
+    stub_uuid = "8825aa49-97ce-4fdf-9807-2ad9b4158acc"
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID(stub_uuid)
+        result = await run(dr_agui_agent)
+        assert result == [
+            RunStartedEvent(thread_id="thread", run_id="run"),
+            TextMessageStartEvent(message_id=stub_uuid),
+            TextMessageContentEvent(message_id=stub_uuid, delta="Hello"),
+            TextMessageEndEvent(message_id=stub_uuid),
+            RunErrorEvent(message="generator didn't stop after athrow()"),
+        ]
+
+
+async def test_run_refusal_error_chunk_empty_content(
+    set_completions: Callable[[list[ChatCompletionChunk]], None],
+    dr_agui_agent: DataRobotAGUIAgent,
+) -> None:
+    """An empty str(exc) on a refusal chunk still terminates with a sensible RunError."""
+    set_completions([refusal_chunk("")])
+    with patch("uuid.uuid4") as uuid4:
+        uuid4.return_value = uuid.UUID("8825aa49-97ce-4fdf-9807-2ad9b4158acc")
+        result = await run(dr_agui_agent)
+        assert result == [
+            RunStartedEvent(thread_id="thread", run_id="run"),
+            RunErrorEvent(message="Upstream agent reported error"),
         ]
 
 

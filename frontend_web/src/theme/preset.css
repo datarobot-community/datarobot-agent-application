@@ -1,6 +1,9 @@
 @import '@fontsource/inter/index.css';
+@import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 @import '@fontsource/roboto-mono/400.css';
+
+@source '../../node_modules/streamdown/dist/*.js';
 
 @config './tailwind.config.ts';
 @custom-variant dark (&:is(.dark *));
@@ -45,47 +48,9 @@
 }
 
 :root {
-  --font-serif: 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
   --font-mono: 'Roboto Mono';
   --radius: 0.375rem;
-  --background: var(--alpine-light-90);
-  --foreground: var(--alpine-light-10);
-  --primary: var(--alpine-light-10);
-  --primary-foreground: var(--alpine-light-100);
-  --secondary: var(--purple-0);
-  --secondary-foreground: var(--alpine-light-20);
-  --muted: var(--alpine-light-60);
-  --muted-foreground: var(--alpine-light-30);
-  --accent: var(--purple-60);
-  --accent-foreground: var(--purple-70);
-  --destructive: var(--red-70);
-  --destructive-foreground: var(--red-70);
-  --ring: var(--alpine-light-0);
-  --border: var(--alpine-light-50);
-  --input: var(--alpine-light-100);
-  --card: var(--alpine-light-100);
-  --card-foreground: var(--alpine-light-10);
-  --popover: var(--alpine-light-80);
-  --popover-foreground: var(--alpine-light-10);
-
-  --sidebar: var(--alpine-light-100);
-  --sidebar-foreground: var(--alpine-light-10);
-  --sidebar-primary: var(--purple-0);
-  --sidebar-primary-foreground: var(--alpine-light-20);
-  --sidebar-accent: var(--purple-10);
-  --sidebar-accent-foreground: var(--alpine-light-10);
-  --sidebar-border: var(--alpine-light-60);
-  --sidebar-ring: var(--alpine-light-0);
-
-  --chart-1: var(--purple-70);
-  --chart-2: var(--pink-60);
-  --chart-3: var(--turquoise-60);
-  --chart-4: var(--orange-60);
-  --chart-5: var(--blue-60);
-
-  --link: var(--azure-80);
-  --success: var(--green-70);
-  --warning: var(--yellow-70);
 
   --react-table-pinned-left-border-box-shadow:
     1px 0px 0px 0px rgba(124, 136, 154, 0.01), 3px 0px 0px 0px rgba(124, 136, 154, 0.01),
@@ -99,45 +64,6 @@
 }
 
 .dark {
-  --background: var(--midnight-gray-90);
-  --foreground: var(--midnight-gray-10);
-  --primary: var(--midnight-gray-0);
-  --secondary: var(--midnight-gray-50);
-  --secondary-foreground: var(--midnight-gray-20);
-  --primary-foreground: var(--midnight-gray-90);
-  --muted: var(--midnight-gray-50);
-  --muted-foreground: var(--midnight-gray-30);
-  --accent: var(--purple-50);
-  --accent-foreground: var(--purple-40);
-  --destructive: var(--red-70);
-  --destructive-foreground: var(--red-40);
-  --ring: var(--midnight-gray-0);
-  --border: var(--midnight-gray-50);
-  --input: var(--midnight-gray-60);
-  --card: var(--midnight-gray-70);
-  --card-foreground: var(--midnight-gray-10);
-  --popover: var(--midnight-gray-60);
-  --popover-foreground: var(--midnight-gray-10);
-
-  --sidebar: var(--midnight-gray-80);
-  --sidebar-foreground: var(--midnight-gray-10);
-  --sidebar-primary: var(--midnight-gray-60);
-  --sidebar-primary-foreground: var(--midnight-gray-20);
-  --sidebar-accent: var(--midnight-gray-55);
-  --sidebar-accent-foreground: var(--midnight-gray-10);
-  --sidebar-border: var(--midnight-gray-60);
-  --sidebar-ring: var(--midnight-gray-50);
-
-  --chart-1: var(--purple-50);
-  --chart-2: var(--pink-40);
-  --chart-3: var(--turquoise-40);
-  --chart-4: var(--orange-40);
-  --chart-5: var(--blue-40);
-
-  --link: var(--azure-50);
-  --success: var(--green-40);
-  --warning: var(--yellow-40);
-
   --react-table-pinned-left-border-box-shadow:
     1px 0px 0px 0px rgba(17, 21, 25, 0.02), 3px 0px 0px 0px rgba(17, 21, 25, 0.04),
     5px 0px 0px 0px rgba(17, 21, 25, 0.06), 7px 0px 0px 0px rgba(17, 21, 25, 0.08),
@@ -152,13 +78,12 @@
 @layer base {
   body {
     @apply bg-background text-foreground body;
-    font-family: var(--font-serif);
-  }
-
-  button:not(:disabled) {
-    cursor: pointer;
+    font-family: var(--font-sans);
   }
   * {
     border-color: var(--border);
+  }
+  button:not(:disabled) {
+    cursor: pointer;
   }
 }

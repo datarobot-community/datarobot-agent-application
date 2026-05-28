@@ -33,7 +33,7 @@ from app.auth.ctx import AUTH_SESS_KEY, get_auth_ctx, must_get_auth_ctx
 from app.auth.session import restore_oauth_session, store_oauth_sess
 from app.users.identity import AuthSchema, Identity, IdentityUpdate
 from app.users.tokens import Tokens
-from app.users.user import User, UserCreate
+from app.users.user import LanguageEnum, ThemeEnum, User, UserCreate
 
 logger = logging.getLogger(name=__name__)
 
@@ -87,6 +87,8 @@ class UserSchema(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     profile_image_url: str | None = None
+    theme: ThemeEnum
+    language: LanguageEnum
 
     identities: list[IdentitySchema] = Field(..., alias="identities")
 
@@ -98,10 +100,17 @@ class UserSchema(BaseModel):
             first_name=user.first_name,
             last_name=user.last_name,
             profile_image_url=user.profile_image_url,
+            theme=user.theme,
+            language=user.language,
             identities=[
                 IdentitySchema.from_identity(identity) for identity in user.identities
             ],
         )
+
+
+class UpdateUserSettingsSchema(BaseModel):
+    language: LanguageEnum | None = None
+    theme: ThemeEnum | None = None
 
 
 class OAuthTokenRequestSchema(BaseModel):
@@ -331,6 +340,12 @@ async def oauth_callback(
                         last_name=user_profile.family_name,
                         email=user_profile.email,
                         profile_image_url=user_profile.photo_url,
+                        language=LanguageEnum.from_locale(
+                            getattr(user_profile, "locale", None)
+                        ),
+                        theme=ThemeEnum.from_theme(
+                            getattr(user_profile, "theme", None)
+                        ),
                     ),
                 )
                 logger.info("created new user", extra={"user_id": user.id})
@@ -466,6 +481,26 @@ async def get_user(
         )
 
     # refresh our session just in case
+    request.session[AUTH_SESS_KEY] = user.to_auth_ctx().model_dump()
+
+    return UserSchema.from_user(user)
+
+
+@auth_router.put("/user/settings/", responses={401: {"model": ErrorSchema}})
+async def update_user_settings(
+    request: Request,
+    body: UpdateUserSettingsSchema,
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
+) -> UserSchema:
+    """Update the current user's display settings (language and/or theme)."""
+    user_repo = request.app.state.deps.user_repo
+
+    user = await user_repo.update_user_settings(
+        user_id=int(auth_ctx.user.id),
+        language=body.language,
+        theme=body.theme,
+    )
+
     request.session[AUTH_SESS_KEY] = user.to_auth_ctx().model_dump()
 
     return UserSchema.from_user(user)

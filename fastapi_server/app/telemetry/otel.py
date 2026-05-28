@@ -204,7 +204,7 @@ class OTel:
             logger.warning(
                 "OTLP collector connection failed. Telemetry data may be lost. "
                 "Suppressing further connection errors to prevent log spam. "
-                "Check OTLP_EXPORTER_OTLP_ENDPOINT configuration."
+                "Check OTEL_EXPORTER_OTLP_ENDPOINT configuration."
             )
 
     def _setup_auto_instrumentation(self) -> None:
@@ -269,7 +269,14 @@ class OTel:
             if self.telemetry_enabled and not self._tracer_provider:
                 self.configure_tracing()
 
-            FastAPIInstrumentor.instrument_app(app)
+            FastAPIInstrumentor.instrument_app(
+                app,
+                # - //[^/]+/$ matches the root path also excludes kube-probe which has
+                #  {full_path:path} route. (http://host:port/ with no further segments)
+                # - /health$ matches the health endpoint
+                # - /assets/.* matches static asset paths
+                excluded_urls=r"//[^/]+/$,/health$,/assets/.*",
+            )
             logging.getLogger(__name__).info(
                 "Auto-instrumentation enabled for FastAPI application"
             )

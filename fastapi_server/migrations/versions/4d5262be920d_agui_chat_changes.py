@@ -25,8 +25,8 @@ Create Date: 2025-10-28 08:34:48.838213
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
+from sqlmodel.sql.sqltypes import AutoString
 
 # revision identifiers, used by Alembic.
 revision: str = "4d5262be920d"
@@ -39,9 +39,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.add_column(
         "chat",
-        sa.Column(
-            "thread_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True, default=None
-        ),
+        sa.Column("thread_id", AutoString(), nullable=True, default=None),
     )
     with op.batch_alter_table("chat") as batch_op:
         batch_op.create_unique_constraint(
@@ -57,15 +55,11 @@ def upgrade() -> None:
     op.drop_column(table_name="message", column_name="components")
     op.add_column(
         table_name="message",
-        column=sa.Column(
-            "agui_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True, default=None
-        ),
+        column=sa.Column("agui_id", AutoString(), nullable=True, default=None),
     )
     op.add_column(
         table_name="message",
-        column=sa.Column(
-            "step", sqlmodel.sql.sqltypes.AutoString(), nullable=True, default=None
-        ),
+        column=sa.Column("step", AutoString(), nullable=True, default=None),
     )
     with op.batch_alter_table("message") as batch_op:
         batch_op.create_unique_constraint(
@@ -81,15 +75,15 @@ def upgrade() -> None:
         "message_tool_call",
         sa.Column("uuid", sa.Uuid(), nullable=False),
         sa.Column("message_uuid", sa.Uuid(), nullable=False),
-        sa.Column("agui_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("tool_call_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("role", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("arguments", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("content", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("agui_id", AutoString(), nullable=True),
+        sa.Column("tool_call_id", AutoString(), nullable=True),
+        sa.Column("role", AutoString(), nullable=False),
+        sa.Column("name", AutoString(), nullable=False),
+        sa.Column("arguments", AutoString(), nullable=False),
+        sa.Column("content", AutoString(), nullable=False),
         sa.Column("in_progress", sa.Boolean(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("error", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("error", AutoString(), nullable=True),
         sa.ForeignKeyConstraint(["message_uuid"], ["message.uuid"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("uuid"),
     )
@@ -110,13 +104,13 @@ def upgrade() -> None:
         "message_reasoning",
         sa.Column("uuid", sa.Uuid(), nullable=False),
         sa.Column("message_uuid", sa.Uuid(), nullable=False),
-        sa.Column("agui_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("role", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("content", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("agui_id", AutoString(), nullable=True),
+        sa.Column("role", AutoString(), nullable=False),
+        sa.Column("name", AutoString(), nullable=False),
+        sa.Column("content", AutoString(), nullable=False),
         sa.Column("in_progress", sa.Boolean(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("error", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("error", AutoString(), nullable=True),
         sa.ForeignKeyConstraint(["message_uuid"], ["message.uuid"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("uuid"),
     )
@@ -146,9 +140,7 @@ def downgrade() -> None:
         )
         op.add_column(
             table_name="message",
-            column=sa.Column(
-                "components", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-            ),
+            column=sa.Column("components", AutoString(), nullable=False),
         )
         op.drop_constraint(
             table_name="message", constraint_name=op.f("uq_chat_id_agui_id")

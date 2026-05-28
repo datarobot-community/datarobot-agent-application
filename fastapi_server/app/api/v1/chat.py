@@ -27,12 +27,10 @@ from pydantic import BaseModel
 
 from app.ag_ui.translate import ExtendedBaseMessage, translate_messages
 from app.auth.ctx import get_agent_headers, must_get_auth_ctx
-from app.chats import Chat, ChatBase, ChatRepository
+from app.chats import Chat, ChatBase
 from app.deps import Deps
-from app.messages import (
-    MessageRepository,
-)
-from app.users.user import User, UserRepository
+from app.repo_types import ChatRepositoryLike, MessageRepositoryLike, UserRepositoryLike
+from app.users.user import User
 
 logger = logging.getLogger(__name__)
 chat_router = APIRouter(tags=["Chat"])
@@ -44,7 +42,7 @@ AGENT_MODEL_NAME = "web-agents"
 SYSTEM_PROMPT = "You are a helpful assistant. Answer the user's provided question."
 
 
-async def _get_current_user(user_repo: "UserRepository", user_id: int) -> "User":
+async def _get_current_user(user_repo: UserRepositoryLike, user_id: int) -> User:
     current_user = await user_repo.get_user(user_id=user_id)
     if not current_user:
         raise HTTPException(status_code=401, detail="User not found")
@@ -67,12 +65,11 @@ async def get_list_of_chats(
     request: Request, auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx)
 ) -> list[ChatWithUpdateTime]:
     """Return list of all chats"""
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
+    deps: Deps = request.app.state.deps
+    current_user = await _get_current_user(deps.user_repo, int(auth_ctx.user.id))
 
-    chat_repo: ChatRepository = request.app.state.deps.chat_repo
-    message_repo: MessageRepository = request.app.state.deps.message_repo
+    chat_repo: ChatRepositoryLike = deps.chat_repo
+    message_repo: MessageRepositoryLike = deps.message_repo
 
     chats = await chat_repo.get_all_chats(current_user)
     chat_ids = [chat.uuid for chat in chats]
@@ -100,12 +97,11 @@ async def get_chat(
     auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
 ) -> ChatWithUpdateTimeAndMessages:
     """Return a chat and its messages."""
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
+    deps: Deps = request.app.state.deps
+    current_user = await _get_current_user(deps.user_repo, int(auth_ctx.user.id))
 
-    chat_repo: ChatRepository = request.app.state.deps.chat_repo
-    message_repo: MessageRepository = request.app.state.deps.message_repo
+    chat_repo: ChatRepositoryLike = deps.chat_repo
+    message_repo: MessageRepositoryLike = deps.message_repo
 
     chat = await chat_repo.get_chat_by_thread_id(current_user.uuid, thread_id)
     if not chat:
@@ -138,10 +134,10 @@ async def update_chat(
     auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
 ) -> Chat:
     """Updates chat name."""
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
-    chat_repo: ChatRepository = request.app.state.deps.chat_repo
+    deps: Deps = request.app.state.deps
+    current_user = await _get_current_user(deps.user_repo, int(auth_ctx.user.id))
+
+    chat_repo: ChatRepositoryLike = deps.chat_repo
 
     chat = await chat_repo.get_chat_by_thread_id(current_user.uuid, thread_id)
 
@@ -162,10 +158,10 @@ async def delete_chat(
     auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
 ) -> Chat:
     """Deletes a chat."""
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
-    chat_repo: ChatRepository = request.app.state.deps.chat_repo
+    deps: Deps = request.app.state.deps
+    current_user = await _get_current_user(deps.user_repo, int(auth_ctx.user.id))
+
+    chat_repo: ChatRepositoryLike = deps.chat_repo
 
     chat = await chat_repo.get_chat_by_thread_id(current_user.uuid, thread_id)
 
@@ -191,10 +187,8 @@ async def create_chat_messages(
     auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
 ) -> StreamingResponse:
     """Send a message to a new or existing thread."""
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
     deps: Deps = request.app.state.deps
+    current_user = await _get_current_user(deps.user_repo, int(auth_ctx.user.id))
 
     # Create an event encoder to properly format SSE events
     encoder = EventEncoder(accept=request.headers.get("accept") or "")

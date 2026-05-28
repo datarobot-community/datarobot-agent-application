@@ -55,7 +55,7 @@ export interface ChatPageContentProps {
 
 export function ChatImplementation({ chatId }: { chatId: string }) {
   const {
-    sendMessage,
+    sendTextMessage,
     userInput,
     setUserInput,
     combinedEvents,
@@ -134,7 +134,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
       <ChatTextInput
         userInput={userInput}
         setUserInput={setUserInput}
-        onSubmit={sendMessage}
+        onSubmit={sendTextMessage}
         runningAgent={isAgentRunning}
       />
     </Chat>

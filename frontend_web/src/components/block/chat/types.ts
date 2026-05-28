@@ -40,15 +40,22 @@ export type ReasoningUIPart = {
       }
   >;
 };
+
+type ToolInvocationMetadata = {
+  startTime?: number;
+  endTime?: number;
+} & Record<string, unknown>;
+
 /**
  * A tool invocation part of a message.
  */
 export interface ToolInvocationData {
-  state: string; // e.g. 'call' | 'result'
-  toolCallId?: string;
+  state: 'start' | 'call' | 'result';
+  toolCallId: string;
   toolName: string;
-  args: Record<string, unknown>;
+  args?: Record<string, unknown>;
   result?: string;
+  metadata?: ToolInvocationMetadata;
 }
 export type ToolInvocationUIPart = {
   type: 'tool-invocation';

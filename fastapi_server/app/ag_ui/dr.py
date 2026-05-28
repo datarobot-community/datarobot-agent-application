@@ -165,10 +165,10 @@ class DataRobotAGUIAgent(AGUIAgent):
         self, input: RunAgentInput
     ) -> AsyncGenerator[BaseEvent, None]:
         yield RunStartedEvent(thread_id=input.thread_id, run_id=input.run_id)
-        try:
-            message_id = str(uuid.uuid4())
+        message_id = str(uuid.uuid4())
+        text_message_started = False
 
-            text_message_started = False
+        try:
             run_finished_emitted = False
 
             logger.debug("Sending request to agent's chat completion endpoint")
@@ -205,6 +205,21 @@ class DataRobotAGUIAgent(AGUIAgent):
 
                 choice = chunk.choices[0]
 
+                if choice.delta.refusal == "error":
+                    error_message = (
+                        choice.delta.content or "Upstream agent reported error"
+                    )
+                    logger.error(
+                        "Upstream agent reported error",
+                        extra={"error_message": error_message},
+                    )
+                    if text_message_started:
+                        yield TextMessageEndEvent(message_id=message_id)
+                        text_message_started = False
+                    yield RunErrorEvent(message=error_message)
+                    run_finished_emitted = True
+                    return
+
                 if choice.delta.content:
                     if not text_message_started:
                         yield TextMessageStartEvent(message_id=message_id)
@@ -239,6 +254,8 @@ class DataRobotAGUIAgent(AGUIAgent):
 
         except Exception as e:
             logger.exception("Error during agent run")
+            if text_message_started:
+                yield TextMessageEndEvent(message_id=message_id)
             yield RunErrorEvent(message=str(e))
 
     def _prepare_chat_completions_input(self, input: RunAgentInput) -> Dict[str, Any]:

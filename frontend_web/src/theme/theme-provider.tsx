@@ -1,34 +1,52 @@
 'use client';
 
-import { useState, createContext, useContext, useLayoutEffect } from 'react';
+import { useCurrentUser } from '@/api/auth/hooks';
+import { useState, createContext, useContext, useLayoutEffect, useEffect, useMemo } from 'react';
 
-type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark';
+export type UserTheme = Theme | 'system';
 
 interface ThemeContextType {
   theme: Theme;
-  setTheme: (theme: Theme) => void;
+  userTheme: UserTheme;
 }
+
+const PREFERS_COLOR_SCHEME_DARK = '(prefers-color-scheme: dark)';
+const themeKey = 'app-theme';
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
-  setTheme: () => {},
+  userTheme: 'system',
 });
 
-export const useTheme = () => {
-  return useContext(ThemeContext);
-};
+export const useTheme = () => useContext(ThemeContext);
 
-const themeKey = 'app-theme';
+function useSystemTheme(): Theme {
+  const [systemTheme, setSystemTheme] = useState<Theme>(() =>
+    typeof window !== 'undefined' && window.matchMedia(PREFERS_COLOR_SCHEME_DARK).matches
+      ? 'dark'
+      : 'light'
+  );
 
-const getInitialTheme = () => {
-  if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem(themeKey);
-    if (savedTheme) {
-      return savedTheme as Theme;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  useEffect(() => {
+    const query = window.matchMedia(PREFERS_COLOR_SCHEME_DARK);
+    const handler = (event: MediaQueryListEvent) => {
+      setSystemTheme(event.matches ? 'dark' : 'light');
+    };
+    query.addEventListener('change', handler);
+    return () => query.removeEventListener('change', handler);
+  }, []);
+
+  return systemTheme;
+}
+
+const getInitialTheme = (systemTheme: Theme): Theme => {
+  if (typeof window === 'undefined') return 'light';
+  const saved = localStorage.getItem(themeKey);
+  if (saved === 'light' || saved === 'dark') {
+    return saved;
   }
-  return 'light';
+  return systemTheme;
 };
 
 export const ThemeProvider = ({
@@ -36,15 +54,31 @@ export const ThemeProvider = ({
 }: {
   children: React.ReactNode | ((props: { theme: Theme }) => React.ReactNode);
 }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
+  const { data: user } = useCurrentUser();
+  const systemTheme = useSystemTheme();
+
+  const theme = useMemo<Theme>(() => {
+    if (user?.theme === 'system') return systemTheme;
+    if (user?.theme === 'light' || user?.theme === 'dark') return user.theme;
+    return getInitialTheme(systemTheme);
+  }, [user?.theme, systemTheme]);
+
+  const userTheme: UserTheme = user?.theme ?? 'system';
 
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem(themeKey, theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (user?.theme) {
+      localStorage.setItem(themeKey, user.theme);
+    }
+  }, [user?.theme]);
+
+  const value = useMemo(() => ({ theme, userTheme }), [theme, userTheme]);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={value}>
       {typeof children === 'function' ? children({ theme }) : children}
     </ThemeContext.Provider>
   );

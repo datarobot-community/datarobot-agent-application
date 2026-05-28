@@ -34,6 +34,9 @@
   <a href="/LICENSE">
     <img src="https://img.shields.io/github/license/datarobot-community/datarobot-agent-application" alt="License">
   </a>
+  <a href="https://join.slack.com/t/datarobot-community/shared_invite/zt-3uzfp8k50-SUdMqeux25ok9_5wr4okrg">
+    <img src="https://img.shields.io/badge/%23applications-a?label=Slack&labelColor=30373D&color=81FBA6" alt="Slack #applications">
+  </a>
 </p>
 
 This repository provides a ready-to-use application template for building and deploying agentic workflows with multi-agent frameworks, a FastAPI backend server, a React frontend, and an MCP server.

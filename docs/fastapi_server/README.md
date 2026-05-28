@@ -71,3 +71,19 @@ By default, the application uses a SQLite async database that is only
 suitable for development purposes. We recommend configuring it with a
 production grade hosted database that supports SQLAlchemy's 2.0+ async
 engine such as https://github.com/MagicStack/asyncpg.
+
+## Memory Space chat persistence (optional)
+
+By default, chats, messages, users, and identities are stored in the SQLite database described above. To use a DataRobot Memory Space instead:
+
+1. Ensure your organization has agentic memory API access (`ENABLE_AGENTIC_MEMORY_API`).
+2. Set `USE_MEMORY_SPACE=true` in your project `.env` (see `.env.template`).
+3. Run `task deploy-dev`. Pulumi provisions a Memory Space and wires `USE_MEMORY_SPACE` and `MEMORY_SPACE_ID` on the **FastAPI custom application** runtime (not the agent deployment).
+
+If you change `USE_MEMORY_SPACE` later, rerun `task deploy-dev` before `task dev` so infrastructure and runtime parameters stay in sync with your `.env`.
+
+When enabled, the backend uses `X-DataRobot-User-Id` as the memory-service participant id when that header is present (the user's DataRobot ObjectId). Otherwise it maps each app user to a stable 24-character hex participant id derived from the app user UUID. Assistant messages use a separate stable app-agent participant id.
+
+OAuth identities (provider connections and tokens) and user profiles are also stored in the same Memory Space as metadata documents keyed by indexed session descriptions (for example `/user/email/{email}` for users and `/user/{user_id}/identity/{provider_type}` for identities). When `USE_MEMORY_SPACE` is enabled, the FastAPI backend does not persist application data in SQLite.
+
+See commented examples in the project root `.env.template`.

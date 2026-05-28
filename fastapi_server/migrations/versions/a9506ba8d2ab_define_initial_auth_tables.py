@@ -23,8 +23,8 @@ Create Date: 2025-10-23 08:52:19.168332
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
+from sqlmodel.sql.sqltypes import AutoString
 
 # revision identifiers, used by Alembic.
 revision: str = "a9506ba8d2ab"
@@ -40,14 +40,10 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("uuid", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("first_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("last_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column(
-            "email", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False
-        ),
-        sa.Column(
-            "profile_image_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("first_name", AutoString(), nullable=True),
+        sa.Column("last_name", AutoString(), nullable=True),
+        sa.Column("email", AutoString(length=255), nullable=False),
+        sa.Column("profile_image_url", AutoString(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
         sa.UniqueConstraint("id"),
@@ -63,23 +59,15 @@ def upgrade() -> None:
             "type", sa.Enum("DATAROBOT", "OAUTH2", name="authschema"), nullable=False
         ),
         sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("provider_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("provider_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column(
-            "provider_user_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
-        sa.Column(
-            "provider_identity_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-        sa.Column("access_token", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("provider_id", AutoString(), nullable=False),
+        sa.Column("provider_type", AutoString(), nullable=False),
+        sa.Column("provider_user_id", AutoString(), nullable=False),
+        sa.Column("provider_identity_id", AutoString(), nullable=True),
+        sa.Column("access_token", AutoString(), nullable=True),
         sa.Column("access_token_expires_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("refresh_token", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column(
-            "datarobot_org_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-        sa.Column(
-            "datarobot_tenant_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("refresh_token", AutoString(), nullable=True),
+        sa.Column("datarobot_org_id", AutoString(), nullable=True),
+        sa.Column("datarobot_tenant_id", AutoString(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.id"],

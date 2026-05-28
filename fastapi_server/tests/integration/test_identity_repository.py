@@ -26,7 +26,8 @@ from app.users.user import UserCreate
 
 async def test_upsert_identity_create(db_deps: Deps) -> None:
     user_repo = db_deps.user_repo
-    identity_repo: IdentityRepository = db_deps.identity_repo
+    identity_repo = db_deps.identity_repo
+    assert isinstance(identity_repo, IdentityRepository)
 
     user = await user_repo.create_user(
         UserCreate(email="create@example.com", first_name="Al", last_name="Bo")
@@ -48,7 +49,8 @@ async def test_upsert_identity_create(db_deps: Deps) -> None:
 
 async def test_upsert_identity_update_existing(db_deps: Deps) -> None:
     user_repo = db_deps.user_repo
-    identity_repo: IdentityRepository = db_deps.identity_repo
+    identity_repo = db_deps.identity_repo
+    assert isinstance(identity_repo, IdentityRepository)
 
     user = await user_repo.create_user(
         UserCreate(email="update@example.com", first_name="Al", last_name="Bo")
@@ -82,7 +84,8 @@ async def test_upsert_identity_concurrent_insert_simulated(
 ) -> None:
     """Simulate race condition by raising IntegrityError on first commit attempt."""
     user_repo = db_deps.user_repo
-    identity_repo: IdentityRepository = db_deps.identity_repo
+    identity_repo = db_deps.identity_repo
+    assert isinstance(identity_repo, IdentityRepository)
 
     user = await user_repo.create_user(
         UserCreate(email="race@example.com", first_name="Al", last_name="Bo")

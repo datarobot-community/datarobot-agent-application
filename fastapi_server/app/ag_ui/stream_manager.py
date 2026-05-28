@@ -25,9 +25,8 @@ from app.ag_ui.base import AGUIAgent
 from app.ag_ui.dr import DataRobotAGUIAgent
 from app.ag_ui.dragent import DRAgentAGUIAgent
 from app.ag_ui.storage import AGUIAgentWithStorage
-from app.chats import ChatRepository
 from app.config import Config
-from app.messages import MessageRepository
+from app.repo_types import ChatRepositoryLike, MessageRepositoryLike
 
 P = ParamSpec("P")
 
@@ -88,8 +87,8 @@ def _normalize_model_id(raw_model: str) -> str:
 
 def create_storage_dr_agent(
     name: str,
-    chat_repo: ChatRepository,
-    message_repo: MessageRepository,
+    chat_repo: ChatRepositoryLike,
+    message_repo: MessageRepositoryLike,
     config: Config,
     user_id: UUID,
     headers: Dict[str, str],
@@ -113,8 +112,8 @@ def create_storage_dr_agent(
 
 def create_stream_manager(
     name: str,
-    chat_repo: ChatRepository,
-    message_repo: MessageRepository,
+    chat_repo: ChatRepositoryLike,
+    message_repo: MessageRepositoryLike,
     config: Config,
 ) -> AGUIStreamManager[UUID, Dict[str, str]]:
     factory = partial(create_storage_dr_agent, name, chat_repo, message_repo, config)

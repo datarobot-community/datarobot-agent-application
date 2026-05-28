@@ -124,28 +124,6 @@ def _check_a2a_server_enabled() -> bool:
 _is_a2a_server_enabled = _check_a2a_server_enabled()
 
 
-def _check_okta_xaa_credentials_needed() -> bool:
-    """Check if Okta XAA client credentials (PRINCIPAL_ID, PRIVATE_JWK) are needed.
-
-    These are required when the agent uses the okta_cross_app_access auth provider
-    to call remote XAA-protected agents. Server-side cross_application_access config
-    only advertises XAA requirements on the agent card and does not need these credentials.
-    """
-    workflow_yaml_path = project_dir.parent / "agent" / "agent" / "workflow.yaml"
-    if not workflow_yaml_path.exists():
-        return False
-    with open(workflow_yaml_path) as f:
-        workflow_config = yaml.safe_load(f) or {}
-    auth_section = workflow_config.get("authentication") or {}
-    return any(
-        isinstance(cfg, dict) and cfg.get("_type") == "okta_cross_app_access"
-        for cfg in auth_section.values()
-    )
-
-
-_is_okta_xaa_credentials_needed = _check_okta_xaa_credentials_needed()
-
-
 def _generate_metadata_yaml(
     agent_name: str,
     custom_model_folder: str,
@@ -522,35 +500,35 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-# Handle Okta XAA credentials for A2A authentication
-if _is_okta_xaa_credentials_needed:
-    PRINCIPAL_ID_KEY: Final[str] = "PRINCIPAL_ID"
-    principal_id = os.environ.get(PRINCIPAL_ID_KEY, "")
-    if principal_id:
-        agent_runtime_parameter_values.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key=PRINCIPAL_ID_KEY,
-                type="string",
-                value=principal_id,
-            ),
-        )
-        pulumi.info(f"XAA configured with PRINCIPAL_ID: {principal_id}")
+IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
+idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")
+if idp_agent_id:
+    agent_runtime_parameter_values.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=IDP_AGENT_ID_PARAM,
+            type="string",
+            value=idp_agent_id,
+        ),
+    )
+    pulumi.info(f"Configured with IDP_AGENT_ID: {idp_agent_id}")
 
-    PRIVATE_JWK_KEY: Final[str] = "PRIVATE_JWK"
-    private_jwk = os.environ.get(PRIVATE_JWK_KEY)
-    if private_jwk:
-        private_jwk_cred = pulumi_datarobot.ApiTokenCredential(
-            agent_asset_name + " Private JWK",
-            args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(private_jwk)),
-        )
-        agent_runtime_parameter_values.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                type="credential",
-                key=PRIVATE_JWK_KEY,
-                value=private_jwk_cred.id,
-            ),
-        )
-        pulumi.info("XAA configured with PRIVATE_JWK credential")
+
+PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
+private_jwk = os.environ.get(PRIVATE_JWK_PARAM)
+if private_jwk:
+    private_jwk_cred = pulumi_datarobot.ApiTokenCredential(
+        agent_asset_name + " Private JWK",
+        args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(private_jwk)),
+    )
+    agent_runtime_parameter_values.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            type="credential",
+            key=PRIVATE_JWK_PARAM,
+            value=private_jwk_cred.id,
+        ),
+    )
+    pulumi.info("Configured with IDP_AGENT_PRIVATE_KEY_JWK credential")
+
 
 if _is_dragent_server_enabled:
     enable_dragent_server_runtime_param = (

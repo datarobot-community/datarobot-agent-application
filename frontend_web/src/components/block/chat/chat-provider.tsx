@@ -9,6 +9,8 @@ export type ChatProviderInput = {
   runInBackground?: boolean;
   isNewChat?: boolean;
   subscriber?: AgentSubscriber;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  forwardedProps?: any;
 };
 export type ChatProviderProps = ChatProviderInput & PropsWithChildren;
 
@@ -19,6 +21,7 @@ export function ChatProvider({
   isNewChat = false,
   subscriber,
   refetchChats: refetchChatsFromProps,
+  forwardedProps,
 }: ChatProviderProps) {
   const refetchChats = refetchChatsFromProps ?? (() => Promise.resolve());
   const value = useAgUiChat({
@@ -27,6 +30,7 @@ export function ChatProvider({
     runInBackground,
     refetchChats,
     subscriber,
+    forwardedProps,
   });
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }

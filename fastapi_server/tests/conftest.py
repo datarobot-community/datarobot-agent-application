@@ -59,7 +59,7 @@ def deps(config: Config) -> Deps:
     Dependency function to provide the necessary dependencies for the FastAPI app.
     Most of the dependencies are mocked to avoid unnecessary complexity in some tests.
     """
-    return Deps(
+    deps = Deps(
         config=config,
         chat_repo=AsyncMock(spec=ChatRepository),
         message_repo=AsyncMock(spec=MessageRepository),
@@ -71,6 +71,8 @@ def deps(config: Config) -> Deps:
         db=AsyncMock(spec=DBCtx),
         stream_manager=AsyncMock(spec=AGUIStreamManager),
     )
+    deps.identity_repo.list_by_user_id = AsyncMock(return_value=[])  # type: ignore[method-assign, union-attr]
+    return deps
 
 
 @pytest.fixture
@@ -234,7 +236,8 @@ async def make_authenticated_client(
                 first_name=first_name,
                 last_name=last_name,
             )
-            user_repo: UserRepository = shared_deps.user_repo
+            user_repo = shared_deps.user_repo
+            assert isinstance(user_repo, UserRepository)
             user = await user_repo.create_user(user_create)
             if not user.id:
                 raise ValueError("User creation failed, no ID assigned.")
@@ -251,7 +254,7 @@ async def make_authenticated_client(
                 datarobot_org_id="org-id",
                 datarobot_tenant_id="tenant-id",
             )
-            identity_repo: IdentityRepository = shared_deps.identity_repo
+            identity_repo = shared_deps.identity_repo
             identity = await identity_repo.create_identity(identity_create)
 
             # Create a unique API key for this user
@@ -351,6 +354,7 @@ def authenticated_client(
     deps.user_repo.get_user = AsyncMock(return_value=app_user)  # type: ignore[method-assign]
     deps.identity_repo.get_by_external_user_id = AsyncMock(return_value=app_identity)  # type: ignore[method-assign]
     deps.identity_repo.upsert_identity = AsyncMock(return_value=app_identity)  # type: ignore[method-assign]
+    deps.identity_repo.list_by_user_id = AsyncMock(return_value=[app_identity])  # type: ignore[method-assign, union-attr]
 
     # Attach user objects to the client for easy access in tests
     client.app_user = app_user  # type: ignore[attr-defined]

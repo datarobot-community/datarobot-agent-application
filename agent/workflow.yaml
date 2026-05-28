@@ -77,6 +77,6 @@ workflow:
 authentication:
   datarobot_auth:
     _type: datarobot_api_key
-  # Uncomment for Okta XAA authentication (requires PRINCIPAL_ID and PRIVATE_JWK env vars):
+  # Uncomment for Okta XAA authentication (requires IDP_AGENT_ID and IDP_AGENT_PRIVATE_KEY_JWK env vars):
   # okta_auth:
   #   _type: okta_cross_app_access

@@ -1,8 +1,12 @@
 import { useLayoutEffect } from 'react';
-import { Outlet, useNavigate, useParams, useMatch } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useParams, useMatch } from 'react-router-dom';
+import { Settings } from 'lucide-react';
 import { ChatSidebar } from '@/components/block/chat/chat-sidebar';
 import { useChatList } from '@/components/block/chat/hooks/use-chat-list';
 import { MainLayoutProvider } from '@/components/block/chat/main-layout-context';
+import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { PATHS } from '@/constants/path';
+import { useTranslation } from '@/lib/i18n';
 
 export function MainLayout() {
   const { chatId = '' } = useParams<{ chatId?: string }>();
@@ -12,9 +16,11 @@ export function MainLayout() {
     navigate(`/chat/${id}`);
   };
 
+  const { t } = useTranslation();
   const isChatEmptyPage = useMatch('/chat');
   const isChatSelectedPage = useMatch('/chat/:chatId');
   const isChat = isChatEmptyPage || isChatSelectedPage;
+  const matchSettings = useMatch(`${PATHS.SETTINGS.ROOT}/*`);
 
   const {
     hasChat,
@@ -55,6 +61,16 @@ export function MainLayout() {
         onChatSelect={setChatIdHandler}
         onChatDelete={deleteChatHandler}
         isDeletingChat={isDeletingChat}
+        topMenuitem={
+          <SidebarMenuItem key="open-settings">
+            <SidebarMenuButton disabled={isLoadingChats} asChild isActive={!!matchSettings}>
+              <Link to={PATHS.SETTINGS.ROOT}>
+                <Settings />
+                <span>{t('App Settings')}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        }
       />
       <MainLayoutProvider
         value={{

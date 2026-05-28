@@ -24,14 +24,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.schema import ErrorCodes, ErrorSchema
 from app.auth.api_key import APIKeyValidator
-from app.users.identity import (
-    AuthSchema,
-    IdentityRepository,
-    IdentityUpdate,
-    ProviderType,
-)
+from app.repo_types import IdentityRepositoryLike, UserRepositoryLike
+from app.users.identity import AuthSchema, IdentityUpdate, ProviderType
 from app.users.tokens import Tokens
-from app.users.user import UserCreate, UserRepository
+from app.users.user import LanguageEnum, UserCreate
 
 if TYPE_CHECKING:
     from app import Config
@@ -119,8 +115,8 @@ async def get_auth_ctx(
 
     # no active app user session found, must be the first application visit
     api_key_validator: APIKeyValidator = request.app.state.deps.api_key_validator
-    user_repo: UserRepository = request.app.state.deps.user_repo
-    identity_repo: IdentityRepository = request.app.state.deps.identity_repo
+    user_repo: UserRepositoryLike = request.app.state.deps.user_repo
+    identity_repo: IdentityRepositoryLike = request.app.state.deps.identity_repo
 
     provider_type: ProviderType
     user_profile: Profile
@@ -176,6 +172,9 @@ async def get_auth_ctx(
                         first_name=user_profile.given_name,
                         last_name=user_profile.family_name,
                         profile_image_url=user_profile.photo_url,
+                        language=LanguageEnum.from_locale(
+                            getattr(user_profile, "locale", None)
+                        ),
                     ),
                 )
             except IntegrityError:

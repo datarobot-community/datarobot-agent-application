@@ -23,8 +23,8 @@ Create Date: 2025-10-23 16:08:31.236071
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
+from sqlmodel.sql.sqltypes import AutoString
 
 # revision identifiers, used by Alembic.
 revision: str = "5efc58e62518"
@@ -38,7 +38,7 @@ def upgrade() -> None:
     op.create_table(
         "chat",
         sa.Column("uuid", sa.Uuid(), nullable=False),
-        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("name", AutoString(), nullable=False),
         sa.Column("user", sa.Uuid(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["user"], ["user.uuid"], ondelete="CASCADE"),
@@ -51,13 +51,13 @@ def upgrade() -> None:
         "message",
         sa.Column("uuid", sa.Uuid(), nullable=False),
         sa.Column("chat_id", sa.Uuid(), nullable=True),
-        sa.Column("role", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("model", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("content", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("components", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("role", AutoString(), nullable=False),
+        sa.Column("model", AutoString(), nullable=False),
+        sa.Column("content", AutoString(), nullable=False),
+        sa.Column("components", AutoString(), nullable=False),
         sa.Column("in_progress", sa.Boolean(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("error", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("error", AutoString(), nullable=True),
         sa.ForeignKeyConstraint(["chat_id"], ["chat.uuid"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("uuid"),
         sa.UniqueConstraint("uuid"),

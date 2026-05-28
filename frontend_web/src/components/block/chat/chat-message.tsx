@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import type { ContentPart, ToolInvocationUIPart, ChatMessageEvent } from './types';
 import { useChatContext } from '@/components/block/chat/hooks/use-chat-context';
 import { Badge } from '@/components/ui/badge';
-import { Markdown } from '@/components/block/markdown';
+import { StreamingMarkdown } from '@/components/ui/streaming-markdown';
 import { useTranslation } from '@/lib/i18n';
 
 interface ChatMessageErrorBoundaryProps {
@@ -90,7 +90,16 @@ export function UniversalContentPart({ part }: { part: ContentPart }) {
 }
 
 export function TextContentPart({ content }: { content: string }) {
-  return <Markdown>{content ? content : ''}</Markdown>;
+  return <StreamingMarkdown>{content ? content : ''}</StreamingMarkdown>;
+}
+
+function ToolInvocationLoading() {
+  return <Loader2 className="my-2 size-4 animate-spin text-muted-foreground" />;
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
 }
 
 export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
@@ -99,6 +108,11 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
   const { toolName } = toolInvocation;
   const ctx = useChatContext();
   const tool = ctx.getTool(toolName);
+  const duration =
+    toolInvocation.metadata?.endTime && toolInvocation.metadata?.startTime
+      ? toolInvocation.metadata.endTime - toolInvocation.metadata.startTime
+      : undefined;
+  const durationReadable = duration ? formatDuration(duration) : undefined;
 
   const hasResult = !!toolInvocation.result;
   const result = useMemo(() => {
@@ -118,9 +132,16 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
   }, [toolInvocation.result, hasResult]);
 
   if (tool?.render) {
+    if (!toolInvocation.args) {
+      return <ToolInvocationLoading />;
+    }
+    // In this case UI element is a tool, so args is passed there as a props
     return tool.render({ status: 'complete', args: toolInvocation.args });
   }
   if (tool?.renderAndWait) {
+    if (!toolInvocation.args) {
+      return <ToolInvocationLoading />;
+    }
     return tool.renderAndWait({
       status: 'complete',
       args: toolInvocation.args,
@@ -150,6 +171,7 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
         <Badge variant="default" className="code">
           {toolInvocation.toolName}
         </Badge>
+        {durationReadable && <span className="flex body-secondary">{durationReadable}</span>}
         {hasResult ? (
           <CheckCircle2
             className={`
@@ -233,7 +255,7 @@ function ChatMessageContent({
                 ? 'bg-secondary text-secondary-foreground'
                 : role === 'reasoning'
                   ? 'bg-muted text-muted-foreground'
-                  : 'bg-accent text-accent-foreground'
+                  : 'bg-accent text-foreground'
           )}
         >
           <Icon className="size-4" />

@@ -22,6 +22,7 @@ import pulumi_datarobot
 from datarobot_pulumi_utils.schema.apps import ApplicationSourceArgs
 from datarobot_pulumi_utils.schema.apps import CustomAppResourceBundles
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+from datarobot_pulumi_utils.pulumi import export
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
 
@@ -203,6 +204,39 @@ session_secret_cred = pulumi_datarobot.ApiTokenCredential(
         api_token=str(session_secret_key),
     ),
 )
+
+# Memory space is consumed by the FastAPI application (session memory), not the agent
+# deployment; expose it as Custom Application runtime parameters only.
+memory_runtime_parameters = []
+if os.environ.get("USE_MEMORY_SPACE"):
+    memory_space = pulumi_datarobot.MemorySpace(
+        f"Application Memory Space ID [{PROJECT_NAME}]"
+    )
+    memory_runtime_parameters.extend(
+        [
+            pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+                key="USE_MEMORY_SPACE",
+                type="boolean",
+                value="true",
+            ),
+            pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+                key="MEMORY_SPACE_ID",
+                type="string",
+                value=memory_space.id,
+            ),
+        ]
+    )
+    _ = memory_space.id.apply(
+        lambda memory_space_id: pulumi.info(
+            f"Memory space configured for application: {memory_space_id}"
+        )
+    )
+    export("MEMORY_SPACE_ID", memory_space.id)
+    pulumi.export(
+        f"Application Memory Space ID [{PROJECT_NAME}]",
+        memory_space.id,
+    )
+
 fastapi_server_app_env_name: str = "DATAROBOT_APPLICATION_ID"
 fastapi_server_application_path = project_dir.parent / "fastapi_server"
 
@@ -217,6 +251,7 @@ fastapi_server_app_runtime_parameters: list[
 ] = (
     agent_app_runtime_parameters
     + llm_app_runtime_parameters
+    + memory_runtime_parameters
     + [
         parameter
         for parameter_group in [

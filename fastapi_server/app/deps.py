@@ -19,6 +19,7 @@ from typing import AsyncGenerator, Dict
 from urllib.parse import urlparse
 from uuid import UUID
 
+import datarobot
 from datarobot.auth.oauth import AsyncOAuthComponent
 
 from app.ag_ui.stream_manager import AGUIStreamManager, create_stream_manager
@@ -27,25 +28,67 @@ from app.auth.oauth import get_oauth
 from app.chats import ChatRepository
 from app.config import Config
 from app.db import DBCtx, create_db_ctx
+from app.memory import (
+    ChatSessionRegistry,
+    IdentitySessionRegistry,
+    MemoryChatRepository,
+    MemoryIdentityRepository,
+    MemoryMessageRepository,
+    MemoryUserRepository,
+    UserSessionRegistry,
+)
 from app.messages import MessageRepository
+from app.repo_types import (
+    ChatRepositoryLike,
+    IdentityRepositoryLike,
+    MessageRepositoryLike,
+    UserRepositoryLike,
+)
 from app.users.identity import IdentityRepository
 from app.users.tokens import Tokens
 from app.users.user import UserRepository
 
 logger = logging.getLogger(__name__)
 
+_MEMORY_SPACE_ID_REQUIRED_MSG = (
+    "MEMORY_SPACE_ID is required when USE_MEMORY_SPACE is enabled. "
+    "Run `task deploy-dev` to provision a Memory Space and wire "
+    "USE_MEMORY_SPACE / MEMORY_SPACE_ID on the FastAPI custom application."
+)
+
+
+def resolve_memory_space_id(config: Config) -> str | None:
+    """Return the memory space ID when memory persistence is fully configured.
+
+    Local development may set USE_MEMORY_SPACE before deploy-dev provisions
+    MEMORY_SPACE_ID; in that case we fall back to SQLite with a warning.
+    Deployed custom applications must have both values wired together.
+    """
+    if not config.use_memory_space:
+        return None
+    if config.memory_space_id:
+        return config.memory_space_id
+    if config.application_id:
+        raise RuntimeError(_MEMORY_SPACE_ID_REQUIRED_MSG)
+    logger.warning(
+        "USE_MEMORY_SPACE is enabled but MEMORY_SPACE_ID is not set; "
+        "using SQLite for persistence until `task deploy-dev` provisions "
+        "a Memory Space and MEMORY_SPACE_ID is available."
+    )
+    return None
+
 
 @dataclass
 class Deps:
     api_key_validator: APIKeyValidator
     auth: AsyncOAuthComponent
-    chat_repo: ChatRepository
+    chat_repo: ChatRepositoryLike
     config: Config
     db: DBCtx
-    identity_repo: IdentityRepository
-    message_repo: MessageRepository
+    identity_repo: IdentityRepositoryLike
+    message_repo: MessageRepositoryLike
     tokens: Tokens
-    user_repo: UserRepository
+    user_repo: UserRepositoryLike
     stream_manager: AGUIStreamManager[UUID, Dict[str, str]]
 
 
@@ -105,10 +148,28 @@ async def create_deps(
 
     oauth = get_oauth(config)
 
-    identity_repo = IdentityRepository(db)
-
-    chat_repo = ChatRepository(db)
-    message_repo = MessageRepository(db)
+    chat_repo: ChatRepositoryLike
+    message_repo: MessageRepositoryLike
+    identity_repo: IdentityRepositoryLike
+    user_repo: UserRepositoryLike
+    memory_space_id = resolve_memory_space_id(config)
+    if memory_space_id:
+        datarobot.Client(
+            endpoint=config.datarobot_endpoint,
+            token=config.datarobot_api_token,
+        )
+        chat_registry = ChatSessionRegistry(memory_space_id)
+        identity_registry = IdentitySessionRegistry(memory_space_id)
+        user_registry = UserSessionRegistry(memory_space_id)
+        chat_repo = MemoryChatRepository(memory_space_id, chat_registry)
+        message_repo = MemoryMessageRepository(memory_space_id, chat_registry)
+        identity_repo = MemoryIdentityRepository(memory_space_id, identity_registry)
+        user_repo = MemoryUserRepository(memory_space_id, user_registry, identity_repo)
+    else:
+        chat_repo = ChatRepository(db)
+        message_repo = MessageRepository(db)
+        identity_repo = IdentityRepository(db)
+        user_repo = UserRepository(db)
 
     stream_manager = create_stream_manager(
         name="agent",
@@ -121,7 +182,7 @@ async def create_deps(
         config=config,
         chat_repo=chat_repo,
         message_repo=message_repo,
-        user_repo=UserRepository(db),
+        user_repo=user_repo,
         identity_repo=identity_repo,
         api_key_validator=api_key_validator,
         auth=oauth,

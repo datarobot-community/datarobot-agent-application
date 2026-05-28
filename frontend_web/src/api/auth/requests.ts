@@ -9,3 +9,11 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<IUser> {
 export async function logout(): Promise<void> {
   await apiClient.post('/v1/logout/');
 }
+
+export async function updateUserSettings(data: {
+  language?: string;
+  theme?: string;
+}): Promise<IUser> {
+  const { data: user } = await apiClient.put<IUser>('/v1/user/settings/', data);
+  return user;
+}
