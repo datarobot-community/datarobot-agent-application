@@ -10,7 +10,7 @@ import {
   type PluginConfig,
   type ControlsConfig,
 } from 'streamdown';
-import { code } from '@streamdown/code';
+import { createCodePlugin } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
 import { cn } from '@/lib/utils';
 import { unwrapMarkdownCodeBlocks } from '@/lib/unwrap-markdown-code-blocks';
@@ -132,7 +132,7 @@ export const MARKDOWN_COMPONENTS: Components = {
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 const plugins: PluginConfig = {
-  code,
+  code: createCodePlugin({ themes: ['github-light', 'github-dark-dimmed'] }),
   math: createMathPlugin({ singleDollarTextMath: true }),
 };
 

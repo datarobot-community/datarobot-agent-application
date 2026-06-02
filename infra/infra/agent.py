@@ -111,9 +111,27 @@ _is_dragent_server_enabled = (
 )
 
 
+def _find_workflow_yaml() -> Path | None:
+    """Locate workflow.yaml for the agent.
+
+    Checks the agent root directory first, then falls back to the agent/ subdirectory.
+    """
+    base = project_dir.parent / "agent"
+
+    primary = base / "workflow.yaml"
+    if primary.exists():
+        return primary
+
+    fallback = base / "agent" / "workflow.yaml"
+    if fallback.exists():
+        return fallback
+
+    return None
+
+
 def _check_a2a_server_enabled() -> bool:
-    workflow_yaml_path = project_dir.parent / "agent" / "agent" / "workflow.yaml"
-    if not workflow_yaml_path.exists():
+    workflow_yaml_path = _find_workflow_yaml()
+    if workflow_yaml_path is None:
         return False
     with open(workflow_yaml_path) as f:
         workflow_config = yaml.safe_load(f) or {}

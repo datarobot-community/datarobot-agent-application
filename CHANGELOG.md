@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.9.4
+- Updated `agent` component from 11.9.10 to 11.10.0:
+  - Upgraded `datarobot-genai` from 0.15.71 to 0.15.78
+    - A non-existent deployment_id or external_id in the agent card registry now returns an actionable error message instead of a generic JSON-RPC -32603 Internal error.
+    - Upgrade to nvidia-nat 1.7.0, and pin starlette>=1.0.1 to mitigate CVE-2026-48710
+    - Fixed datarobot_api_key auth provider not forwarding Authorization: Bearer header on A2A RPC calls when the agent card has no security_schemes.
+    - Fixed asyncio.isasyncgenfunction error on Python 3.12+
+    - Unhandled exceptions in A2A remote calls (auth failures, network errors, timeouts) no longer crash the agent. Errors are caught and sanitised.
+    - Fixed agent card registry returning at most 25 cards by adding pagination support.
+
 ## 11.9.3
 - Updated `agent` component from 11.9.2 to 11.9.10:
   - *Breaking changes*: moved `agent/workflow.yaml` to `workflow.yaml` as the top level configuration entity of an agent.

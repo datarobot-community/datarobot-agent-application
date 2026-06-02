@@ -69,6 +69,14 @@ __all__ = [
 ]
 
 
+_TRUTHY_ENV_VALUES = frozenset({"1", "true", "yes"})
+
+
+def env_flag_enabled(name: str) -> bool:
+    """Return True when an environment variable is set to a truthy flag value."""
+    return os.environ.get(name, "").strip().lower() in _TRUTHY_ENV_VALUES
+
+
 def fetch_and_prepare_app_resources(source_id: str) -> Optional[dict[str, Any]]:
     """
     Fetch resource configuration from a CustomApplicationSource entity
@@ -208,7 +216,7 @@ session_secret_cred = pulumi_datarobot.ApiTokenCredential(
 # Memory space is consumed by the FastAPI application (session memory), not the agent
 # deployment; expose it as Custom Application runtime parameters only.
 memory_runtime_parameters = []
-if os.environ.get("USE_MEMORY_SPACE"):
+if env_flag_enabled("USE_MEMORY_SPACE"):
     memory_space = pulumi_datarobot.MemorySpace(
         f"Application Memory Space ID [{PROJECT_NAME}]"
     )

@@ -42,7 +42,7 @@ class TestCustomModel:
     @patch("agent.myagent.MyAgent")
     @patch.dict(
         os.environ,
-        {"LLM_DEPLOYMENT_ID": "TEST_VALUE", "MEM0_API_KEY": "some_key"},
+        {"LLM_DEPLOYMENT_ID": "TEST_VALUE"},
         clear=True,
     )
     @pytest.mark.parametrize("stream", [False, True])

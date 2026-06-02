@@ -16,6 +16,19 @@ const proxyBase: string = base === '' ? '/' : base;
 // https://vite.dev/config/
 export default defineConfig({
     plugins: [
+        {
+            name: 'shiki-themes-subset',
+            enforce: 'pre',
+            resolveId(source, importer) {
+                if (
+                    source === './themes.mjs' &&
+                    importer &&
+                    importer.includes('shiki/dist/')
+                ) {
+                    return path.resolve(__dirname, './src/lib/shiki-themes.ts');
+                }
+            },
+        },
         react(),
         tailwindcss(),
         {
@@ -32,9 +45,11 @@ export default defineConfig({
         },
     ],
     resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './src'),
-        },
+        alias: [
+            { find: '@', replacement: path.resolve(__dirname, './src') },
+            // Use Shiki's web bundle (56 languages) instead of the full bundle (235 languages).
+            { find: /^shiki$/, replacement: 'shiki/bundle/web' },
+        ],
     },
     base: base,
     build: {
