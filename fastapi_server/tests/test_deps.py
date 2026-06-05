@@ -19,7 +19,11 @@ import pytest
 
 from app.chats import ChatRepository
 from app.config import Config
-from app.deps import create_deps, resolve_memory_space_id, sqlite_uri_to_path
+from app.deps import (
+    create_deps,
+    resolve_application_memory_space_id,
+    sqlite_uri_to_path,
+)
 from app.memory import (
     MemoryChatRepository,
     MemoryIdentityRepository,
@@ -39,8 +43,8 @@ async def test_create_deps_uses_memory_repositories_when_enabled() -> None:
         database_uri="sqlite+aiosqlite:///:memory:",
         datarobot_endpoint="https://api.test.datarobot.com",
         datarobot_api_token="test-datarobot-api-key",
-        USE_MEMORY_SPACE=True,
-        MEMORY_SPACE_ID="space-test",
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID="space-test",
     )
 
     with patch("app.deps.datarobot.Client"):
@@ -51,48 +55,48 @@ async def test_create_deps_uses_memory_repositories_when_enabled() -> None:
             assert isinstance(deps.user_repo, MemoryUserRepository)
 
 
-def test_resolve_memory_space_id_returns_none_when_disabled() -> None:
+def test_resolve_application_memory_space_id_returns_none_when_disabled() -> None:
     config = Config(
         session_secret_key="test-secret",
         datarobot_endpoint="https://api.test.datarobot.com",
         datarobot_api_token="test-token",
     )
-    assert resolve_memory_space_id(config) is None
+    assert resolve_application_memory_space_id(config) is None
 
 
-def test_resolve_memory_space_id_returns_id_when_configured() -> None:
+def test_resolve_application_memory_space_id_returns_id_when_configured() -> None:
     config = Config(
         session_secret_key="test-secret",
         datarobot_endpoint="https://api.test.datarobot.com",
         datarobot_api_token="test-token",
-        USE_MEMORY_SPACE=True,
-        MEMORY_SPACE_ID="space-test",
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID="space-test",
     )
-    assert resolve_memory_space_id(config) == "space-test"
+    assert resolve_application_memory_space_id(config) == "space-test"
 
 
-def test_resolve_memory_space_id_returns_none_locally_without_id() -> None:
+def test_resolve_application_memory_space_id_returns_none_locally_without_id() -> None:
     config = Config(
         session_secret_key="test-secret",
         datarobot_endpoint="https://api.test.datarobot.com",
         datarobot_api_token="test-token",
-        USE_MEMORY_SPACE=True,
-        MEMORY_SPACE_ID=None,
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID=None,
     )
-    assert resolve_memory_space_id(config) is None
+    assert resolve_application_memory_space_id(config) is None
 
 
-def test_resolve_memory_space_id_raises_when_deployed_without_id() -> None:
+def test_resolve_application_memory_space_id_raises_when_deployed_without_id() -> None:
     config = Config(
         session_secret_key="test-secret",
         datarobot_endpoint="https://api.test.datarobot.com",
         datarobot_api_token="test-token",
-        USE_MEMORY_SPACE=True,
-        MEMORY_SPACE_ID=None,
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID=None,
         application_id="6978ed7637491dea39936243",
     )
-    with pytest.raises(RuntimeError, match="MEMORY_SPACE_ID is required"):
-        resolve_memory_space_id(config)
+    with pytest.raises(RuntimeError, match="APPLICATION_MEMORY_SPACE_ID is required"):
+        resolve_application_memory_space_id(config)
 
 
 @pytest.mark.asyncio
@@ -103,8 +107,8 @@ async def test_create_deps_falls_back_to_sqlite_before_memory_space_is_wired() -
         database_uri="sqlite+aiosqlite:///:memory:",
         datarobot_endpoint="https://api.test.datarobot.com",
         datarobot_api_token="test-datarobot-api-key",
-        USE_MEMORY_SPACE=True,
-        MEMORY_SPACE_ID=None,
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID=None,
     )
 
     async with create_deps(config) as deps:

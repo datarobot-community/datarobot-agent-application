@@ -1,6 +1,10 @@
 ---
 # https://taskfile.dev
 version: '3'
+env:
+  # Opt out of NeMo Agent Toolkit anonymous CLI telemetry and skip its interactive
+  # [Y/n] consent prompt, which otherwise blocks non-interactive `nat dragent` runs.
+  NAT_TELEMETRY_ENABLED: 'false'
 vars:
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:

@@ -5,7 +5,7 @@ description = "Implementation of agent"
 readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[langgraph, dragent, auth]==0.15.78",
+    "datarobot-genai[langgraph, dragent, auth]==0.15.105",
     "datarobot-moderations[all]==11.2.30",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",

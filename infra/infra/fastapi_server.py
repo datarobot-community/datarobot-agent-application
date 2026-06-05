@@ -34,6 +34,7 @@ from .agent import agent_app_runtime_parameters
 
 
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
+APPLICATION_MEMORY_SPACE_ID: Final[str] = "APPLICATION_MEMORY_SPACE_ID"
 session_secret_key = os.environ.get(SESSION_SECRET_KEY)
 
 required_key_scope_level: str = "admin"
@@ -216,19 +217,19 @@ session_secret_cred = pulumi_datarobot.ApiTokenCredential(
 # Memory space is consumed by the FastAPI application (session memory), not the agent
 # deployment; expose it as Custom Application runtime parameters only.
 memory_runtime_parameters = []
-if env_flag_enabled("USE_MEMORY_SPACE"):
+if env_flag_enabled("USE_APPLICATION_MEMORY_SPACE"):
     memory_space = pulumi_datarobot.MemorySpace(
         f"Application Memory Space ID [{PROJECT_NAME}]"
     )
     memory_runtime_parameters.extend(
         [
             pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
-                key="USE_MEMORY_SPACE",
+                key="USE_APPLICATION_MEMORY_SPACE",
                 type="boolean",
                 value="true",
             ),
             pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
-                key="MEMORY_SPACE_ID",
+                key=APPLICATION_MEMORY_SPACE_ID,
                 type="string",
                 value=memory_space.id,
             ),
@@ -239,7 +240,7 @@ if env_flag_enabled("USE_MEMORY_SPACE"):
             f"Memory space configured for application: {memory_space_id}"
         )
     )
-    export("MEMORY_SPACE_ID", memory_space.id)
+    export(APPLICATION_MEMORY_SPACE_ID, memory_space.id)
     pulumi.export(
         f"Application Memory Space ID [{PROJECT_NAME}]",
         memory_space.id,

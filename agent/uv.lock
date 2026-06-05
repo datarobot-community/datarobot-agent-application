@@ -143,7 +143,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.15.78" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.15.105" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.30" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1005,11 +1005,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.78"
+version = "0.15.105"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ef/a5/19aa5f589e0bce7e921965b2c3b4bb7e4cfd8d9416b54731de3f6d991372/datarobot_genai-0.15.78.tar.gz", hash = "sha256:6a1f02f522f06d571a8cd086a63327fab7f164a081bf63603a75a0dd5943a731", size = 333168, upload-time = "2026-05-27T18:11:31.944Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/ca/150166c5554b9caced4d0854653239bbe5ac45b130d5480d83b790c6f5b9/datarobot_genai-0.15.105.tar.gz", hash = "sha256:13abb0bf85126abb2dd5d0975a508659a1207fbf1223b00f7167ae980bcf6c38", size = 346400, upload-time = "2026-06-04T15:50:54.359Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/05/fd8417c073ab682e2d32436f55325ccfc9382e911dec0a0029b806cde2bf/datarobot_genai-0.15.78-py3-none-any.whl", hash = "sha256:76b8a541382b33e47532e0b6fe09c63242ef613f550a58da12ca90ad942981f3", size = 461034, upload-time = "2026-05-27T18:11:29.944Z" },
+    { url = "https://files.pythonhosted.org/packages/11/1a/3f7624837dd6492adc5fd4ed2e180841568792a3f305ce972c2a70f66877/datarobot_genai-0.15.105-py3-none-any.whl", hash = "sha256:d577aa82d2b35edf5ef7eeb7269b6915ab83301552b057c7dab8b1050db9acb7", size = 479929, upload-time = "2026-06-04T15:50:52.276Z" },
 ]
 
 [package.optional-dependencies]

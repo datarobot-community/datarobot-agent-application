@@ -374,11 +374,11 @@ Use the `MCP_SERVER_MCP_ENDPOINT` URL (shown in the **outputs** section in the s
 
 # Next steps
 
-- [Configure your MCP client](/docs/mcp_client_setup.md) for instructions on connecting Cursor, VSCode, or Claude Desktop.
-- [Develop custom tools](/docs/custom_tools.md) for instructions on adding custom tools to the server.
-- See [MCP server architecture](/docs/mcp_server_architecture.md) for a detailed overview of the server architecture.
+- [Configure your MCP client](https://docs.datarobot.com/en/docs/agentic-ai/agentic-mcp/agentic-mcp-clients.html) for instructions on connecting Cursor, VSCode, or Claude Desktop.
+- [Develop custom tools](https://docs.datarobot.com/en/docs/agentic-ai/agentic-mcp/agentic-tools-mcp.html#create-custom-mcp-tools) for instructions on adding custom tools to the server.
+- See [MCP server architecture](./docs/mcp_server_architecture.md) for a detailed overview of the server architecture.
 - [Advanced options](#advanced-options) for debugging, testing, and further customization.
-- Read more about [dynamic tool registration](/docs/dynamic_tool_registration.md) for instructions on automatically registering tools with the server.
+- Read more about [dynamic tool registration](./docs/dynamic_tool_registration.md) for instructions on automatically registering tools with the server.
 
 # Advanced options
 

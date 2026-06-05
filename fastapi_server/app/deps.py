@@ -50,30 +50,30 @@ from app.users.user import UserRepository
 
 logger = logging.getLogger(__name__)
 
-_MEMORY_SPACE_ID_REQUIRED_MSG = (
-    "MEMORY_SPACE_ID is required when USE_MEMORY_SPACE is enabled. "
+_APPLICATION_MEMORY_SPACE_ID_REQUIRED_MSG = (
+    "APPLICATION_MEMORY_SPACE_ID is required when USE_APPLICATION_MEMORY_SPACE is enabled. "
     "Run `task deploy-dev` to provision a Memory Space and wire "
-    "USE_MEMORY_SPACE / MEMORY_SPACE_ID on the FastAPI custom application."
+    "USE_APPLICATION_MEMORY_SPACE / APPLICATION_MEMORY_SPACE_ID on the FastAPI custom application."
 )
 
 
-def resolve_memory_space_id(config: Config) -> str | None:
+def resolve_application_memory_space_id(config: Config) -> str | None:
     """Return the memory space ID when memory persistence is fully configured.
 
-    Local development may set USE_MEMORY_SPACE before deploy-dev provisions
-    MEMORY_SPACE_ID; in that case we fall back to SQLite with a warning.
+    Local development may set USE_APPLICATION_MEMORY_SPACE before deploy-dev provisions
+    APPLICATION_MEMORY_SPACE_ID; in that case we fall back to SQLite with a warning.
     Deployed custom applications must have both values wired together.
     """
-    if not config.use_memory_space:
+    if not config.use_application_memory_space:
         return None
-    if config.memory_space_id:
-        return config.memory_space_id
+    if config.application_memory_space_id:
+        return config.application_memory_space_id
     if config.application_id:
-        raise RuntimeError(_MEMORY_SPACE_ID_REQUIRED_MSG)
+        raise RuntimeError(_APPLICATION_MEMORY_SPACE_ID_REQUIRED_MSG)
     logger.warning(
-        "USE_MEMORY_SPACE is enabled but MEMORY_SPACE_ID is not set; "
+        "USE_APPLICATION_MEMORY_SPACE is enabled but APPLICATION_MEMORY_SPACE_ID is not set; "
         "using SQLite for persistence until `task deploy-dev` provisions "
-        "a Memory Space and MEMORY_SPACE_ID is available."
+        "a Memory Space and APPLICATION_MEMORY_SPACE_ID is available."
     )
     return None
 
@@ -152,19 +152,25 @@ async def create_deps(
     message_repo: MessageRepositoryLike
     identity_repo: IdentityRepositoryLike
     user_repo: UserRepositoryLike
-    memory_space_id = resolve_memory_space_id(config)
-    if memory_space_id:
+    application_memory_space_id = resolve_application_memory_space_id(config)
+    if application_memory_space_id:
         datarobot.Client(
             endpoint=config.datarobot_endpoint,
             token=config.datarobot_api_token,
         )
-        chat_registry = ChatSessionRegistry(memory_space_id)
-        identity_registry = IdentitySessionRegistry(memory_space_id)
-        user_registry = UserSessionRegistry(memory_space_id)
-        chat_repo = MemoryChatRepository(memory_space_id, chat_registry)
-        message_repo = MemoryMessageRepository(memory_space_id, chat_registry)
-        identity_repo = MemoryIdentityRepository(memory_space_id, identity_registry)
-        user_repo = MemoryUserRepository(memory_space_id, user_registry, identity_repo)
+        chat_registry = ChatSessionRegistry(application_memory_space_id)
+        identity_registry = IdentitySessionRegistry(application_memory_space_id)
+        user_registry = UserSessionRegistry(application_memory_space_id)
+        chat_repo = MemoryChatRepository(application_memory_space_id, chat_registry)
+        message_repo = MemoryMessageRepository(
+            application_memory_space_id, chat_registry
+        )
+        identity_repo = MemoryIdentityRepository(
+            application_memory_space_id, identity_registry
+        )
+        user_repo = MemoryUserRepository(
+            application_memory_space_id, user_registry, identity_repo
+        )
     else:
         chat_repo = ChatRepository(db)
         message_repo = MessageRepository(db)

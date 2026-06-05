@@ -221,13 +221,7 @@ tasks:
           --target 'urn:pulumi:*::*::datarobot:index/llmBlueprint:LlmBlueprint::LLM Blueprint*' \
           --target 'urn:pulumi:*::*::datarobot:index/playground:Playground::LLM Playground*' \
           --target 'urn:pulumi:*::*::datarobot:index/registeredModel:RegisteredModel::LLM Registered Model*' \
-          --target 'urn:pulumi:*::*::datarobot:index/appOauth:AppOauth::*'
-      - |
-        case "${USE_MEMORY_SPACE:-}" in
-          1|true|TRUE|yes|YES) ;;
-          *) exit 0 ;;
-        esac
-        export PULUMI_SKIP_UPDATE_CHECK=1 && {{.UV_CMD}} run pulumi up -y \
+          --target 'urn:pulumi:*::*::datarobot:index/appOauth:AppOauth::*' \
           --target 'urn:pulumi:*::*::datarobot:index/memorySpace:MemorySpace::*'
 
   unit:

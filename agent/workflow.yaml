@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 general:
+  telemetry:
+    tracing:
+      otelcollector:
+        _type: datarobot_otelcollector
+        project: agent
   front_end:
     _type: dragent_fastapi
     # Step adaptor is not necessary for custom agents
@@ -72,8 +77,17 @@ workflow:
   _type: langgraph_agent
   llm_name: datarobot_llm
   description: LangGraph planner/writer agent
-  # tool_names:
-  #   - remote_agent
+  middleware:
+    - datarobot_moderation
+    # tool_names:
+    #   - remote_agent
+middleware:
+  datarobot_moderation:
+    # Guards can be configured inline by adding the moderation field here.
+    # See the Guardrails Configuration Guide at https://pypi.org/project/datarobot-moderations/
+    # If there is no inline configuration then moderation_config.yaml will be loaded, if present.
+    # If no guards are configured then the middleware is a no-op.
+    _type: datarobot_moderation
 authentication:
   datarobot_auth:
     _type: datarobot_api_key

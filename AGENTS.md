@@ -16,6 +16,7 @@ dr run dev
 
 # Agent Development Instructions
 
+
 ## Dependencies Installation
 
 The following command should be run after agent code modification:
@@ -72,11 +73,19 @@ def graph_factory(llm, tools, verbose=False):
         system_prompt=make_system_prompt("You are a content writer. ..."),
         name="writer_agent", debug=verbose)
 
+    def planner_to_writer_relay(state: MessagesState) -> MessagesState:
+        last = state["messages"][-1]
+        if isinstance(last, AIMessage):
+            return {"messages": [HumanMessage(content=last.content)]}
+        return {"messages": []}
+
     workflow = StateGraph(MessagesState)
     workflow.add_node("planner_node", planner)
+    workflow.add_node("planner_to_writer_relay", planner_to_writer_relay)
     workflow.add_node("writer_node", writer)
     workflow.add_edge(START, "planner_node")
-    workflow.add_edge("planner_node", "writer_node")
+    workflow.add_edge("planner_node", "planner_to_writer_relay")
+    workflow.add_edge("planner_to_writer_relay", "writer_node")
     workflow.add_edge("writer_node", END)
     return workflow
 ```
@@ -155,7 +164,7 @@ By default it provides tools for DataRobot operations, but can be extended with 
 
 ## MCP Server Development Guidelines
 
-IMPORTANT: Do NOT import code from `agent/` or `fastapi_server/` directories. The MCP server has independent dependencies to avoid conflicts.
+IMPORTANT: Do NOT import code from `agent/` or `fastapi_server/` directories. The MCP server has independent dependencies to avoid conflicts. 
 IMPORTANT: The MCP server runs as an independent service. Agents connect to it via MCP protocol (HTTP), not direct Python imports.
 
 - You may modify files ONLY inside `mcp_server/` directory.
@@ -267,7 +276,7 @@ By default it ships a chat UI, but it can reimplemented to contain dashboards, m
 
 ## Frontend Development Guidelines
 
-IMPORTANT: Do NOT replace this stack with a different framework (e.g. Next.js, Vue, Angular, Svelte). If the user asks to switch frameworks, because deployment pipeline and infrastructure depend on the current stack.
+IMPORTANT: Do NOT replace this stack with a different framework (e.g. Next.js, Vue, Angular, Svelte). If the user asks to switch frameworks, because deployment pipeline and infrastructure depend on the current stack. 
 IMPORTANT: The frontend depends on backend API endpoints and agent tool outputs being in place.
 
 - You may modify files ONLY inside `frontend_web/` and `fastapi_server/` for the frontend work.

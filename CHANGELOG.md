@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased Changes
+## 11.10.0
+- Updated `agent` component from 11.10.0 to 11.10.11:
+  - Upgraded `datarobot-genai` from 0.15.78 to 0.15.105
+    - Added telemetry tracing support for `dragent` agents. Generated workflows now include `datarobot_otelcollector` collector configuration so framework spans get exported correctly.
+    - `DataRobotModerationMiddleware` can now be included unconditionally in `workflow.yaml`; it no-ops when moderation guards are not configured.
+    - Fixed LlamaIndex `DataRobotLiteLLM` requests for Azure/GPT backends by stripping tool-calling fields when no tools are provided.
+    - Improved memory support: `dr_mem0_memory` now supports default TTL, and `streaming_memory_agent` now resolves per-user inner agents while preserving AG-UI events.
+    - Added `drmcpbase` package for shared DataRobot API client and feature flag helpers; removed unused DRMCP memory-management/S3 support.
+    - LLM thinking/reasoning mode support for agents; surfacing reasoning events for Langgraph and llamaindex agents.
+  - Generated agent templates now use per-user registration across frameworks, enabling per-user MCP/function groups in memory-wrapped workflows.
+  - Enabled DataRobot Memory Service workflow configuration in the same paths that previously supported `mem0`.
+  - Disabled NeMo Agent Toolkit anonymous CLI telemetry by default (`NAT_TELEMETRY_ENABLED=false`) so `task agent:dev` no longer blocks on NAT's interactive consent prompt.
+- Renamed FastAPI application memory-space runtime parameters from `USE_MEMORY_SPACE` / `MEMORY_SPACE_ID` to `USE_APPLICATION_MEMORY_SPACE` / `APPLICATION_MEMORY_SPACE_ID`, keeping application persistence separate from agent memory runtime parameters.
+- Stand up memory spaces, if any, during `task deploy-dev`.
 
 ## 11.9.4
 - Updated `agent` component from 11.9.10 to 11.10.0:
