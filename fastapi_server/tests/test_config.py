@@ -123,6 +123,42 @@ def test__config__oauth_provider_fallback(
         assert Config().oauth_impl == expected_impl
 
 
+def test__config__local_dev_reads_agent_port() -> None:
+    # Local development: AGENT_ENDPOINT is unset, so AGENT_PORT is honored and
+    # feeds the agent_endpoint fallback.
+    base_env = dict(
+        MLOPS_RUNTIME_PARAM_SESSION_SECRET_KEY='{"type":"credential","payload":{"credentialType":"api_token","apiToken":"test-key"}}',
+        DATAROBOT_ENDPOINT="https://api.test.datarobot.com",
+        DATAROBOT_API_TOKEN="test-token",
+        AGENT_PORT="9999",
+    )
+    with patch.dict(os.environ, base_env, clear=True):
+        config = Config()
+        assert config.agent_port == 9999
+        assert config.agent_endpoint == "http://localhost:9999"
+
+
+def test__config__ignores_kubernetes_service_link_agent_port_when_deployed() -> None:
+    # Deployed in a shared k8s namespace that contains a Service named "agent":
+    # the kubelet injects AGENT_PORT=tcp://<clusterIP>:<port>, which is not an int.
+    # Because AGENT_ENDPOINT is set, AGENT_PORT must be ignored (kept at default)
+    # instead of crashing Config validation.
+    base_env = dict(
+        MLOPS_RUNTIME_PARAM_SESSION_SECRET_KEY='{"type":"credential","payload":{"credentialType":"api_token","apiToken":"test-key"}}',
+        DATAROBOT_ENDPOINT="https://api.test.datarobot.com",
+        DATAROBOT_API_TOKEN="test-token",
+        AGENT_ENDPOINT="https://api.test.datarobot.com/deployments/abc123/directAccess",
+        AGENT_PORT="tcp://172.30.51.145:8080",
+    )
+    with patch.dict(os.environ, base_env, clear=True):
+        config = Config()
+        assert config.agent_port == 8842  # default, AGENT_PORT ignored
+        assert (
+            config.agent_endpoint
+            == "https://api.test.datarobot.com/deployments/abc123/directAccess"
+        )
+
+
 def test__config__allows_application_memory_before_memory_id_is_wired() -> None:
     config = Config(
         session_secret_key="test-secret",

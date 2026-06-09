@@ -278,89 +278,48 @@ class AGUIAgentWithStorage(AGUIAgent):
         Background task that consumes events from the queue and persists them to storage.
         Runs independently from the event emission stream.
 
+        Events are drained in batches, and each batch is persisted inside a single
+        repository transaction so all of its repository calls share one database
+        session, one transaction, and one commit rather than one of each per call.
+
         Args:
             existing_chat (Chat): The chat to persist events for.
         """
         state = StorageStateMachineState()
 
         try:
-            while True:
+            finished = False
+            while not finished:
                 # Get event from queue; None signals completion
                 event = await self._event_queue.get()
                 if event is None:
                     break
 
-                try:
-                    # Captu
-                    state.current_event_timestamp = self._epoch_milli_or_now(
-                        event.timestamp
-                    )
+                # Drain whatever else is already queued into one batch.
+                batch = [event]
+                while not finished:
+                    try:
+                        next_event = self._event_queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+                    if next_event is None:
+                        finished = True
+                        break
+                    batch.append(next_event)
 
-                    if isinstance(event, RunStartedEvent):
-                        state = StorageStateMachineState()
-                    if isinstance(event, RunFinishedEvent):
-                        # Flush remaining buffers
-                        await self._flush_message_buffer(state)
-                        await self._flush_reasoning_buffer(state)
-                        await self._flush_tool_call_buffer(state)
-
-                        if state.active_message:
-                            await self._message_repo.update_message(
-                                state.active_message.uuid,
-                                MessageUpdate(in_progress=False),
+                async with self._message_repo.transaction():
+                    for event in batch:
+                        try:
+                            state = await self._process_event(
+                                state, existing_chat, event
                             )
-                        if state.active_reasoning:
-                            await self._message_repo.update_message_reasoning(
-                                state.active_reasoning.uuid,
-                                MessageReasoningUpdate(in_progress=False),
+                        except Exception as e:
+                            logger.error(
+                                f"Error processing event in storage consumer: {e}",
+                                exc_info=True,
                             )
-                        if state.active_tool_call:
-                            await self._message_repo.update_message_tool_call(
-                                state.active_tool_call.uuid,
-                                MessageToolCallUpdate(in_progress=False),
-                            )
-                    if isinstance(event, RunErrorEvent):
-                        # Flush remaining buffers before marking as errored
-                        await self._flush_message_buffer(state)
-                        await self._flush_reasoning_buffer(state)
-                        await self._flush_tool_call_buffer(state)
-
-                        if event.code:
-                            error = f"[{event.code}] {event.message}"
-                        else:
-                            error = event.message
-                        if state.active_message:
-                            await self._message_repo.update_message(
-                                state.active_message.uuid,
-                                MessageUpdate(in_progress=False, error=error),
-                            )
-                        if state.active_reasoning:
-                            await self._message_repo.update_message_reasoning(
-                                state.active_reasoning.uuid,
-                                MessageReasoningUpdate(in_progress=False, error=error),
-                            )
-                        if state.active_tool_call:
-                            await self._message_repo.update_message_tool_call(
-                                state.active_tool_call.uuid,
-                                MessageToolCallUpdate(in_progress=False, error=error),
-                            )
-
-                    if isinstance(event, StepStartedEvent):
-                        state.active_step = event.step_name
-                    if isinstance(event, StepFinishedEvent):
-                        state.active_step = None
-
-                    await self._handle_text_message_events(state, existing_chat, event)
-                    await self._handle_tool_call_events(state, existing_chat, event)
-                    await self._handle_reasoning_event(state, existing_chat, event)
-
-                except Exception as e:
-                    logger.error(
-                        f"Error processing event in storage consumer: {e}",
-                        exc_info=True,
-                    )
-                    # Continue consuming events despite errors
-                    continue
+                            # Continue consuming events despite errors
+                            continue
         except Exception as e:
             logger.error(
                 f"Storage consumer task failed: {e}",
@@ -369,14 +328,94 @@ class AGUIAgentWithStorage(AGUIAgent):
         finally:
             # Ensure final flush on task completion
             try:
-                await self._flush_message_buffer(state)
-                await self._flush_reasoning_buffer(state)
-                await self._flush_tool_call_buffer(state)
+                async with self._message_repo.transaction():
+                    await self._flush_message_buffer(state)
+                    await self._flush_reasoning_buffer(state)
+                    await self._flush_tool_call_buffer(state)
             except Exception as e:
                 logger.error(
                     f"Error during final flush in storage consumer: {e}",
                     exc_info=True,
                 )
+
+    async def _process_event(
+        self,
+        state: StorageStateMachineState,
+        existing_chat: Chat,
+        event: BaseEvent,
+    ) -> StorageStateMachineState:
+        """
+        Apply a single event to the storage state machine, persisting as needed.
+
+        Args:
+            state (StorageStateMachineState): The current state machine state.
+            existing_chat (Chat): The chat to persist events for.
+            event (BaseEvent): The event to process.
+
+        Returns:
+            StorageStateMachineState: The (possibly reset) state machine state.
+        """
+        state.current_event_timestamp = self._epoch_milli_or_now(event.timestamp)
+
+        if isinstance(event, RunStartedEvent):
+            state = StorageStateMachineState()
+        if isinstance(event, RunFinishedEvent):
+            # Flush remaining buffers
+            await self._flush_message_buffer(state)
+            await self._flush_reasoning_buffer(state)
+            await self._flush_tool_call_buffer(state)
+
+            if state.active_message:
+                await self._message_repo.update_message(
+                    state.active_message.uuid,
+                    MessageUpdate(in_progress=False),
+                )
+            if state.active_reasoning:
+                await self._message_repo.update_message_reasoning(
+                    state.active_reasoning.uuid,
+                    MessageReasoningUpdate(in_progress=False),
+                )
+            if state.active_tool_call:
+                await self._message_repo.update_message_tool_call(
+                    state.active_tool_call.uuid,
+                    MessageToolCallUpdate(in_progress=False),
+                )
+        if isinstance(event, RunErrorEvent):
+            # Flush remaining buffers before marking as errored
+            await self._flush_message_buffer(state)
+            await self._flush_reasoning_buffer(state)
+            await self._flush_tool_call_buffer(state)
+
+            if event.code:
+                error = f"[{event.code}] {event.message}"
+            else:
+                error = event.message
+            if state.active_message:
+                await self._message_repo.update_message(
+                    state.active_message.uuid,
+                    MessageUpdate(in_progress=False, error=error),
+                )
+            if state.active_reasoning:
+                await self._message_repo.update_message_reasoning(
+                    state.active_reasoning.uuid,
+                    MessageReasoningUpdate(in_progress=False, error=error),
+                )
+            if state.active_tool_call:
+                await self._message_repo.update_message_tool_call(
+                    state.active_tool_call.uuid,
+                    MessageToolCallUpdate(in_progress=False, error=error),
+                )
+
+        if isinstance(event, StepStartedEvent):
+            state.active_step = event.step_name
+        if isinstance(event, StepFinishedEvent):
+            state.active_step = None
+
+        await self._handle_text_message_events(state, existing_chat, event)
+        await self._handle_tool_call_events(state, existing_chat, event)
+        await self._handle_reasoning_event(state, existing_chat, event)
+
+        return state
 
     async def _handle_reasoning_event(
         self, state: StorageStateMachineState, existing_chat: Chat, event: BaseEvent
@@ -548,11 +587,14 @@ class AGUIAgentWithStorage(AGUIAgent):
             await self._message_repo.update_message_tool_call(
                 state.active_tool_call.uuid, MessageToolCallUpdate(in_progress=False)
             )
+            state.active_tool_call.in_progress = False
         if isinstance(event, ToolCallChunkEvent):
             await self._ensure_message_exists(
                 state,
                 existing_chat,
-                event.parent_message_id or str(uuid4()),
+                event.parent_message_id
+                or (state.active_message and state.active_message.agui_id)
+                or str(uuid4()),
                 None,
             )
             await self._ensure_tool_call_exists(
@@ -563,7 +605,8 @@ class AGUIAgentWithStorage(AGUIAgent):
                 event.tool_call_name,
             )
             assert state.active_tool_call, "Tool Call Created"
-            # Buffer arguments for chunk events too
+            # Buffer arguments for chunk events too; the tool call is closed out when
+            # the next tool call starts or the run finishes.
             state.buffered_tool_call_arguments += event.delta or ""
 
             # Flush buffer if it gets too large
@@ -572,11 +615,6 @@ class AGUIAgentWithStorage(AGUIAgent):
                 >= self._minimal_chunk_to_persist
             ):
                 await self._flush_tool_call_buffer(state)
-
-            await self._message_repo.update_message_tool_call(
-                state.active_tool_call.uuid,
-                MessageToolCallUpdate(in_progress=False),
-            )
 
     async def _handle_text_message_events(
         self,
@@ -619,18 +657,19 @@ class AGUIAgentWithStorage(AGUIAgent):
             await self._ensure_message_exists(
                 state,
                 existing_chat,
-                event.message_id or str(uuid4()),
+                event.message_id
+                or (state.active_message and state.active_message.agui_id)
+                or str(uuid4()),
                 None,
             )
             assert state.active_message, "Active message created."
+            # Buffer content instead of updating immediately; the message is closed
+            # out when the next message starts or the run finishes.
+            state.buffered_message_content += event.delta or ""
 
-            await self._message_repo.update_message(
-                state.active_message.uuid,
-                MessageUpdate(
-                    content=state.active_message.content + (event.delta or ""),
-                    in_progress=False,
-                ),
-            )
+            # Flush buffer if it gets too large
+            if len(state.buffered_message_content) >= self._minimal_chunk_to_persist:
+                await self._flush_message_buffer(state)
 
     async def _flush_message_buffer(self, state: StorageStateMachineState) -> None:
         """Flush buffered message content to storage."""
@@ -751,6 +790,24 @@ class AGUIAgentWithStorage(AGUIAgent):
             raise RuntimeError(
                 f"Creating {tool_call_id} with no corresponding active message"
             )
+
+        prior_tool_call = state.active_tool_call
+        if (
+            prior_tool_call
+            and prior_tool_call.agui_id == tool_call_id
+            and prior_tool_call.message_uuid == state.active_message.uuid
+        ):
+            return
+
+        # Starting a different tool call: flush buffered arguments to the prior one
+        # and close it out.
+        if prior_tool_call:
+            await self._flush_tool_call_buffer(state)
+            if prior_tool_call.in_progress:
+                await self._message_repo.update_message_tool_call(
+                    prior_tool_call.uuid, MessageToolCallUpdate(in_progress=False)
+                )
+                prior_tool_call.in_progress = False
 
         if not (
             active_tool_call := await self._message_repo.get_tool_call_by_agui_id(

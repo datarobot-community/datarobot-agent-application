@@ -53,9 +53,15 @@ class AGUIStreamManager(Generic[P]):
 
         async def populate_queue() -> None:
             agent = self._agent_factory(*args, **kwargs)
-            async for event in agent.run(input):
-                q.put(event)
-            q.put(NoMoreEvents())
+            try:
+                async for event in agent.run(input):
+                    q.put(event)
+            finally:
+                # Always emit the end-of-stream sentinel, even if agent.run()
+                # raised, so iterate_queue (and the HTTP StreamingResponse)
+                # terminates instead of hanging until an idle timeout severs
+                # the connection. Any exception still propagates.
+                q.put(NoMoreEvents())
 
         async def iterate_queue() -> AsyncGenerator[BaseEvent, None]:
             while True:

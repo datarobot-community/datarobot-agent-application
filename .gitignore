@@ -232,7 +232,7 @@ http-client.private.env.json
 node_modules/
 frontend_web/e2e/storageState.json
 
-/test_results/
+/test_results/*
 
 # Pulumi
 pulumi_config.json

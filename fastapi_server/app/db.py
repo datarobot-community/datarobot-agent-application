@@ -15,6 +15,7 @@
 import logging
 from asyncio import Lock
 from contextlib import asynccontextmanager, nullcontext
+from contextvars import ContextVar
 from typing import AsyncGenerator, cast
 
 from sqlalchemy import event, text
@@ -66,6 +67,12 @@ class DBCtx:
         if self._persistence_fs:
             self._lock = Lock()
 
+        # Session shared by all `session()` calls within an open `session_scope()`
+        # in the current task context (e.g. the AG-UI storage consumer batches).
+        self._scoped_session: ContextVar[AsyncSession | None] = ContextVar(
+            "dbctx_scoped_session", default=None
+        )
+
     @asynccontextmanager
     async def _read_session(self) -> AsyncGenerator[AsyncSession, None]:
         def prevent_writes(
@@ -103,9 +110,43 @@ class DBCtx:
     async def session(
         self, writable: bool = False
     ) -> AsyncGenerator[AsyncSession, None]:
+        if scoped_session := self._scoped_session.get():
+            yield scoped_session
+            return
+
         session_context = self._write_session if writable else self._read_session
         async with session_context() as session:
             yield session
+
+    @asynccontextmanager
+    async def session_scope(self) -> AsyncGenerator[AsyncSession, None]:
+        """
+        Open a single writable session shared by every `session()` call made within
+        this scope in the current task. `commit()` calls against the shared session
+        become flushes; the one real commit happens on scope exit. This keeps bursts
+        of repository calls (e.g. streaming event persistence) on one connection,
+        one transaction, and one persistence sync instead of one of each per call.
+        """
+        if self._scoped_session.get():
+            raise RuntimeError("session_scope cannot be nested.")
+
+        async with self._write_session() as session:
+            token = self._scoped_session.set(session)
+            try:
+                yield session
+                await session.commit()
+            finally:
+                self._scoped_session.reset(token)
+
+    async def commit(self, session: AsyncSession) -> None:
+        """
+        Commit the session, unless it is the shared session of an open
+        `session_scope()` — then flush so the scope owner commits once at exit.
+        """
+        if self._scoped_session.get() is session:
+            await session.flush()
+            return
+        await session.commit()
 
     async def shutdown(self) -> None:
         """

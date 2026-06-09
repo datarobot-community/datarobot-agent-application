@@ -254,6 +254,7 @@ export type ChatErrorEvent = {
   threadId: string;
   createdAt: Date;
   error: string;
+  testId?: string;
 };
 
 export type ChatThinkingEvent = {

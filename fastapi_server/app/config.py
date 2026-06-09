@@ -37,6 +37,23 @@ class Config(DataRobotAppFrameworkBaseSettings):
     agent_port: int = Field(default=8842, ge=1, le=65535)
     agent_endpoint: str | None = None
 
+    @field_validator("agent_port", mode="before")
+    @classmethod
+    def ignore_agent_port_when_deployed(cls, v: object) -> object:
+        # AGENT_PORT only matters for local development, where it is the fallback
+        # used to build agent_endpoint (see set_agent_endpoint below). When
+        # deployed, AGENT_ENDPOINT is set explicitly and agent_port is never read,
+        # so the two are effectively mutually exclusive.
+        #
+        # Skip AGENT_PORT entirely (keep the default) whenever AGENT_ENDPOINT is
+        # set. Besides matching that intent, this avoids a startup crash in shared
+        # Kubernetes namespaces that contain a Service named "agent": the kubelet
+        # injects a service-link env var AGENT_PORT=tcp://<clusterIP>:<port>, which
+        # is not a valid int and would otherwise fail Config validation.
+        if os.getenv("AGENT_ENDPOINT"):
+            return 8842  # Config-level default; unused when deployed
+        return v
+
     @field_validator("agent_endpoint", mode="before")
     @classmethod
     def set_agent_endpoint(cls, v: str | None, info: ValidationInfo) -> str:

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime, timezone
-from typing import AsyncGenerator, NamedTuple
+from typing import Any, AsyncGenerator, NamedTuple
 
 import pytest
 from ag_ui.core import (
@@ -41,6 +41,7 @@ from ag_ui.core import (
     ToolCallStartEvent,
     UserMessage,
 )
+from sqlalchemy import event as sa_event
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
 
@@ -653,3 +654,64 @@ async def test_created_at_uses_event_timestamp(
 
     assert message.reasonings
     assert as_utc_epoch_milli_seconds(message.reasonings[0].created_at) == reasoning_ts
+
+
+async def test_tool_call_chunk_stream_batches_writes(
+    storage_agent: AGUIAgentWithStorage,
+    stub_agent: StubAgent,
+    in_memory_sqlite: DBCtx,
+    chat_repo: ChatRepository,
+    message_repo: MessageRepository,
+    user: User,
+) -> None:
+    """A burst of tool call chunks is buffered rather than written once per chunk."""
+    statements: list[str] = []
+
+    def record_statement(
+        conn: Any,
+        cursor: Any,
+        statement: str,
+        parameters: Any,
+        context: Any,
+        executemany: bool,
+    ) -> None:
+        statements.append(statement)
+
+    sa_event.listen(
+        in_memory_sqlite.engine.sync_engine, "before_cursor_execute", record_statement
+    )
+
+    deltas = [f"chunk-{i}," for i in range(50)]
+    events: list[BaseEvent] = [
+        RunStartedEvent(thread_id="t-chunks", run_id="r1"),
+        ToolCallChunkEvent(
+            parent_message_id="m2",
+            tool_call_id="tc1",
+            tool_call_name="tool",
+            delta=deltas[0],
+        ),
+        *[ToolCallChunkEvent(delta=delta) for delta in deltas[1:]],
+        RunFinishedEvent(thread_id="t-chunks", run_id="r1"),
+    ]
+    stub_agent.set_events(*events)
+    response = await run(
+        storage_agent, "t-chunks", UserMessage(id="m1", content="Hi", name="u1")
+    )
+    assert response == events
+
+    chat = await chat_repo.get_chat_by_thread_id(user.uuid, "t-chunks")
+    assert chat is not None
+    message = await message_repo.get_message_by_agui_id(chat.uuid, "m2")
+    assert message is not None
+    assert len(message.tool_calls) == 1
+    tool_call = message.tool_calls[0]
+    assert tool_call.arguments == "".join(deltas)
+    assert not tool_call.in_progress
+
+    tool_call_updates = [
+        s for s in statements if s.startswith("UPDATE message_tool_call")
+    ]
+    assert len(tool_call_updates) <= 2, (
+        f"Expected buffered tool call persistence (one args flush + one close), "
+        f"got {len(tool_call_updates)} updates"
+    )

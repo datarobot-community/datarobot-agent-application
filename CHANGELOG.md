@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased Changes
+
+## 11.10.1
+- Batched chat-history database writes during streaming in the FastAPI backend, reducing DataRobot Files API calls and improving streaming performance and persistence reliability under load.
+- Updated `agent` component from 11.10.11 to 11.10.15:
+  - Changed `AGENT_MEMORY_TTL_SECONDS` runtime parameter type from `numeric` to `string`
+  - Renamed `MEMORY_SPACE_ID` to `AGENT_MEMORY_SPACE_ID`
+  - Upgraded `datarobot-genai` from 0.15.105 to 0.15.113:
+    - Instrumented `DRMem0Editor` for otel tracing.
+    - Renamed `memory_space_id` to `agent_memory_space_id` and set it from the environment or runtime parameters.
+    - Upgraded `datarobot-moderations` from 11.2.30 to 11.2.33.
+
 ## 11.10.0
 - Updated `agent` component from 11.10.0 to 11.10.11:
   - Upgraded `datarobot-genai` from 0.15.78 to 0.15.105

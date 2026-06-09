@@ -17,7 +17,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID, uuid4
@@ -446,6 +447,11 @@ class MemoryMessageRepository:
         self._rs_chat: dict[UUID, UUID] = {}
         self._tool_call_message: dict[UUID, UUID] = {}
         self._reasoning_message: dict[UUID, UUID] = {}
+
+    @asynccontextmanager
+    async def transaction(self) -> AsyncGenerator[None, None]:
+        """No-op batching scope; memory-service calls have no shared transaction."""
+        yield
 
     def _remember_maps(self, msg: Message, chat_id: UUID) -> None:
         self._msg_chat[msg.uuid] = chat_id

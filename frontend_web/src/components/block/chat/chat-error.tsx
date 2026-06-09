@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import type { ChatErrorEvent } from './types';
 import { useTranslation } from '@/lib/i18n';
 
-export function ChatError({ error, createdAt }: ChatErrorEvent) {
+export function ChatError({ error, createdAt, testId = 'chat-error-message' }: ChatErrorEvent) {
   const { t } = useTranslation();
   // Convert createdAt to Date if it's a string
   const date = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
@@ -11,6 +11,7 @@ export function ChatError({ error, createdAt }: ChatErrorEvent) {
   return (
     <div
       className={cn('flex gap-3 rounded-lg p-4', 'border border-destructive/20 bg-destructive/10')}
+      data-testid={testId}
     >
       <div className="shrink-0">
         <div

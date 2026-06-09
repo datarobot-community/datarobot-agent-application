@@ -78,7 +78,7 @@ class ChatRepository:
 
         async with self._db.session(writable=True) as session:
             session.add(chat)
-            await session.commit()
+            await self._db.commit(session)
             await session.refresh(chat)
             return chat
 
@@ -116,7 +116,7 @@ class ChatRepository:
 
             chat.name = name
             sess.add(chat)
-            await sess.commit()
+            await self._db.commit(sess)
             await sess.refresh(chat)
             return chat
 
@@ -132,5 +132,5 @@ class ChatRepository:
                 return None
 
             await sess.delete(chat)
-            await sess.commit()
+            await self._db.commit(sess)
             return chat

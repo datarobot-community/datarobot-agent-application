@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from 'playwright-core';
+import type { BrowserContext, ConsoleMessage, Page } from 'playwright-core';
 import { test, expect } from '@playwright/test';
 import { baseURL } from '../playwright.config';
 const TIMEOUT = 5 * 60 * 1000;
@@ -10,6 +10,20 @@ async function typeComposerMessage(page: Page, text: string) {
   await input.fill('');
   await input.pressSequentially(text, { delay: 15 });
   await expect(input).toHaveValue(text, { timeout: 60_000 });
+}
+
+function trackConsoleErrors(page: Page) {
+  const errors: string[] = [];
+  const handler = (msg: ConsoleMessage) => {
+    if (msg.type() === 'error') {
+      errors.push(msg.text());
+    }
+  };
+  page.on('console', handler);
+  return {
+    errors,
+    dispose: () => page.off('console', handler),
+  };
 }
 
 test.describe('Main flow test', () => {
@@ -39,51 +53,68 @@ test.describe('Main flow test', () => {
 
   test('write a question to agent and wait until response fully done', async () => {
     test.setTimeout(TIMEOUT); // to wait long response from agent
-
     await page.getByTestId('start-new-chat-btn').click();
     await expect(page.locator('[data-testid^="initial-assistant-message-"]')).toBeVisible();
-    await typeComposerMessage(page, 'tell me small story');
-    await expect(page.getByTestId('send-message-btn')).toBeEnabled();
-    await page.getByTestId('send-message-btn').click();
-    const spinner = await page.getByTestId('thinking-loading');
-    await expect(spinner).toBeVisible();
-    await expect(page.getByTestId('send-message-disabled-btn')).toBeDisabled();
 
-    // wait until message will be received
-    await page.getByTestId('send-message-btn').waitFor({ state: 'visible', timeout: TIMEOUT });
+    const { errors, dispose } = trackConsoleErrors(page);
+
+    try {
+      await typeComposerMessage(page, 'tell 2 facts about Kiyv in 1 sentence');
+      await expect(page.getByTestId('send-message-btn')).toBeEnabled();
+      await page.getByTestId('send-message-btn').click();
+      const spinner = await page.getByTestId('thinking-loading');
+      await expect(spinner).toBeVisible();
+      await expect(page.getByTestId('send-message-disabled-btn')).toBeDisabled();
+
+      // wait until message will be received
+      await page.getByTestId('send-message-btn').waitFor({ state: 'visible', timeout: TIMEOUT });
+
+      await expect(page.getByTestId('chat-error-message')).not.toBeVisible();
+      expect(errors).toHaveLength(0);
+    } finally {
+      dispose();
+    }
   });
 
   test('new thread is active when user switches chats', async () => {
     test.setTimeout(TIMEOUT); // to wait for chat to be deleted
     let contentCount = 0;
-    await page.getByTestId('start-new-chat-btn').click();
-    await expect(page.locator('[data-testid^="initial-assistant-message-"]')).toBeVisible();
-    await typeComposerMessage(page, 'tell some fun fact');
-    await expect(page.getByTestId('send-message-btn')).toBeEnabled();
-    await page.getByTestId('send-message-btn').click();
-    // Wait for the message to be sent and the chat to appear in the sidebar
-    await page.getByTestId('thinking-loading').waitFor({ state: 'visible' });
+    const { errors, dispose } = trackConsoleErrors(page);
 
-    await page.locator('#sidebar-chats').locator('[data-testid^="chat-"]')?.last().click();
-    await expect(page.getByTestId('send-message-btn')).toBeVisible();
+    try {
+      await page.getByTestId('start-new-chat-btn').click();
+      await expect(page.locator('[data-testid^="initial-assistant-message-"]')).toBeVisible();
+      await typeComposerMessage(page, 'tell 2 facts about Lviv in 1 sentence');
+      await expect(page.getByTestId('send-message-btn')).toBeEnabled();
+      await page.getByTestId('send-message-btn').click();
+      // Wait for the message to be sent and the chat to appear in the sidebar
+      await page.getByTestId('thinking-loading').waitFor({ state: 'visible' });
 
-    await page.locator('#sidebar-chats').locator('[data-testid^="chat-"]')?.first().click();
+      await page.locator('#sidebar-chats').locator('[data-testid^="chat-"]')?.last().click();
+      await expect(page.getByTestId('send-message-btn')).toBeVisible();
 
-    await expect
-      .poll(
-        async () => {
-          const content = await page
-            .locator('[data-testid^="default-assistant-message-"]')
-            ?.first();
-          const text = await content.textContent();
-          contentCount = text?.length ?? 0;
-          return contentCount;
-        },
-        {
-          timeout: TIMEOUT,
-        }
-      )
-      .toBeGreaterThan(0);
+      await page.locator('#sidebar-chats').locator('[data-testid^="chat-"]')?.first().click();
+
+      await expect
+        .poll(
+          async () => {
+            const content = await page
+              .locator('[data-testid^="default-assistant-message-"]')
+              ?.first();
+            const text = await content.textContent();
+            contentCount = text?.length ?? 0;
+            return contentCount;
+          },
+          {
+            timeout: TIMEOUT,
+          }
+        )
+        .toBeGreaterThan(0);
+      await expect(page.getByTestId('chat-error-message')).not.toBeVisible();
+      expect(errors).toHaveLength(0);
+    } finally {
+      dispose();
+    }
   });
 
   test('remove chat', async () => {

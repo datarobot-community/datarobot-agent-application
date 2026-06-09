@@ -14,9 +14,10 @@
 import json
 import logging
 import uuid as uuidpkg
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Sequence, cast
+from typing import Any, AsyncGenerator, Sequence, cast
 
 from sqlalchemy import Column, DateTime, ForeignKey, desc
 from sqlalchemy.exc import IntegrityError
@@ -220,6 +221,15 @@ class MessageRepository:
     def __init__(self, db: DBCtx):
         self._db = db
 
+    @asynccontextmanager
+    async def transaction(self) -> AsyncGenerator[None, None]:
+        """
+        Run all repository calls inside this scope on one shared session,
+        with a single commit at scope exit.
+        """
+        async with self._db.session_scope():
+            yield
+
     async def create_message(self, message_data: MessageCreate) -> Message:
         """
         Add a new message to the database with chat existence validation.
@@ -231,7 +241,7 @@ class MessageRepository:
         async with self._db.session(writable=True) as session:
             session.add(message)
             try:
-                await session.commit()
+                await self._db.commit(session)
             except IntegrityError:
                 await session.rollback()
                 raise ValueError(f"Chat with ID {message_data.chat_id} does not exist")
@@ -261,7 +271,7 @@ class MessageRepository:
                 if value is not None:
                     setattr(message, field, value)
 
-            await session.commit()
+            await self._db.commit(session)
             await session.refresh(message)
 
             return message
@@ -276,7 +286,7 @@ class MessageRepository:
         async with self._db.session(writable=True) as session:
             session.add(message_tool_call)
             try:
-                await session.commit()
+                await self._db.commit(session)
             except IntegrityError:
                 await session.rollback()
                 raise ValueError(
@@ -307,7 +317,7 @@ class MessageRepository:
                 if value is not None:
                     setattr(tool_call, field, value)
 
-            await session.commit()
+            await self._db.commit(session)
             await session.refresh(tool_call)
             return tool_call
 
@@ -321,7 +331,7 @@ class MessageRepository:
         async with self._db.session(writable=True) as session:
             session.add(reasoning)
             try:
-                await session.commit()
+                await self._db.commit(session)
             except IntegrityError:
                 await session.rollback()
                 raise ValueError(
@@ -352,7 +362,7 @@ class MessageRepository:
                 if value is not None:
                     setattr(reasoning, field, value)
 
-            await session.commit()
+            await self._db.commit(session)
             await session.refresh(reasoning)
             return reasoning
 
@@ -365,6 +375,8 @@ class MessageRepository:
                 select(Message)
                 .where(Message.uuid == uuid)
                 .options(selectinload("*"))
+                # Refresh instances cached in a shared `session_scope()` session
+                .execution_options(populate_existing=True)
                 .limit(1)
             )
             return response.one_or_none()
@@ -380,6 +392,8 @@ class MessageRepository:
                 select(Message)
                 .where(Message.chat_id == chat_id, Message.agui_id == agui_id)
                 .options(selectinload("*"))
+                # Refresh instances cached in a shared `session_scope()` session
+                .execution_options(populate_existing=True)
                 .limit(1)
             )
             return response.one_or_none()
@@ -398,6 +412,8 @@ class MessageRepository:
                     MessageToolCall.agui_id == agui_id,
                 )
                 .options(selectinload("*"))
+                # Refresh instances cached in a shared `session_scope()` session
+                .execution_options(populate_existing=True)
                 .limit(1)
             )
             return response.one_or_none()
@@ -412,6 +428,8 @@ class MessageRepository:
                 .where(Message.chat_id == chat_id)
                 .order_by(Message.created_at)  # type: ignore[arg-type]
                 .options(selectinload("*"))
+                # Refresh instances cached in a shared `session_scope()` session
+                .execution_options(populate_existing=True)
             )
             return response.all()
 
@@ -435,6 +453,8 @@ class MessageRepository:
                     .where(Message.chat_id == chat_id)
                     .order_by(desc(Message.created_at))  # type: ignore[arg-type]
                     .options(selectinload("*"))
+                    # Refresh instances cached in a shared `session_scope()` session
+                    .execution_options(populate_existing=True)
                     .limit(1)
                 )
                 message = response.first()

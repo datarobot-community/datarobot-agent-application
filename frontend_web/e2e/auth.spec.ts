@@ -27,12 +27,25 @@ test.describe('auth flow', () => {
     test.setTimeout(TIMEOUT);
 
     await page.goto(origin, { waitUntil: 'networkidle' });
-    await page.waitForURL('**/login**');
-    await page.getByTestId('email-field').type(USER_EMAIL);
-    await page.getByTestId('password-field').type(USER_PASSWORD);
-    await page.getByTestId('sign-in-button').click();
 
-    await page.waitForURL(origin); // wait until login will be fully done
+    // SaaS login (login.datarobot.com/login) and on-prem login (<origin>/sign-in)
+    // use different test ids for the same fields.
+    const emailField = page
+      .getByTestId('email-field')
+      .or(page.getByTestId('sign-in-input-username'));
+    const passwordField = page
+      .getByTestId('password-field')
+      .or(page.getByTestId('sign-in-input-password'));
+    const signInButton = page.getByTestId('sign-in-button').or(page.getByTestId('login-button'));
+
+    await emailField.waitFor();
+    await emailField.type(USER_EMAIL);
+    await passwordField.type(USER_PASSWORD);
+    await signInButton.click();
+
+    // Wait until login is done: back on the app origin (SaaS leaves login.datarobot.com)
+    // and no longer on the on-prem /sign-in page (which lives on the app origin).
+    await page.waitForURL(url => url.origin === origin && url.pathname !== '/sign-in');
     await page.goto(baseURL, { waitUntil: 'networkidle' });
     await page.context().storageState({
       path: './e2e/storageState.json',
