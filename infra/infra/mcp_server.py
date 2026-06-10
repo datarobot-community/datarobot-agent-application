@@ -20,6 +20,7 @@ from typing import Sequence, Final
 import pulumi
 import pulumi_datarobot
 import datarobot as dr
+from datarobot_pulumi_utils.common import get_datarobot_url
 from datarobot_pulumi_utils.pulumi import resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
@@ -587,12 +588,12 @@ deployment = pulumi_datarobot.Deployment(
     prediction_environment_id=base_prediction_environment.id,
 )
 
-datarobot_endpoint = os.getenv("DATAROBOT_ENDPOINT", "").rstrip("/")
+_dr_url = get_datarobot_url()
 mcp_server_mcp_endpoint = deployment.id.apply(
-    lambda id: f"{datarobot_endpoint}/deployments/{id}/directAccess/mcp"
+    lambda id: f"{_dr_url}/deployments/{id}/directAccess/mcp"
 )
 mcp_server_base_endpoint = deployment.id.apply(
-    lambda id: f"{datarobot_endpoint}/deployments/{id}/directAccess/"
+    lambda id: f"{_dr_url}/deployments/{id}/directAccess/"
 )
 pulumi.export(mcp_server_asset_name + " Custom Model Id", custom_model.id)
 pulumi.export(mcp_server_asset_name + " Deployment Id", deployment.id)

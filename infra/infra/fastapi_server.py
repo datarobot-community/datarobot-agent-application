@@ -22,6 +22,7 @@ import pulumi_datarobot
 from datarobot_pulumi_utils.schema.apps import ApplicationSourceArgs
 from datarobot_pulumi_utils.schema.apps import CustomAppResourceBundles
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+from datarobot_pulumi_utils.common import fix_url
 from datarobot_pulumi_utils.pulumi import export
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
@@ -304,7 +305,7 @@ fastapi_server_app = pulumi_datarobot.CustomApplication(
 pulumi.export(fastapi_server_app_env_name, fastapi_server_app.id)
 pulumi.export(
     f"Agentic Starter [{PROJECT_NAME}]",
-    fastapi_server_app.application_url,
+    fastapi_server_app.application_url.apply(fix_url),
 )
 
 DATABASE_URI: Final[str] = "DATABASE_URI"

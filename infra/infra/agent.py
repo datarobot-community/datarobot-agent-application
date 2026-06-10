@@ -21,6 +21,7 @@ import yaml  # type: ignore[import-untyped]
 import datarobot as dr
 import pulumi
 import pulumi_datarobot
+from datarobot_pulumi_utils.common import get_datarobot_url
 from datarobot_pulumi_utils.pulumi import export, resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.custom_model_deployment import CustomModelDeployment
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
@@ -578,9 +579,12 @@ agent_custom_model = pulumi_datarobot.CustomModel(
     runtime_parameter_values=agent_runtime_parameter_values,
 )
 
+_dr_url = get_datarobot_url()
+_dr_web_url = _dr_url.removesuffix("/api/v2")
+
 agent_custom_model_endpoint = agent_custom_model.id.apply(
     lambda id: (
-        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+        f"{_dr_url}/genai/agents/fromCustomModel/{id}/chat/"
     )
 )
 
@@ -603,15 +607,9 @@ agent_blueprint = pulumi_datarobot.LlmBlueprint(
     prompt_type="ONE_TIME_PROMPT",
 )
 
-datarobot_url = (
-    os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
-    .rstrip("/")
-    .rstrip("/api/v2")
-)
-
 agent_playground_url = pulumi.Output.format(
     "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
-    datarobot_url,
+    _dr_web_url,
     use_case.id,
     agent_playground.id,
 )
@@ -693,19 +691,19 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     agent_agent_deployment_id = agent_agent_deployment.id.apply(lambda id: f"{id}")
     agent_deployment_endpoint = agent_agent_deployment.id.apply(
         lambda id: (
-            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess"
+            f"{_dr_url}/deployments/{id}/directAccess"
             if _is_dragent_server_enabled
-            else f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+            else f"{_dr_url}/deployments/{id}"
         )
     )
     agent_deployment_completions_endpoint = agent_agent_deployment.id.apply(
         lambda id: (
-            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
+            f"{_dr_url}/deployments/{id}/chat/completions"
         )
     )
     agent_deployment_a2a_endpoint = agent_agent_deployment.id.apply(
         lambda id: (
-            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess/a2a/"
+            f"{_dr_url}/deployments/{id}/directAccess/a2a/"
         )
     )
 

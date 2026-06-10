@@ -22,6 +22,7 @@ import datarobot as dr
 import os
 import pulumi
 import pulumi_datarobot as datarobot
+from datarobot_pulumi_utils.common import get_datarobot_url
 from datarobot_pulumi_utils.pulumi import export
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
@@ -180,12 +181,7 @@ custom_model_runtime_parameters = [
     ),
 ]
 
-# TODO(APP-5859): Move datarobot_url to af-component-base infra/__init__.py
-datarobot_url = (
-    os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
-    .rstrip("/")
-    .removesuffix("/api/v2")
-)
+datarobot_url = get_datarobot_url().removesuffix("/api/v2")
 rag_playground_url = pulumi.Output.format(
     "{0}/usecases/{1}/playgrounds/{2}/comparison/chats",
     datarobot_url,
