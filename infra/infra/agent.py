@@ -583,9 +583,7 @@ _dr_url = get_datarobot_url()
 _dr_web_url = _dr_url.removesuffix("/api/v2")
 
 agent_custom_model_endpoint = agent_custom_model.id.apply(
-    lambda id: (
-        f"{_dr_url}/genai/agents/fromCustomModel/{id}/chat/"
-    )
+    lambda id: f"{_dr_url}/genai/agents/fromCustomModel/{id}/chat/"
 )
 
 agent_playground = pulumi_datarobot.Playground(
@@ -697,14 +695,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         )
     )
     agent_deployment_completions_endpoint = agent_agent_deployment.id.apply(
-        lambda id: (
-            f"{_dr_url}/deployments/{id}/chat/completions"
-        )
+        lambda id: f"{_dr_url}/deployments/{id}/chat/completions"
     )
     agent_deployment_a2a_endpoint = agent_agent_deployment.id.apply(
-        lambda id: (
-            f"{_dr_url}/deployments/{id}/directAccess/a2a/"
-        )
+        lambda id: f"{_dr_url}/deployments/{id}/directAccess/a2a/"
     )
 
     export(
