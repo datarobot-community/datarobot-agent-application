@@ -8,8 +8,8 @@ Tracing is wired up by two pieces that the template generates automatically:
 
 | Piece | File | What it does |
 |---|---|---|
-| [`instrument()` call](#instrumentation-agentregisterpy) | `agent/register.py` | Patches HTTP clients, the OpenAI SDK, and the agent framework to emit spans. |
-| [`otelcollector` block](#exporter-workflowyaml) | `workflow.yaml` | Configures the OTel collector that exports those spans to DataRobot. |
+| [`instrument()` call](#instrumentation-agentagentregisterpy) | `agent/agent/register.py` | Patches HTTP clients, the OpenAI SDK, and the agent framework to emit spans. |
+| [`otelcollector` block](#exporter-workflowyaml) | `agent/workflow.yaml` | Configures the OTel collector that exports those spans to DataRobot. |
 
 Both are present by default. You do not need to add them — this doc explains what they are so you know not to remove them and how to recognize them.
 
@@ -18,9 +18,9 @@ Both are present by default. You do not need to add them — this doc explains w
 
 ---
 
-## Instrumentation (`agent/register.py`)
+## Instrumentation (`agent/agent/register.py`)
 
-Near the top of `agent/register.py`, `instrument()` from `datarobot_genai.core.telemetry_agent` is called right after the module imports:
+Near the top of `agent/agent/register.py`, `instrument()` from `datarobot_genai.core.telemetry_agent` is called right after the module imports:
 
 ```python
 from datarobot_genai.core.telemetry_agent import instrument
@@ -89,4 +89,4 @@ For a deployed agent, open the deployment's **Monitoring > Data exploration** ta
 
 ## Disabling tracing
 
-Tracing is on by default and recommended. To disable it, remove the `instrument()` block from `agent/register.py` **and** the `telemetry` block from `workflow.yaml`. Removing this code disables all monitoring, tracing, and telemetry for the agent.
+Tracing is on by default and recommended. To disable it, remove the `instrument()` block from `agent/agent/register.py` **and** the `telemetry` block from `agent/workflow.yaml`. Removing this code disables all monitoring, tracing, and telemetry for the agent.

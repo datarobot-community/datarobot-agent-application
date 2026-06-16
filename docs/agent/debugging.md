@@ -159,7 +159,7 @@ The **Run Agent** configuration points to `agent/dev.py`, sets the working direc
 
 ## Enable verbose logging
 
-Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent execution, LLM calls, and tool invocations. In the template, verbosity is enabled by default in `custom.py`.
+Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent execution, LLM calls, and tool invocations. In the template, verbosity defaults to `True` in `custompy_adaptor` (via `completion_create_params`).
 
 You can also enable verbose mode via the CLI completion JSON by adding `"verbose": true` to the `extra_body` field.
 

@@ -48,10 +48,43 @@ from datarobot_genai.nat.agent import NatAgent
 import agent.register  # noqa: F401 - load nat_tool(fn, name, ...) registrations from register.py
 
 class MyAgent(NatAgent):
-    def __init__(self, *args, workflow_path=Path(__file__).parent / "workflow.yaml", **kwargs):
+    def __init__(
+        self,
+        *args,
+        workflow_path: Path = Path(__file__).parent.parent / "workflow.yaml",
+        **kwargs,
+    ):
         super().__init__(*args, workflow_path=workflow_path, **kwargs)
 ```
 
+## `custompy_adaptor`
+
+When using the DRUM front server, `custom.py` delegates to `custompy_adaptor` in `myagent.py`. NAT handles MCP differently from other frameworks: it does not use `mcp_tools_context`. Instead, it merges MCP `server_config` headers into `forwarded_headers` before passing them to `MyAgent`:
+
+```python
+async def custompy_adaptor(completion_create_params):
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    server_config = mcp_config.server_config
+    headers = server_config["headers"] if server_config else {}
+    forwarded_headers.update(headers)
+    mcp_tools_factory = lambda: noop_mcp_tools_context(mcp_config)
+    agent = MyAgent(
+        verbose=completion_create_params.get("verbose", True),
+        forwarded_headers=forwarded_headers,
+    )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )
+```
+
+When no MCP server is configured, `forwarded_headers` may be an empty dict. NAT loads tools declaratively from `workflow.yaml` rather than through the MCP tools context.
+
+`workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on **DRUM** and **DRAgent** via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
 The `workflow.yaml` defines everything:
 
 **Functions** (sub-agents)&mdash;defined as `chat_completion` types with system prompts:
@@ -132,6 +165,7 @@ function_groups:
 
 ### Custom local tools
 
+The template ships with a `word_counter` tool that counts words in a given text. It is defined in `register.py`, registered via `nat_tool`, and declared in `workflow.yaml`. You can remove it or replace it with your own tools.
 To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
 
 **Do not** use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
@@ -141,13 +175,14 @@ To add a custom tool to a NAT agent, define a plain Python function and register
 ```python
 from typing import Annotated
 
-def generate_objectid(
-    type: Annotated[str, "The type of object to generate an ID for. Should be only 'deployment'."],
+
+def word_counter(
+    text: Annotated[str, "The full text content to count words in."],
 ) -> str:
-    """Generate a unique object ID for a deployment."""
-    if type != "deployment":
-        raise ValueError("Invalid type")
-    return "69cbb73789723b6936c6c9e1"
+    """Count words in the given text."""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
+
 ```
 
 Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses these to generate the tool schema for the LLM.
@@ -156,9 +191,9 @@ Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses thes
 
 ```python
 from datarobot_genai.nat.tool import nat_tool
-from agent.tools import generate_objectid
+from agent.tools import word_counter
 
-nat_tool(generate_objectid, "generate_objectid")
+nat_tool(word_counter, "word_counter", description="Count words in a given text.")
 ```
 
 The second argument is the name of the tool as it will appear in `workflow.yaml`.
@@ -169,9 +204,9 @@ The second argument is the name of the tool as it will appear in `workflow.yaml`
 
 ```yaml
 functions:
-  generate_objectid:
-    _type: generate_objectid
-    description: A tool that generates an object ID for a deployment.
+  word_counter:
+    _type: word_counter
+    description: Count words in a given text.
 
 workflow:
   _type: per_user_tool_calling_agent
@@ -180,7 +215,7 @@ workflow:
     - planner
     - writer
     - mcp_tools
-    - generate_objectid
+    - word_counter
 ```
 
 The `_type` in the `functions` section must match the name passed to `nat_tool()`. The tool then becomes available alongside other functions and MCP tools.

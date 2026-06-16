@@ -22,6 +22,31 @@ class MyAgent(BaseAgent[None]):
 
 The MCP tools context is a no-op by default since there is no framework-specific MCP adapter. You can add one by implementing `mcp_tools_context` or wiring tools manually.
 
+## `custompy_adaptor`
+
+When using the DRUM front server, `custom.py` delegates to `custompy_adaptor` in `myagent.py`. The base agent ships a no-op `mcp_tools_context` and loads MCP **outside** `MyAgent` via the same factory pattern as other frameworks:
+
+```python
+async def custompy_adaptor(completion_create_params):
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)
+    agent = MyAgent(
+        llm=get_llm(model_name=...),
+        verbose=completion_create_params.get("verbose", True),
+        forwarded_headers=forwarded_headers,
+    )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )
+```
+
+Replace the no-op `mcp_tools_context` with a framework-specific adapter if you add MCP support to a base agent.
+
 ## `register.py`
 
 The base agent registration has LLM and tool wiring commented out by default &mdash; uncomment to enable:

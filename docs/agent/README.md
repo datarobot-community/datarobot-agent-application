@@ -16,6 +16,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
+| [`workflow.yaml` path migration](./migration-workflow-yaml-path.md) | Relocate `workflow.yaml` from `agent/agent/` to `agent/` (11.9.3); required for NAT agents on DRUM and DRAgent. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
@@ -33,7 +34,7 @@ Agents can expose themselves as A2A servers and connect to remote agents via the
 
 ## Agent file structure
 
-The agent is implemented in the `agent/` directory. The inner `agent/agent/` package contains the code you edit; the outer files provide infrastructure for running and deploying the agent.
+The agent is implemented in the `agent/` directory. The inner `agent/agent/` package contains the Python code you edit; `workflow.yaml` and other outer files provide NAT orchestration and infrastructure for running and deploying the agent.
 
 ```
 agent/
@@ -41,8 +42,8 @@ agent/
 │   ├── __init__.py         # Package exports: MyAgent, Config, custompy_adaptor
 │   ├── myagent.py          # Agent definition (framework-specific)
 │   ├── config.py           # Configuration management
-│   ├── register.py         # DRAgent/NAT registration (framework-specific)
-│   └── workflow.yaml       # Declarative workflow config (framework-specific)
+│   └── register.py         # DRAgent/NAT registration (framework-specific)
+├── workflow.yaml           # NAT orchestration config (framework-specific; see note below)
 ├── tests/                  # Agent tests
 │   ├── conftest.py
 │   ├── test_agent.py
@@ -55,12 +56,15 @@ agent/
 └── uv.lock                 # Dependency lockfile
 ```
 
+> [!IMPORTANT]
+> **`workflow.yaml` lives at `agent/workflow.yaml`**, not under `agent/agent/`. It is the top-level NAT configuration for the agent. **NAT framework agents** load it on **DRUM** (via `workflow_path` in `myagent.py`) as well as on **DRAgent**. Upgrading from layouts that kept the file at `agent/agent/workflow.yaml`? See [`workflow.yaml` path migration](./migration-workflow-yaml-path.md).
+
 | File | Description |
 |---|---|
-| `agent/myagent.py` | **Framework-specific.** Contains the main agent implementation. Defines the `MyAgent` class and a `custompy_adaptor` function for DRUM compatibility. The implementation varies by framework — see [Agent types](#agent-types) for details. |
-| `agent/config.py` | Manages configuration loading from environment variables, runtime parameters, and DataRobot credentials. |
-| `agent/register.py` | **Framework-specific.** NAT registration module used by the DRAgent front server. Wires LLM, MCP tools, workflow tools, and the agent together. |
-| `workflow.yaml` | **Framework-specific.** Declarative workflow configuration for the DRAgent front server: front-end type, A2A metadata, LLM component, and workflow type. |
+| `agent/agent/myagent.py` | **Framework-specific.** Contains the main agent implementation. Defines the `MyAgent` class and a `custompy_adaptor` function for DRUM compatibility. The implementation varies by framework — see [Agent types](#agent-types) for details. |
+| `agent/agent/config.py` | Manages configuration loading from environment variables, runtime parameters, and DataRobot credentials. |
+| `agent/agent/register.py` | **Framework-specific.** NAT registration module used by the DRAgent front server. Wires LLM, MCP tools, workflow tools, and the agent together. |
+| `agent/workflow.yaml` | **Framework-specific.** Declarative NAT workflow configuration: front-end type, A2A metadata, LLM component, workflow type, middleware, and memory wrappers. Required for NAT agents on DRUM and DRAgent; used by DRAgent for all frameworks. |
 | `custom.py` | Implements DataRobot DRUM integration hooks (`load_model`, `chat`) for agent execution. |
 | `cli.py` | CLI for testing the agent locally and validating deployments. |
 | `dev.py` | Local development prediction server using DRUM. |
@@ -69,12 +73,26 @@ agent/
 
 ## Functions and hooks (`custom.py`)
 
-The `custom.py` file at the root of the `agent/` directory contains the required functions that DataRobot DRUM calls to execute the agent. These hooks connect the DataRobot runtime with the agent's logic.
+The `custom.py` file at the root of the `agent/` directory implements the DataRobot DRUM hooks (`load_model`, `chat`). It handles request-level concerns&mdash;authorization context, header forwarding, and streaming bridging&mdash;then delegates agent execution to `custompy_adaptor` from the `agent` package.
 
 | Hook | Description |
 |---|---|
 | `load_model()` | One-time initialization function called when DataRobot starts the agent. |
 | `chat()` | Main execution function called for each user interaction/chat message. |
+
+### DRUM request flow
+
+```
+custom.py (chat)
+  → resolve authorization context
+  → whitelist x-datarobot-* headers into completion_create_params
+  → custompy_adaptor (agent/myagent.py)
+      → MCPConfig + mcp_tools_factory
+      → MyAgent instantiation
+      → agent_chat_completion_wrapper
+```
+
+`custom.py` does **not** instantiate `MyAgent` directly. All framework-specific MCP wiring and agent construction live in `custompy_adaptor`.
 
 ### `load_model()` hook
 
@@ -121,9 +139,27 @@ Each framework uses a factory helper from `datarobot_genai` to generate `MyAgent
 | NAT | Direct subclass of `NatAgent` | `workflow.yaml` path |
 | Base | Direct subclass of `BaseAgent` | Manual `invoke()` implementation |
 
-The `custompy_adaptor` function in `myagent.py` bridges the `MyAgent` class with DRUM's `chat()` hook by creating an MCP config, resolving the LLM, instantiating the agent, and invoking it via `agent_chat_completion_wrapper`.
+The `custompy_adaptor` function in `myagent.py` (re-exported from the `agent` package) bridges `MyAgent` with DRUM's `chat()` hook. It reads `forwarded_headers` and `authorization_context` from `completion_create_params` (set by `custom.py`), builds an `MCPConfig`, resolves the LLM, instantiates the agent, and invokes it via `agent_chat_completion_wrapper` with an `mcp_tools_factory` callback. MCP tools are loaded inside that wrapper so the MCP context spans the full agent execution, including streaming.
+
+When using the DRAgent front server, MCP and tool wiring happen in `register.py` instead&mdash;see the framework-specific docs for that path.
 
 **Important:** The name `MyAgent` must not be changed&mdash;it is referenced by the framework infrastructure.
+
+### Tools
+
+`MyAgent` accepts a `tools` parameter at initialization. The agent class does **not** load MCP tools inside `invoke()`&mdash;callers obtain tools externally and supply them to the agent:
+
+| Mechanism | When to use |
+|---|---|
+| `tools=` constructor argument | Pass the merged tool list when constructing `MyAgent` (typical DRAgent path in `register.py`). |
+| `set_tools()` | Update tools after initialization; propagates to sub-agents in multi-agent frameworks such as CrewAI and LlamaIndex. |
+
+To access MCP, call `mcp_tools_context()` **outside** the agent class:
+
+- **DRUM**&mdash;in `custompy_adaptor`, build an `MCPConfig` and pass an `mcp_tools_factory` callback to `agent_chat_completion_wrapper`. The wrapper loads MCP tools and provides them to the agent before `invoke()` runs.
+- **DRAgent**&mdash;in `register.py`, use `async with mcp_tools_context(mcp_config) as mcp_tools`, merge with workflow tools, and pass the result to `MyAgent(..., tools=tools)`.
+
+See the framework-specific docs for complete examples of each path.
 
 See the framework-specific documentation for detailed implementation guides:
 
@@ -135,11 +171,18 @@ See the framework-specific documentation for detailed implementation guides:
 
 ## Tool integration
 
-Agents can use tools to extend their capabilities. Tools are injected at runtime from multiple sources. The exact pattern depends on the framework: LangGraph, CrewAI, and LlamaIndex often use in-repo tool functions passed into the graph, crew, or workflow; **NAT** custom tools are registered with `nat_tool` in `register.py`, declared under `functions` in `workflow.yaml`, and rely on importing `agent.register` at startup&mdash;see [NAT custom local tools](./frameworks/nat.md#custom-local-tools).
+Agents can use tools to extend their capabilities. Tools are supplied to `MyAgent` at initialization (via the `tools` parameter) or updated afterward with `set_tools()`. The agent class does not fetch MCP tools internally&mdash;callers load MCP explicitly outside the agent and pass the resulting tool list in. The exact wiring depends on the front server and framework; see [Tools](#tools) under agent class implementation for the DRUM vs DRAgent split.
+
+Agents can combine tools from multiple sources. LangGraph, CrewAI, and LlamaIndex often use in-repo tool functions passed into the graph, crew, or workflow; **NAT** custom tools are registered with `nat_tool` in `register.py`, declared under `functions` in `workflow.yaml`, and rely on importing `agent.register` at startup&mdash;see [NAT custom local tools](./frameworks/nat.md#custom-local-tools).
 
 ### MCP tools
 
-MCP tools are loaded from the MCP server via `mcp_tools_context()`. Each framework has its own MCP adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). The MCP server provides tools for DataRobot operations and can be extended with custom tools. See [MCP server](../mcp-server.md) for details.
+MCP tools are loaded by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens **outside** `MyAgent`, in the execution-flow glue code&mdash;not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration.
+
+| Front server | Where MCP is wired | How tools reach `MyAgent` |
+|---|---|---|
+| DRUM | `custompy_adaptor` in `myagent.py` | `mcp_tools_factory` passed to `agent_chat_completion_wrapper` loads MCP and supplies tools before `invoke()` |
+| DRAgent | `register.py` | `async with mcp_tools_context(mcp_config) as mcp_tools`, then `MyAgent(..., tools=workflow_tools + mcp_tools)` |
 
 ### Workflow tools (DRAgent only)
 
@@ -179,7 +222,7 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
-For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md).
+For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md). To enable persistent per-user memory across conversations, see [Agent memory](./agent-memory.md).
 
 ## Front servers
 
@@ -189,12 +232,12 @@ The agent component supports two front server implementations that serve the age
 
 **DRUM** (DataRobot User Model) is the traditional front server for custom models in DataRobot. It is the default and runs unless DRAgent is explicitly enabled.
 
-- **Entry point**&mdash;`custom.py`, implements `load_model()` and `chat()` hooks.
+- **Entry point**&mdash;`custom.py`, implements `load_model()` and `chat()` hooks. **NAT framework agents** also require `agent/workflow.yaml` at the agent component root&mdash;`NatAgent` resolves orchestration from that file through `workflow_path` in `myagent.py`, not only when DRAgent is enabled.
 - **Execution model**&mdash;synchronous. Uses a `ThreadPoolExecutor` to bridge async agent code into DRUM's sync interface.
 - **Status**&mdash;stable, feature-complete. This is the production-tested path used in DataRobot deployments.
 - **Streaming**&mdash;supported via a sync/async queue bridge that drains async events into a thread-safe queue consumed synchronously.
 
-DRUM serves the agent as a DataRobot custom model, exposing an OpenAI-compatible chat completion API. The `custom.py` hooks (`load_model` and `chat`) follow the DataRobot [structured model hooks](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-overview.html) contract.
+DRUM serves the agent as a DataRobot custom model, exposing an OpenAI-compatible chat completion API. The `custom.py` hooks (`load_model` and `chat`) follow the DataRobot [structured model hooks](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-overview.html) contract. To add runtime guardrails, see [Moderation and guardrails](./moderation.md#drum).
 
 ### DRAgent
 
@@ -213,6 +256,7 @@ DRAgent enables features that are not available with DRUM:
 - **Agent-to-Agent (A2A)**&mdash;expose your agent as an A2A server and connect to remote agents. See [Agent2Agent](./agent2agent.md).
 - **Declarative workflow configuration**&mdash;define LLMs, tools, and agent connections in `workflow.yaml`.
 - **NAT ecosystem**&mdash;access the full NeMo Agent Toolkit including NAT-provided LLM interfaces, function types, and tool integrations.
+- **Runtime guardrails**&mdash;apply moderations via `datarobot_moderation` middleware in `workflow.yaml`. See [Moderation and guardrails](./moderation.md#dragent).
 
 To enable DRAgent, set the following in your `.env` file:
 
@@ -243,6 +287,10 @@ All agent types use the same `datarobot_genai` package for LLM configuration, re
 
 ## Migrations
 
+### 11.9.3 — `workflow.yaml` location
+
+Agent component 11.9.3 moved `workflow.yaml` from `agent/agent/workflow.yaml` to `agent/workflow.yaml`. NAT framework agents load this file on **DRUM** and **DRAgent**. See [`workflow.yaml` path migration](./migration-workflow-yaml-path.md).
+
 ### 11.8.8 — New agent format
 
 Starting with version 11.8.8, agent templates (except `base`) no longer require defining agents within a `MyAgent` class. They are now converted from their native framework primitives to `MyAgent` with a helper function. The LLM is also decoupled from the agent class. See the [changelog](../../CHANGELOG.md) and [af-component-agent#474](https://github.com/datarobot-community/af-component-agent/pull/474) for details.
@@ -256,6 +304,7 @@ Migration guides per framework:
 | LlamaIndex | [migration-to-11.8.8-llamaindex.md](./frameworks/migration-to-11.8.8-llamaindex.md) |
 | Base | [migration-to-11.8.8-base.md](./frameworks/migration-to-11.8.8-base.md) |
 | NAT | [migration-to-11.8.8-nat.md](./frameworks/migration-to-11.8.8-nat.md) |
+| All frameworks | [`workflow.yaml` path (11.9.3)](./migration-workflow-yaml-path.md) |
 
 ## Further reading
 

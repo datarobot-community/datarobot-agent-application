@@ -131,6 +131,7 @@ def create_app(
     if config is None:
         config = Config()
 
+    otel.configure(config)
     init_logging(level=config.log_level, format_type=config.log_format)
 
     # Configure uvicorn logging with health check filtering and custom formatting
@@ -180,11 +181,13 @@ def create_app(
     app.include_router(base_router)
 
     # This is the base path for the app, used to serve static files and templates
-    app.mount(
-        "/assets",
-        StaticFiles(directory=STATIC_DIR / "assets"),
-        name="static",
-    )
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.is_dir():
+        app.mount(
+            "/assets",
+            StaticFiles(directory=assets_dir),
+            name="static",
+        )
 
     # This is the final path that serves the React app
     @app.get("{full_path:path}")

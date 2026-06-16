@@ -26,7 +26,7 @@ from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.tools import BaseTool
+from langchain_core.tools import BaseTool, tool
 from langgraph.graph import END, START, MessagesState, StateGraph
 from openai.types.chat import CompletionCreateParams
 
@@ -55,12 +55,20 @@ prompt_template = ChatPromptTemplate.from_messages(
 )
 
 
+@tool
+def word_counter(text: str) -> str:
+    """Count words in the given text."""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
+
+
 def graph_factory(
     llm: BaseChatModel, tools: list[BaseTool], verbose: bool = False
 ) -> StateGraph[MessagesState]:
+    all_tools = [word_counter, *tools]
     agent_planner = create_agent(
         llm,
-        tools=tools,
+        tools=all_tools,
         system_prompt=make_system_prompt(
             "You are a content planner. You create brief, structured outlines for blog articles. "
             "You identify the most important points and cite relevant sources. Keep it simple and to the point - "
@@ -82,7 +90,7 @@ def graph_factory(
 
     agent_writer = create_agent(
         llm,
-        tools=tools,
+        tools=all_tools,
         system_prompt=make_system_prompt(
             "You are a content writer working with a planner colleague.\n"
             "You write opinion pieces based on the planner's outline and context. You provide objective and "
@@ -97,7 +105,8 @@ def graph_factory(
             "3. Sections/Subtitles are properly named in an engaging manner.\n"
             "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
             "\n"
-            "Write in markdown format, ready for publication.",
+            "Write in markdown format, ready for publication. "
+            "You MUST call the word_counter tool to verify your output is within the word limit.",
         ),
         name="writer_agent",
         debug=verbose,

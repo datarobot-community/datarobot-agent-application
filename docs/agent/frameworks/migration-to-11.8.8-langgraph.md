@@ -153,6 +153,7 @@ async def custompy_adaptor(completion_create_params, ...):
         timeout=...,
         forwarded_headers=...,
     )
+    return await agent_chat_completion_wrapper(agent, completion_create_params)
 ```
 
 **After:**
@@ -161,7 +162,13 @@ async def custompy_adaptor(completion_create_params, ...):
 _PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 async def custompy_adaptor(completion_create_params, ...):
-    ...
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)
     model_name = completion_create_params.get("model")
     agent = MyAgent(
         llm=get_llm(
@@ -171,11 +178,16 @@ async def custompy_adaptor(completion_create_params, ...):
         timeout=...,
         forwarded_headers=...,
     )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )
 ```
 
 Key differences:
 - `model=` parameter &rarr; `llm=get_llm(model_name=...)` parameter.
 - `_PLACEHOLDER_MODELS` filters out the `"unknown"` model placeholder sent by DataRobot.
+- MCP config and tool loading move into `custompy_adaptor`; pass an `mcp_tools_factory` to `agent_chat_completion_wrapper`.
+- `forwarded_headers` and `authorization_context` are read from `completion_create_params` (set by `custom.py`), not extracted inline.
 
 ### 7. Update tests
 

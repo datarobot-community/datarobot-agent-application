@@ -60,6 +60,13 @@ general:
 #     _type: authenticated_a2a_client
 #     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
 #     auth_provider: datarobot_auth
+functions:
+  langgraph_agent:
+    _type: langgraph_agent
+    llm_name: datarobot_llm
+    description: LangGraph planner/writer agent
+    # tool_names:
+    #   - remote_agent
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -73,14 +80,20 @@ llms:
     #     - use_datarobot_llm_gateway: true
     #       llm_default_model: anthropic/claude-opus-4-20250514
     #   num_retries: 1
+memory:
+  mem0_memory:
+    _type: dr_mem0_memory
 workflow:
-  _type: langgraph_agent
+  # When memory is not configured streaming_memory_agent is a passthrough so it is safe to use
+  # unconditionally. To configure memory choose agent memory provider "Mem0" and set MEM0_API_KEY
+  # in .env or choose agent memory provider "Datarobot Memory Service" and AGENT_MEMORY_SPACE_ID
+  # will be created during `task deploy-dev`.
+  _type: streaming_memory_agent
+  inner_agent_name: langgraph_agent
+  memory_name: mem0_memory
   llm_name: datarobot_llm
-  description: LangGraph planner/writer agent
-  middleware:
-    - datarobot_moderation
-    # tool_names:
-    #   - remote_agent
+  description: LangGraph planner/writer agent with automatic memory capture and retrieval
+  middleware: [datarobot_moderation]
 middleware:
   datarobot_moderation:
     # Guards can be configured inline by adding the moderation field here.

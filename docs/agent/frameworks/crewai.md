@@ -42,6 +42,31 @@ kickoff_inputs = lambda user_prompt_content: {"topic": str(user_prompt_content),
 MyAgent = datarobot_agent_class_from_crew(crew, agents, tasks, kickoff_inputs)
 ```
 
+## `custompy_adaptor`
+
+When using the DRUM front server, `custom.py` delegates to `custompy_adaptor` in `myagent.py`. This function loads MCP **outside** `MyAgent`, then invokes the agent:
+
+```python
+async def custompy_adaptor(completion_create_params):
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)
+    agent = MyAgent(
+        llm=get_llm(model_name=..., parameters={"stream_options": None}),
+        verbose=completion_create_params.get("verbose", True),
+        forwarded_headers=forwarded_headers,
+    )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )
+```
+
+The agent is constructed without tools; `agent_chat_completion_wrapper` calls `mcp_tools_factory` to load MCP tools and supplies them to the agent (via `tools=` or `set_tools()`) before `invoke()` runs. Use `set_tools()` to update tools after initialization&mdash;it propagates to all CrewAI sub-agents.
+
 ## `register.py`
 
 DRAgent registration uses `CrewaiAgentConfig` with workflow type `crewai_agent` and `LLMFrameworkEnum.CREWAI` for LLM and tool wrappers:
@@ -90,6 +115,8 @@ async def crewai_agent(config: CrewaiAgentConfig, builder: Builder) -> AsyncGene
     yield FunctionInfo.from_fn(_response_fn, description=config.description)
 ```
 
+For DRAgent, MCP tools are loaded explicitly in `_response_fn` via `mcp_tools_context()`, merged with workflow tools, and passed to `MyAgent(..., tools=tools)` at initialization&mdash;not inside `invoke()`. Use `set_tools()` to update tools after initialization.
+
 ## `workflow.yaml`
 
 ```yaml
@@ -129,7 +156,7 @@ CrewAI agents receive tools through three channels:
 
 ### MCP tools
 
-MCP tools are loaded at runtime via `mcp_tools_context()` from `datarobot_genai.crewai.mcp`. These are automatically injected&mdash;you don't need to modify agent code to use them. See [MCP server](../../mcp-server.md).
+MCP tools are loaded by calling `mcp_tools_context()` in `custompy_adaptor` (DRUM) or `register.py` (DRAgent)&mdash;**outside** `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
 
 ### Workflow tools (DRAgent only)
 
@@ -143,11 +170,10 @@ To add a custom tool, define a plain Python function and wrap it with CrewAI's `
 from crewai.tools import tool
 
 @tool
-def generate_objectid(type: str) -> str:
-    """Generate a unique object ID for a deployment."""
-    if type != "deployment":
-        raise ValueError("Invalid type")
-    return "69cbb73789723b6936c6c9e1"
+def word_counter(text: str) -> str:
+    """Count words in the given text."""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
 ```
 
 Add the tool to agents:
@@ -158,7 +184,7 @@ agent_planner = Agent(
     goal="Create a short outline about: {topic}.",
     backstory=make_system_prompt("You are a content planner. ..."),
     llm=llm,
-    tools=[generate_objectid],
+    tools=[word_counter],
 )
 ```
 

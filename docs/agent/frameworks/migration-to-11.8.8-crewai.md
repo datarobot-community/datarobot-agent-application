@@ -69,7 +69,7 @@ agent_planner = Agent(
 
 Key differences:
 - `self.llm()` &rarr; `llm` (module-level, created by `get_llm()`)
-- `self.tools` &rarr; removed from agent definition (tools are injected at runtime)
+- `self.tools` &rarr; removed from agent definition; tools are passed via the `tools` init parameter (or `set_tools()`) by the caller&mdash;not loaded inside `invoke()`
 - `self.verbose` &rarr; hardcoded `True` (or your preferred default)
 - `backstory` now uses `make_system_prompt()` for consistent formatting
 

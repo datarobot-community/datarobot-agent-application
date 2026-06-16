@@ -1420,3 +1420,78 @@ class TestDrumRuntimeParameters:
 
         found_keys = [param.key for param in runtime_params if param.key in drum_keys]
         assert set(found_keys) == set(drum_keys)
+
+
+class TestA2AEndpointRuntimeParameter:
+    """Guard against silent A2A breakage: inject the deployment A2A endpoint runtime
+    parameter when DRAgent and an A2A server block are both enabled."""
+
+    A2A_ENDPOINT_PARAM_KEY = "AGENT_A2A_ENDPOINT"
+
+    def _setup_workspace(self, tmp_path, monkeypatch, workflow_content: str):
+        """Create a project layout within tmp_path and patch project_dir accordingly.
+
+        Layout: tmp_path/project/infra  (project_dir)
+                tmp_path/project/agent/workflow.yaml
+        """
+        project_root = tmp_path / "project"
+        infra_dir = project_root / "infra"
+        infra_dir.mkdir(parents=True)
+        agent_dir = project_root / "agent"
+        agent_dir.mkdir(parents=True)
+        (agent_dir / "workflow.yaml").write_text(workflow_content)
+
+        # project_dir is imported from infra.__init__; override it so
+        # _find_workflow_yaml resolves to our temp agent directory.
+        monkeypatch.setattr("infra.project_dir", infra_dir)
+
+    def test_a2a_endpoint_param_present_when_a2a_and_dragent_enabled(
+        self, monkeypatch, tmp_path
+    ):
+        """When workflow.yaml has A2A config and ENABLE_DRAGENT_SERVER=true,
+        the A2A endpoint runtime parameter must appear in agent_agent_runtime_parameters."""
+        monkeypatch.setenv("ENABLE_DRAGENT_SERVER", "true")
+        monkeypatch.setenv("AGENT_DEPLOY", "1")
+        monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+        self._setup_workspace(
+            tmp_path,
+            monkeypatch,
+            "general:\n"
+            "  front_end:\n"
+            "    a2a:\n"
+            "      server:\n"
+            "        name: test-agent\n"
+            "        description: Test\n",
+        )
+
+        import importlib
+        import infra.agent as agent_infra
+
+        importlib.reload(agent_infra)
+
+        param_keys = [p.key for p in agent_infra.agent_agent_runtime_parameters]
+        assert self.A2A_ENDPOINT_PARAM_KEY in param_keys
+
+    def test_a2a_endpoint_param_absent_when_a2a_disabled(self, monkeypatch, tmp_path):
+        """When workflow.yaml has no A2A config, the A2A endpoint parameter must NOT
+        appear in agent_agent_runtime_parameters — even if DRAgent is on."""
+        monkeypatch.setenv("ENABLE_DRAGENT_SERVER", "true")
+        monkeypatch.setenv("AGENT_DEPLOY", "1")
+        monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+        self._setup_workspace(
+            tmp_path,
+            monkeypatch,
+            "general:\n  front_end:\n    streaming: true\n",
+        )
+
+        import importlib
+        import infra.agent as agent_infra
+
+        importlib.reload(agent_infra)
+
+        param_keys = [p.key for p in agent_infra.agent_agent_runtime_parameters]
+        assert self.A2A_ENDPOINT_PARAM_KEY not in param_keys

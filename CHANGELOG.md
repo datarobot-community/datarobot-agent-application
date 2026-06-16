@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.2
+- Added a prompt for choosing whether to enable agent memory when the dragent server is enabled.
+- Added a prompt for `MEM0_API_KEY` when Mem0 is selected as the agent memory provider and the key is not set in `.env`.
+- Updated `agent` component from 11.10.17 to 11.10.27:
+  - Exported `AGENT_MEMORY_SPACE_ID` when agent memory provider "Datarobot Memory Service" is selected
+  - NemoAgentToolkit `workflow.yaml` unconditionally uses `streaming_memory_agent` since it is a passthrough when memory is not configured.
+  - Added documentation for DataRobot moderations.
+  - Added documentation for agent memory integration.
+  - Switched the tool example from `generate_objectid` to `word_counter`.
+  - Upgraded `datarobot-genai` from 0.15.113 to 0.15.125
+    - Made `streaming_memory_agent` a passthrough when memory is not configured.
+    - Skipped `datarobot_moderation_middleware` when loading the NeMo Agent Toolkit `workflow.yaml` when running the agent from drum.
+
+
 ## 11.10.1
 - Batched chat-history database writes during streaming in the FastAPI backend, reducing DataRobot Files API calls and improving streaming performance and persistence reliability under load.
 - Updated `agent` component from 11.10.11 to 11.10.15:
@@ -44,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 11.9.3
 - Updated `agent` component from 11.9.2 to 11.9.10:
-  - *Breaking changes*: moved `agent/workflow.yaml` to `workflow.yaml` as the top level configuration entity of an agent.
+  - *Breaking changes*: moved `workflow.yaml` from `agent/agent/workflow.yaml` to `agent/workflow.yaml` (agent component root). NAT agents load this file on DRUM as well as DRAgent; see [workflow.yaml path migration](docs/agent/migration-workflow-yaml-path.md).
   - Allow running agent with `dragent` in Agentic Playground.
   - Upgraded `datarobot-genai` from 0.15.53 to 0.15.71
     - Fixed `extra_body` passthrough for workflow.yaml LLM configs

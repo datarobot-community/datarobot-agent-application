@@ -28,7 +28,10 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.22.0,<1.30.0",
     "opentelemetry-instrumentation>=0.43b0,<0.59b0",
     "opentelemetry-instrumentation-fastapi>=0.43b0,<0.59b0",
+    "opentelemetry-instrumentation-httpx>=0.43b0,<0.59b0",
+    "opentelemetry-instrumentation-logging>=0.43b0,<0.59b0",
     "opentelemetry-instrumentation-requests>=0.43b0,<0.59b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.43b0,<0.59b0",
     "python-dotenv>=1.0.1",
     "ruff>=0.3.0",
     "sqlmodel>=0.0.24",
@@ -118,6 +121,9 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

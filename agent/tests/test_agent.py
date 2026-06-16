@@ -32,7 +32,7 @@ import pytest
 from langchain_core.prompts import ChatPromptTemplate
 
 from agent import MyAgent
-from agent.myagent import graph_factory, prompt_template
+from agent.myagent import graph_factory, prompt_template, word_counter
 
 
 class TestMyAgentLangGraph:
@@ -86,6 +86,11 @@ class TestMyAgentLangGraph:
         assert "planner_node" in graph.nodes
         assert "writer_node" in graph.nodes
 
+    def test_word_counter_tool(self):
+        """Test that word_counter returns a word count string."""
+        result = word_counter.invoke("hello world")
+        assert "Word count: 2" in result
+
     @patch("agent.myagent.create_agent")
     def test_graph_factory_passes_llm_and_tools(self, mock_create_agent):
         """Test that graph_factory passes LLM and tools to agents."""
@@ -96,6 +101,15 @@ class TestMyAgentLangGraph:
         for call in mock_create_agent.call_args_list:
             assert call[0][0] == mock_llm
             assert mock_tool in call[1]["tools"]
+
+    @patch("agent.myagent.create_agent")
+    def test_graph_factory_includes_word_counter(self, mock_create_agent):
+        """Test that graph_factory includes the built-in word_counter tool."""
+        mock_llm = Mock()
+        graph_factory(mock_llm, [], verbose=False)
+        for call in mock_create_agent.call_args_list:
+            tool_names = [t.name for t in call[1]["tools"]]
+            assert "word_counter" in tool_names
 
     def test_workflow_property_uses_graph_factory(self, agent):
         """Test that the agent's workflow property produces a graph."""

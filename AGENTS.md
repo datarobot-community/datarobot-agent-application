@@ -29,9 +29,9 @@ dr task run agent:install
 
 ## Agent Structure
 
-Agent must be implemented in the following location withing the `agent/agent` directory. None of the other files outside of this directory are related.
+Agent application code must be implemented in the `agent/agent` directory. The NAT orchestration file `workflow.yaml` lives at the agent component root (`agent/workflow.yaml`), not inside `agent/agent/`. NAT framework agents require that file on DRUM and DRAgent.
 
-For detailed documentation, see [docs/agent/README.md](../docs/agent/README.md).
+For detailed documentation, see [docs/agent/README.md](docs/agent/README.md). When upgrading layouts that still have `agent/agent/workflow.yaml`, see [workflow.yaml path migration](docs/agent/migration-workflow-yaml-path.md).
 
 
 
