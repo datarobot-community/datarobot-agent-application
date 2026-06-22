@@ -103,10 +103,10 @@ def graph_factory(
             "1. Use the content plan to craft a compelling blog post.\n"
             "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
             "3. Sections/Subtitles are properly named in an engaging manner.\n"
-            "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+            "4. Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
             "\n"
-            "Write in markdown format, ready for publication. "
-            "You MUST call the word_counter tool to verify your output is within the word limit.",
+            "Match the length and format the user asked for - for a short request like a single tweet (under 280 characters), output only that single item, nothing else (no alternatives or commentary). "
+            "Write in markdown, ready for publication. Call word_counter once to check the length, then return - do not loop, rewrite, or include the count.",
         ),
         name="writer_agent",
         debug=verbose,

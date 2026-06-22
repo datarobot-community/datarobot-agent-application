@@ -5,9 +5,9 @@
 The agent template can wire in **persistent, per-user memory** so the agent recalls facts across conversations. Memory is configured at project generation time with the Copier variable `use_agent_memory` and implemented declaratively in `workflow.yaml`.
 
 > [!IMPORTANT]
-> **DRAgent is required.** Memory integration only works with the DRAgent front server (`ENABLE_DRAGENT_SERVER=true` locally, or the `ENABLE_DRAGENT_SERVER` runtime parameter in deployed environments). The DRUM path (`custom.py` / `chat()`) does not load the memory wrapper. See [DRAgent front server](./README.md#dragent) for setup.
+> Memory runs on the [DRAgent front server](./README.md#front-server) (the only supported front server). The deprecated DRUM fallback (`ENABLE_DRAGENT_SERVER=false`) does **not** load the memory wrapper — leave DRAgent enabled if you rely on memory.
 
-Memory is **not** implemented in `myagent.py` or `custom.py`. The template wraps your framework agent in a `streaming_memory_agent` workflow that automatically retrieves relevant memories before each turn and captures new ones after.
+Memory is **not** implemented in `myagent.py`. The template wraps your framework agent in a `streaming_memory_agent` workflow that automatically retrieves relevant memories before each turn and captures new ones after.
 
 | Section | Description |
 |---|---|
@@ -84,7 +84,7 @@ The LLM used for capture and retrieval is the workflow `llm_name` (typically `da
 
 ### DRAgent requirement
 
-Memory is configured entirely in `workflow.yaml`. It requires the **DRAgent** front server (`ENABLE_DRAGENT_SERVER=true` locally, or the `ENABLE_DRAGENT_SERVER` runtime parameter in deployed environments). The DRUM path (`custom.py` / `chat()`) does not load the memory wrapper.
+Memory is configured entirely in `workflow.yaml` and runs through DRAgent middleware. The deprecated DRUM fallback (`ENABLE_DRAGENT_SERVER=false`) does not load the memory wrapper, so memory is silently disabled if you fall back to DRUM. See [Front server](./README.md#front-server).
 
 > [!NOTE]
 > When memory is enabled, the generated `workflow.yaml` uses `streaming_memory_agent` as the top-level workflow type instead of the framework agent type directly (for example `langgraph_agent` or `per_user_tool_calling_agent`). Your framework-specific agent moves into the `functions` section as the `inner_agent_name`.
@@ -212,13 +212,7 @@ For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMO
 
 ## Local development
 
-1. **Enable DRAgent** in `.env`:
-
-   ```sh
-   ENABLE_DRAGENT_SERVER=true
-   ```
-
-2. **Set provider credentials** in `.env`:
+1. **Set provider credentials** in `.env`:
 
    **Mem0:**
    ```sh
@@ -235,13 +229,13 @@ For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMO
    AGENT_MEMORY_TTL_SECONDS=86400
    ```
 
-3. **Start the agent:**
+2. **Start the agent:**
 
    ```sh
    dr run agent:dev
    ```
 
-4. **Test with repeated prompts** to verify memory persists across turns for the same user identity.
+3. **Test with repeated prompts** to verify memory persists across turns for the same user identity.
 
 For Mem0, obtain an API key from the [Mem0 dashboard](https://app.mem0.ai/). For the DataRobot Memory Service, use a memory space ID from your DataRobot tenant (or run `pulumi up` to create one via infrastructure).
 

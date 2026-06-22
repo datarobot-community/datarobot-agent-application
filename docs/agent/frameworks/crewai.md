@@ -276,6 +276,10 @@ kickoff_inputs = lambda user_prompt_content: {
 
 All `{variable}` placeholders in `role`, `goal`, `backstory`, `description`, and `expected_output` are resolved from this dictionary at runtime.
 
+### Chat history
+
+CrewAI supports chat history only as **flat text**, opt-in: add a `"chat_history"` key to `kickoff_inputs` and reference `{chat_history}` in a `backstory` or `description`. Prior turns are then injected as a plain-text summary; omit the key and no history is added. Prior turns aren't threaded as native role-tagged messages, since `Crew.kickoff()` accepts only string variables, not a message list.
+
 ### How to modify
 
 - **Change agent behavior**&mdash;modify `role`, `goal`, and `backstory` in the `Agent()` definition.

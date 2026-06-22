@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.3
+- DRAgent front server enabled by default for agent component (read more in [docs/agent/README.md#front-server](docs/agent/README.md#front-server)).
+- `dr start` does not prompt for an agent memory provider during local project setup.
+- Updated `agent` component from 11.10.27 to 11.10.41:
+  - dragent front server enabled by default.
+  - Configured smalled resource bundles by default for `dragent`: `xlarge` in default mode, and `3xlarge` in HA mode.
+  - Fixed resolution of external URLs in airgapped environments.
+  - Updated the default agents execution environment, including security fixes that remove a vulnerable transitive `transformers` dependency (CVE-2026-1839) and upgrade `pyarrow` to a patched version (CVE-2026-25087).
+  - Upgraded `datarobot-genai` from 0.15.125 to 0.18.9:
+    - Fixed tool calls in chat history across agent frameworks.
+    - Folded assistant reasoning into chat history.
+    - Echoed the requested model in dragent chat completions.
+    - Fixed passing retrieved memories to LlamaIndex agent.
+    - CrewAI agents now use native async kickoff (`akickoff`), with streaming and ReAct tool-loop fixes.
+    - Fixed issues with CrewAI tool calling for Claude Sonnet models.
+    - Fixed gpt-5-mini tool looping and constraint violations in agent template.
+
 ## 11.10.2
 - Added a prompt for choosing whether to enable agent memory when the dragent server is enabled.
 - Added a prompt for `MEM0_API_KEY` when Mem0 is selected as the agent memory provider and the key is not set in `.env`.
@@ -19,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Upgraded `datarobot-genai` from 0.15.113 to 0.15.125
     - Made `streaming_memory_agent` a passthrough when memory is not configured.
     - Skipped `datarobot_moderation_middleware` when loading the NeMo Agent Toolkit `workflow.yaml` when running the agent from drum.
-
 
 ## 11.10.1
 - Batched chat-history database writes during streaming in the FastAPI backend, reducing DataRobot Files API calls and improving streaming performance and persistence reliability under load.

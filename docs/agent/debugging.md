@@ -10,9 +10,7 @@ This guide covers how to debug agent code during local development using the CLI
 
 ## Development server
 
-All debugging approaches require the agent development server. The server is a local DRUM instance that loads your agent code and serves it on an HTTP endpoint (default port `8842`).
-
-The entry point is `agent/dev.py`, which starts a `PredictionServer` with `targetType: agenticworkflow`. The server reads `.env` for configuration and loads hooks from `agent/custom.py`.
+All debugging approaches require the agent development server. The Taskfile runs the [DRAgent](./README.md#front-server) FastAPI/NAT server (`nat dragent serve --config_file workflow.yaml`) on `http://localhost:8842` by default.
 
 ### Start manually
 
@@ -24,17 +22,13 @@ dr task run agent:dev
 
 Then send requests from a second terminal using the CLI.
 
-### DRAgent mode
-
-When `ENABLE_DRAGENT_SERVER=true` is set, the development server runs `nat dragent serve` instead of DRUM. The Taskfile forwards CLI commands directly to `nat dragent run` or `nat dragent query`.
-
 ## Testing with the CLI
 
-The agent CLI (`agent/cli.py`) provides commands for testing against both local and deployed agents.
+The agent CLI (`agent/cli.py`) provides commands for testing against both local and deployed agents. Under DRAgent, `execute` runs the workflow in-process via `nat dragent run` and does not require a running server.
 
 ### Local execution
 
-Submit a prompt to a running local development server:
+Run a prompt directly through the workflow (no dev server needed):
 
 ```sh
 task agent:cli -- execute --user_prompt "Artificial Intelligence"
@@ -46,30 +40,9 @@ With a structured JSON prompt:
 task agent:cli -- execute --user_prompt '{"topic": "Generative AI"}'
 ```
 
-With streaming enabled:
-
-```sh
-task agent:cli -- execute --user_prompt "Artificial Intelligence" --stream
-```
-
-Auto-start the dev server for a single test (starts and stops automatically):
-
-```sh
-task agent:cli START_DEV=1 -- execute --user_prompt "Artificial Intelligence"
-```
-
 With a prompt from a text file:
 
 ```sh
-task agent:cli -- execute --file "example-prompt.txt"
-```
-
-### DRAgent execution
-
-When `ENABLE_DRAGENT_SERVER=true`, `execute` runs the workflow directly in-process via `nat dragent run` without needing a running server:
-
-```sh
-task agent:cli -- execute --user_prompt "Artificial Intelligence"
 task agent:cli -- execute --file "example-prompt.txt"
 ```
 
@@ -86,13 +59,13 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 | Flag | Description |
 |---|---|
 | `--user_prompt` | Text or JSON prompt to send. |
-| `--completion_json` | Path to a JSON file with full chat completion params. Not supported with dragent mode. |
-| `--file` | Path to a text file whose contents are used as the prompt. Dragent mode only. |
-| `--stream` | Enable streaming response. Not supported with dragent mode. |
-| `--show_output` | Display full response inline. Not supported with dragent mode. |
-| `--deployment_id` | Target a deployed agent instead of local. |
+| `--file` | Path to a text file whose contents are used as the prompt. |
+| `--deployment_id` | Target a deployed agent instead of running locally. |
 
 ## Debugging in VS Code
+
+> [!NOTE]
+> The bundled VS Code and PyCharm launch configurations currently start the legacy `dev.py` DRUM server. They work today because `ENABLE_DRAGENT_SERVER=false` falls back to DRUM, but IDE-based debugging of the DRAgent runtime requires manual setup (run `nat dragent serve` under your debugger of choice). The shipped configurations will be updated when the [DRUM fallback](./README.md#drum-fallback-deprecated-temporary) is removed.
 
 This repository includes a pre-configured launch configuration in `.vscode/launch.json`.
 
@@ -101,6 +74,7 @@ This repository includes a pre-configured launch configuration in `.vscode/launc
 1. Open the repository in VS Code.
 2. Ensure the Python extension is installed.
 3. Select the agent interpreter: press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P`, run **Python: Select Interpreter**, and choose `agent/.venv/bin/python`.
+4. Set `ENABLE_DRAGENT_SERVER=false` in `.env` to use the bundled DRUM launch config.
 
 ### Launch configuration
 
@@ -136,6 +110,9 @@ The included `.vscode/launch.json` is already configured:
 
 ## Debugging in PyCharm
 
+> [!NOTE]
+> See the note in the [VS Code section](#debugging-in-vs-code) — the bundled PyCharm run configuration also targets the legacy DRUM `dev.py`. Set `ENABLE_DRAGENT_SERVER=false` to use it, or configure a custom run configuration that launches `nat dragent serve --config_file workflow.yaml`.
+
 This repository includes a pre-configured **Run Agent** run/debug configuration in `.idea/runConfigurations/Run_Agent.xml`.
 
 ### Setup
@@ -159,13 +136,13 @@ The **Run Agent** configuration points to `agent/dev.py`, sets the working direc
 
 ## Enable verbose logging
 
-Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent execution, LLM calls, and tool invocations. In the template, verbosity defaults to `True` in `custompy_adaptor` (via `completion_create_params`).
+Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent execution, LLM calls, and tool invocations. In the template, verbosity defaults to `True` when the agent is built in `register.py`.
 
 You can also enable verbose mode via the CLI completion JSON by adding `"verbose": true` to the `extra_body` field.
 
-### NAT log level (DRAgent mode)
+### NAT log level
 
-When running in DRAgent mode (`ENABLE_DRAGENT_SERVER=true`), control NAT's log verbosity with the `NAT_LOG_LEVEL` environment variable:
+Control NAT's log verbosity with the `NAT_LOG_LEVEL` environment variable:
 
 ```sh
 export NAT_LOG_LEVEL=DEBUG
@@ -190,10 +167,11 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 - Ensure you started the server in **Debug** mode, not regular Run.
 - Confirm the breakpoint is on a line that actually executes for your prompt.
 - Re-run the CLI command after the debugger is fully attached&mdash;the dev server handles one request at a time.
+- The shipped launch configs target the DRUM fallback. Set `ENABLE_DRAGENT_SERVER=false` in `.env`, or launch `nat dragent serve` under the debugger manually.
 
 ### Import errors in `myagent.py`
 
-**Symptom:** Imports to files in the same directory fail silently in DRUM.
+**Symptom:** Imports to files in the same directory fail silently.
 
 **Fix:** Use relative imports (e.g. `from .tools import my_tool`) instead of package imports (e.g. `from agent.tools import my_tool`).
 

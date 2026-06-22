@@ -27,7 +27,7 @@ class MyAgent(NatAgent):
         forwarded_headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(
-            workflow_path=Path(__file__).parent.parent / "workflow.yaml",
+            workflow_path=Path(__file__).parent / "workflow.yaml",
             api_key=api_key,
             api_base=api_base,
             model=model,

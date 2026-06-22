@@ -20,7 +20,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.memory.constants import user_by_email_description
+from app.memory.constants import user_by_email_description, user_email_deduplication_key
 from app.memory.user_registry import UserSessionRegistry
 from app.memory.user_repos import MemoryUserRepository
 from app.users.user import LanguageEnum, ThemeEnum, UserCreate
@@ -50,7 +50,7 @@ async def test_create_user_uses_email_description() -> None:
         patch("app.memory.user_repos.Session.list", return_value=[]),
         patch("app.memory.user_repos.Session.get", return_value=created),
         patch(
-            "app.memory.user_repos.Session.create",
+            "app.memory.sessions.Session.create",
             return_value=created,
         ) as create_mock,
     ):
@@ -62,6 +62,9 @@ async def test_create_user_uses_email_description() -> None:
     assert create_mock.call_args[1]["description"] == user_by_email_description(
         "new@example.com"
     )
+    assert create_mock.call_args[1][
+        "deduplication_key"
+    ] == user_email_deduplication_key("new@example.com")
     assert user.email == "new@example.com"
     assert user.id == 1001
 

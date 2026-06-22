@@ -16,6 +16,8 @@
       <excludeFolder url="file://$MODULE_DIR$/fastapi_server/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/fastapi_server/core/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/fastapi_server/core/htmlcov" />
+      <excludeFolder url="file://$MODULE_DIR$/docs/.bin/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/test_orchestrator/.venv" />
     </content>
     <orderEntry type="jdk" jdkName="uv (fastapi_server)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

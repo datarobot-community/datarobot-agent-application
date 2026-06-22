@@ -23,20 +23,21 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID, uuid4
 
-from datarobot.models.memory import Event, Session
+from datarobot.models.memory import Emitter, Event, Session
 
 from app.chats import Chat, ChatCreate
 from app.memory.constants import (
     MEMORY_SPACE_MAX_RETRIEVAL_LIMIT,
+    chat_deduplication_key,
     thread_session_description,
 )
-from app.memory.locks import memory_space_lock
 from app.memory.metadata_keys import session_metadata
 from app.memory.participant import (
     get_memory_participant_id,
     normalize_memory_participant_id,
 )
 from app.memory.registry import ChatSessionRegistry
+from app.memory.sessions import create_memory_session
 from app.messages import (
     Message,
     MessageCreate,
@@ -209,7 +210,7 @@ def memory_space_participant_id_for_user(
     )
 
 
-def _emitter_for_message_event(session: Session, message_role: str) -> dict[str, str]:
+def _emitter_for_message_event(session: Session, message_role: str) -> Emitter:
     """Build memory-service event emitter (type user|agent, id = 24-hex ObjectId).
 
     Sessions are created with a single ``participants`` entry (the app user). The
@@ -308,48 +309,48 @@ class MemoryChatRepository:
                 "thread_id is required when storing chats in memory service"
             )
 
-        lock_key = (
-            f"{self._memory_space_id}:chat:{chat_data.user_uuid}:{chat_data.thread_id}"
+        deduplication_key = chat_deduplication_key(
+            chat_data.user_uuid, chat_data.thread_id
         )
-        async with memory_space_lock(lock_key):
-            existing = await self.get_chat_by_thread_id(
-                chat_data.user_uuid, chat_data.thread_id
-            )
-            if existing is not None:
-                return existing
+        existing = await self.get_chat_by_thread_id(
+            chat_data.user_uuid, chat_data.thread_id
+        )
+        if existing is not None:
+            return existing
 
-            chat_uuid = uuid4()
-            metadata = {
-                "thread_id": chat_data.thread_id,
-                "name": chat_data.name,
-                "chat_uuid": str(chat_uuid),
-                "user_uuid": str(chat_data.user_uuid),
-            }
-            # Memory-service validates max_length=1 on participants for this deployment.
-            participants = [memory_space_participant_id(chat_data.user_uuid)]
+        chat_uuid = uuid4()
+        metadata = {
+            "thread_id": chat_data.thread_id,
+            "name": chat_data.name,
+            "chat_uuid": str(chat_uuid),
+            "user_uuid": str(chat_data.user_uuid),
+        }
+        # Memory-service validates max_length=1 on participants for this deployment.
+        participants = [memory_space_participant_id(chat_data.user_uuid)]
 
-            description = thread_session_description(chat_data.thread_id)
+        description = thread_session_description(chat_data.thread_id)
 
-            def _create() -> Session:
-                return Session.create(
-                    self._memory_space_id,
-                    participants,
-                    metadata=metadata,
-                    description=description,
-                )
+        session, duplicated = await create_memory_session(
+            self._memory_space_id,
+            participants,
+            deduplication_key=deduplication_key,
+            metadata=metadata,
+            description=description,
+        )
+        if duplicated:
+            return self._session_to_chat(session)
 
-            session = await asyncio.to_thread(_create)
-            created_id = session.id
-            if created_id is None:
-                raise ValueError("Memory service returned a session without id")
-            self._registry.register(chat_uuid, created_id)
-            return Chat(
-                uuid=chat_uuid,
-                name=chat_data.name,
-                thread_id=chat_data.thread_id,
-                user_uuid=chat_data.user_uuid,
-                created_at=session.created_at,
-            )
+        created_id = session.id
+        if created_id is None:
+            raise ValueError("Memory service returned a session without id")
+        self._registry.register(chat_uuid, created_id)
+        return Chat(
+            uuid=chat_uuid,
+            name=chat_data.name,
+            thread_id=chat_data.thread_id,
+            user_uuid=chat_data.user_uuid,
+            created_at=session.created_at,
+        )
 
     async def get_chat_by_thread_id(
         self,

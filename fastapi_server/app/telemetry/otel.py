@@ -291,11 +291,13 @@ class OTel:
         requests_logger = logging.getLogger("requests")
         requests_logger.addFilter(otlp_filter)
 
-        # Apply to opentelemetry SDK export loggers
+        # Apply to opentelemetry SDK export loggers.
+        # Names must match __name__ in the SDK modules: metrics and logs use
+        # the _internal path; traces use the public path.
         for sdk_logger_name in (
             "opentelemetry.sdk._logs._internal.export",
             "opentelemetry.sdk.trace.export",
-            "opentelemetry.sdk.metrics.export",
+            "opentelemetry.sdk.metrics._internal.export",
         ):
             logging.getLogger(sdk_logger_name).addFilter(otlp_filter)
 

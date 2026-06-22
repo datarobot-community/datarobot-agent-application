@@ -73,13 +73,23 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.max_workers = 1
 
+    config = Config()
+
+    if config.otel_exporter_otlp_endpoint:
+        os.environ.setdefault(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", config.otel_exporter_otlp_endpoint
+        )
+    if config.otel_exporter_otlp_headers:
+        os.environ.setdefault(
+            "OTEL_EXPORTER_OTLP_HEADERS", config.otel_exporter_otlp_headers
+        )
+
     trace_provider, metric_provider, log_provider = setup_otel(RuntimeParameters, args)
 
     os.environ["TARGET_NAME"] = "response"
     if args.autoreload:
         os.environ["FLASK_DEBUG"] = "1"
 
-    config = Config()
     port = config.local_dev_port
 
     # Use absolute path to ensure moderation_config.yaml is found regardless of CWD

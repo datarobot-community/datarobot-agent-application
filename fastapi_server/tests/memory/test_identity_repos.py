@@ -19,7 +19,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.memory.constants import identity_by_user_provider_description
+from app.memory.constants import (
+    identity_by_user_provider_description,
+    identity_deduplication_key,
+)
 from app.memory.identity_registry import IdentitySessionRegistry
 from app.memory.identity_repos import MemoryIdentityRepository
 from app.users.identity import AuthSchema, IdentityUpdate
@@ -46,7 +49,7 @@ async def test_upsert_identity_creates_session_with_user_provider_description() 
             return_value=[],
         ),
         patch(
-            "app.memory.identity_repos.Session.create",
+            "app.memory.sessions.Session.create",
             return_value=created,
         ) as create_mock,
     ):
@@ -64,6 +67,9 @@ async def test_upsert_identity_creates_session_with_user_provider_description() 
     assert create_mock.call_args[1][
         "description"
     ] == identity_by_user_provider_description(5, "google")
+    assert create_mock.call_args[1]["deduplication_key"] == identity_deduplication_key(
+        5, "google"
+    )
     assert identity.user_id == 5
     assert identity.provider_user_id == "google-user-1"
     assert identity.id == 1001
@@ -103,7 +109,7 @@ async def test_upsert_identity_updates_existing_metadata() -> None:
 
     existing.update = MagicMock()
     with patch(
-        "app.memory.identity_repos.Session.get",
+        "app.memory.sessions.Session.get",
         side_effect=[existing, existing, updated],
     ):
         identity = await repo.upsert_identity(
@@ -193,7 +199,7 @@ async def test_update_identity_reregisters_provider_cache_on_provider_user_id_ch
     repo = MemoryIdentityRepository("space-1", registry)
 
     with patch(
-        "app.memory.identity_repos.Session.get",
+        "app.memory.sessions.Session.get",
         side_effect=[session, updated_session],
     ):
         result = await repo.update_identity(

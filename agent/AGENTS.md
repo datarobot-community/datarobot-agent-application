@@ -130,6 +130,10 @@ Refer to [Custom metrics](../docs/agent/custom-metrics.md) page for how to set u
 
 ## Migrations
 
+### 11.9.3 — `workflow.yaml` location
+
+Agent component 11.9.3 moved `workflow.yaml` from `agent/agent/workflow.yaml` to `agent/workflow.yaml`. NAT framework agents load this file on **DRUM** and **DRAgent**. See [workflow.yaml path migration](../docs/agent/migration-workflow-yaml-path.md).
+
 ### 11.8.8 — New agent format (class-based → factory-based)
 
 Starting with agent component version 11.8.8 ([af-component-agent#474](https://github.com/datarobot-community/af-component-agent/pull/474)), agent templates (except `base`) no longer require defining agents within a `MyAgent` class. Agents are now defined using native framework primitives at module level and converted to `MyAgent` via a helper function (`datarobot_agent_class_from_*`). The LLM is also decoupled from the agent class and injected via `get_llm()`.
@@ -141,3 +145,4 @@ If you are upgrading an existing agent from a version prior to 11.8.8, follow th
 - [LlamaIndex migration](../docs/agent/frameworks/migration-to-11.8.8-llamaindex.md)
 - [Base agent migration](../docs/agent/frameworks/migration-to-11.8.8-base.md)
 - [NAT agent migration](../docs/agent/frameworks/migration-to-11.8.8-nat.md)
+- [workflow.yaml path migration (11.9.3)](../docs/agent/migration-workflow-yaml-path.md)

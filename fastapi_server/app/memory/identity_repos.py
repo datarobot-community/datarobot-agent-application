@@ -28,11 +28,12 @@ from app.memory.constants import (
     IDENTITY_METADATA_VERSION,
     MEMORY_SPACE_MAX_RETRIEVAL_LIMIT,
     identity_by_user_provider_description,
+    identity_deduplication_key,
 )
 from app.memory.identity_registry import IdentitySessionRegistry
-from app.memory.locks import memory_space_lock
 from app.memory.metadata_keys import session_metadata
 from app.memory.repos import memory_space_participant_id
+from app.memory.sessions import create_memory_session, patch_memory_session
 from app.users.identity import (
     AuthSchema,
     Identity,
@@ -175,51 +176,47 @@ class MemoryIdentityRepository:
         return await asyncio.to_thread(_get)
 
     async def create_identity(self, identity_data: IdentityCreate) -> Identity:
-        lock_key = (
-            f"{self._memory_space_id}:identity:"
-            f"{identity_data.user_id}:{identity_data.provider_type}:"
-            f"{identity_data.provider_user_id}"
+        existing = await self.get_by_user_id(
+            identity_data.provider_type, identity_data.user_id
         )
-        async with memory_space_lock(lock_key):
-            existing = await self.get_by_user_id(
-                identity_data.provider_type, identity_data.user_id
-            )
-            if existing is not None:
-                return existing
+        if existing is not None:
+            return existing
 
-            identity_uuid = uuid4()
-            identity_id = _synthetic_identity_id(identity_uuid)
-            identity = Identity(
-                id=identity_id,
-                uuid=identity_uuid,
-                created_at=datetime.now(timezone.utc),
-                **identity_data.model_dump(),
-            )
-            metadata = identity_to_metadata(identity)
-            description = identity_by_user_provider_description(
+        identity_uuid = uuid4()
+        identity_id = _synthetic_identity_id(identity_uuid)
+        identity = Identity(
+            id=identity_id,
+            uuid=identity_uuid,
+            created_at=datetime.now(timezone.utc),
+            **identity_data.model_dump(),
+        )
+        metadata = identity_to_metadata(identity)
+        description = identity_by_user_provider_description(
+            identity.user_id, identity.provider_type
+        )
+
+        session, duplicated = await create_memory_session(
+            self._memory_space_id,
+            _identity_session_participants(identity.uuid),
+            deduplication_key=identity_deduplication_key(
                 identity.user_id, identity.provider_type
-            )
-
-            def _create() -> Session:
-                return Session.create(
-                    self._memory_space_id,
-                    _identity_session_participants(identity.uuid),
-                    metadata=metadata,
-                    description=description,
-                )
-
-            session = await asyncio.to_thread(_create)
-            if session.id is None:
-                raise ValueError("Memory service returned a session without id")
-            self._registry.register(
-                session_id=session.id,
-                user_id=identity.user_id,
-                provider_type=identity.provider_type,
-                provider_user_id=identity.provider_user_id,
-                identity_uuid=identity.uuid,
-                identity_id=identity_id,
-            )
+            ),
+            metadata=metadata,
+            description=description,
+        )
+        if duplicated:
             return self._session_to_identity(session)
+        if session.id is None:
+            raise ValueError("Memory service returned a session without id")
+        self._registry.register(
+            session_id=session.id,
+            user_id=identity.user_id,
+            provider_type=identity.provider_type,
+            provider_user_id=identity.provider_user_id,
+            identity_uuid=identity.uuid,
+            identity_id=identity_id,
+        )
+        return self._session_to_identity(session)
 
     async def get_identity_by_id(
         self,
@@ -274,6 +271,28 @@ class MemoryIdentityRepository:
             return None
         return identity
 
+    def _apply_upsert_fields(
+        self,
+        identity: Identity,
+        *,
+        auth_type: AuthSchema,
+        user_id: int,
+        provider_id: str,
+        provider_type: str,
+        provider_user_id: str,
+        update: IdentityUpdate | None,
+    ) -> Identity:
+        identity.type = auth_type
+        identity.user_id = user_id
+        identity.provider_id = provider_id
+        identity.provider_type = provider_type
+        identity.provider_user_id = provider_user_id
+        if update:
+            for field, value in update.model_dump(exclude_unset=True).items():
+                if value is not None:
+                    setattr(identity, field, value)
+        return identity
+
     async def upsert_identity(
         self,
         user_id: int,
@@ -283,50 +302,42 @@ class MemoryIdentityRepository:
         provider_user_id: str,
         update: IdentityUpdate | None = None,
     ) -> Identity:
-        lock_key = (
-            f"{self._memory_space_id}:identity:"
-            f"{user_id}:{provider_type}:{provider_user_id}"
-        )
-        async with memory_space_lock(lock_key):
-            session = await self._get_session_by_user_provider(user_id, provider_type)
-            if session is None:
-                identity_uuid = uuid4()
-                identity_id = _synthetic_identity_id(identity_uuid)
-                identity = Identity(
-                    id=identity_id,
-                    uuid=identity_uuid,
-                    created_at=datetime.now(timezone.utc),
-                    type=auth_type,
-                    user_id=user_id,
-                    provider_id=provider_id,
-                    provider_type=provider_type,
-                    provider_user_id=provider_user_id,
-                    provider_identity_id=None,
-                    access_token=None,
-                    access_token_expires_at=None,
-                    refresh_token=None,
-                    datarobot_org_id=None,
-                    datarobot_tenant_id=None,
-                )
-                if update:
-                    for field, value in update.model_dump(exclude_unset=True).items():
-                        if value is not None:
-                            setattr(identity, field, value)
+        session = await self._get_session_by_user_provider(user_id, provider_type)
+        if session is None:
+            identity_uuid = uuid4()
+            identity_id = _synthetic_identity_id(identity_uuid)
+            identity = Identity(
+                id=identity_id,
+                uuid=identity_uuid,
+                created_at=datetime.now(timezone.utc),
+                type=auth_type,
+                user_id=user_id,
+                provider_id=provider_id,
+                provider_type=provider_type,
+                provider_user_id=provider_user_id,
+                provider_identity_id=None,
+                access_token=None,
+                access_token_expires_at=None,
+                refresh_token=None,
+                datarobot_org_id=None,
+                datarobot_tenant_id=None,
+            )
+            if update:
+                for field, value in update.model_dump(exclude_unset=True).items():
+                    if value is not None:
+                        setattr(identity, field, value)
 
-                metadata = identity_to_metadata(identity)
-                description = identity_by_user_provider_description(
-                    user_id, provider_type
-                )
+            metadata = identity_to_metadata(identity)
+            description = identity_by_user_provider_description(user_id, provider_type)
 
-                def _create() -> Session:
-                    return Session.create(
-                        self._memory_space_id,
-                        _identity_session_participants(identity_uuid),
-                        metadata=metadata,
-                        description=description,
-                    )
-
-                session = await asyncio.to_thread(_create)
+            session, duplicated = await create_memory_session(
+                self._memory_space_id,
+                _identity_session_participants(identity_uuid),
+                deduplication_key=identity_deduplication_key(user_id, provider_type),
+                metadata=metadata,
+                description=description,
+            )
+            if not duplicated:
                 if session.id is None:
                     raise ValueError("Memory service returned a session without id")
                 self._registry.register(
@@ -339,35 +350,38 @@ class MemoryIdentityRepository:
                 )
                 return self._session_to_identity(session)
 
-            existing = metadata_to_identity(session)
-            if existing is None:
-                raise ValueError("Memory session is missing valid identity metadata")
-
-            identity = existing
-            identity.type = auth_type
-            identity.user_id = user_id
-            identity.provider_id = provider_id
-            identity.provider_type = provider_type
-            identity.provider_user_id = provider_user_id
-
-            if update:
-                for field, value in update.model_dump(exclude_unset=True).items():
-                    if value is not None:
-                        setattr(identity, field, value)
-
-            metadata = identity_to_metadata(identity)
-            description = identity_by_user_provider_description(user_id, provider_type)
+            sid = session.id
+            if sid is None:
+                raise ValueError("Memory session is missing id")
+        else:
             sid = session.id
             if sid is None:
                 raise ValueError("Memory session is missing id")
 
-            def _patch() -> Session:
-                s = Session.get(self._memory_space_id, sid)
-                s.update(metadata=metadata, description=description)
-                return Session.get(self._memory_space_id, sid)
+        def build_patch(s: Session) -> dict[str, object]:
+            existing = metadata_to_identity(s)
+            if existing is None:
+                raise ValueError("Memory session is missing valid identity metadata")
+            identity = self._apply_upsert_fields(
+                existing,
+                auth_type=auth_type,
+                user_id=user_id,
+                provider_id=provider_id,
+                provider_type=provider_type,
+                provider_user_id=provider_user_id,
+                update=update,
+            )
+            return {
+                "metadata": identity_to_metadata(identity),
+                "description": identity_by_user_provider_description(
+                    user_id, provider_type
+                ),
+            }
 
-            updated = await asyncio.to_thread(_patch)
-            return self._session_to_identity(updated)
+        updated = await patch_memory_session(
+            self._memory_space_id, sid, build_patch=build_patch
+        )
+        return self._session_to_identity(updated)
 
     async def update_identity(
         self, identity_id: int, update: IdentityUpdate
@@ -376,27 +390,36 @@ class MemoryIdentityRepository:
         if not sid:
             return None
 
-        def _patch() -> tuple[tuple[int, str, str, UUID, int] | None, Session | None]:
-            s = Session.get(self._memory_space_id, sid)
+        old_keys_holder: list[tuple[int, str, str, UUID, int]] = []
+
+        def build_patch(s: Session) -> dict[str, object]:
             identity = metadata_to_identity(s)
             if identity is None or identity.id is None:
-                return None, None
-            old_keys = (
-                identity.user_id,
-                identity.provider_type,
-                identity.provider_user_id,
-                identity.uuid,
-                identity.id,
+                raise ValueError("Memory session is missing valid identity metadata")
+            old_keys_holder.clear()
+            old_keys_holder.append(
+                (
+                    identity.user_id,
+                    identity.provider_type,
+                    identity.provider_user_id,
+                    identity.uuid,
+                    identity.id,
+                )
             )
             for field, value in update.model_dump(exclude_unset=True).items():
                 setattr(identity, field, value)
-            s.update(metadata=identity_to_metadata(identity))
-            refreshed = Session.get(self._memory_space_id, sid)
-            return old_keys, refreshed
+            return {"metadata": identity_to_metadata(identity)}
 
-        old_keys, session = await asyncio.to_thread(_patch)
-        if old_keys is None or session is None:
+        try:
+            session = await patch_memory_session(
+                self._memory_space_id, sid, build_patch=build_patch
+            )
+        except ValueError:
             return None
+
+        if not old_keys_holder:
+            return None
+        old_keys = old_keys_holder[0]
 
         old_user_id, old_provider_type, old_provider_user_id, old_uuid, old_id = (
             old_keys

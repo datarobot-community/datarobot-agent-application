@@ -19,6 +19,30 @@ from urllib.parse import quote
 from uuid import UUID
 
 MEMORY_SPACE_MAX_RETRIEVAL_LIMIT = 100
+# Memory Space API allows deduplication keys up to 72 characters.
+DEDUPLICATION_KEY_LENGTH = 64
+
+
+def session_deduplication_key(namespace: str, *parts: str) -> str:
+    """Build a stable deduplication key for Session.create within a memory space."""
+    raw = namespace + "\0" + "\0".join(parts)
+    return hashlib.sha256(raw.encode()).hexdigest()[:DEDUPLICATION_KEY_LENGTH]
+
+
+def chat_deduplication_key(user_uuid: UUID, thread_id: str) -> str:
+    """Deduplication key for chat sessions keyed by user and AG-UI thread id."""
+    return session_deduplication_key("chat", str(user_uuid), thread_id)
+
+
+def user_email_deduplication_key(email: str) -> str:
+    """Deduplication key for user profile sessions keyed by email."""
+    return session_deduplication_key("user-email", email)
+
+
+def identity_deduplication_key(user_id: int, provider_type: str) -> str:
+    """Deduplication key for OAuth identity sessions keyed by user and provider."""
+    return session_deduplication_key("identity", str(user_id), provider_type)
+
 
 # Session metadata ``v`` discriminates document types in a shared Memory Space (not
 # per-type schema revisions). Chat sessions are unversioned; identity and user

@@ -54,10 +54,6 @@ tasks:
       - dr self update
       - "echo '✨ Choose your agentic framework.'"
       - |
-        COPIER_MEMORY_DATA=""
-        if [ "${ENABLE_DRAGENT_SERVER:-false}" != "true" ]; then
-          COPIER_MEMORY_DATA="--data use_agent_memory=none"
-        fi
         PYTHONWARNINGS=ignore uvx copier recopy -a .datarobot/answers/agent-agent.yml \
         -r {{.AGENT_VERSION}} \
         --data base_answers_file=.datarobot/answers/base.yml \
@@ -66,7 +62,7 @@ tasks:
         --data include_taskfile_infra=no \
         --data mcp_answers_file=.datarobot/answers/drmcp-mcp_server.yml \
         --data llm_answers_file=.datarobot/answers/llm-llm.yml \
-        $COPIER_MEMORY_DATA \
+        --data use_agent_memory=none \
         {{.COPIER_FLAGS}} -w --quiet
       - task build-agents-md
       - dr task compose

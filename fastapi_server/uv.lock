@@ -635,7 +635,7 @@ wheels = [
 
 [[package]]
 name = "datarobot"
-version = "3.15.0"
+version = "3.17.0rc1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -652,9 +652,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ea/2b/33b31f3681fcb669ad3857761ecfd310c2771d733406ef7f394c988a3148/datarobot-3.15.0.tar.gz", hash = "sha256:e6a63aae3f61c3348cc195b9d4d5c00335c07b9dfd24f49dcea96ef0eae19cf7", size = 806839, upload-time = "2026-05-07T19:41:41.11Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/6e/80572044de4c88eeb5a0e60d06ed6392c2477238e1bd1a7c81d55ce75659/datarobot-3.17.0rc1.tar.gz", hash = "sha256:c731b1abd4ac2d6f087dc604f47e95cb62817e6770736e1a4943912c892ba034", size = 830746, upload-time = "2026-06-16T23:26:12.392Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/db/3e4aaaf35d48acfe1e99c0d4658a943e2ca0ac7f6e68b13239dac37586a2/datarobot-3.15.0-py3-none-any.whl", hash = "sha256:b3fbbaede277312a0bea36db1360c55166b93d6131a6f9d106c533fe6616fbf2", size = 873786, upload-time = "2026-05-07T19:41:39.177Z" },
+    { url = "https://files.pythonhosted.org/packages/94/c4/13d4df92c000ce33d73da81dcb81a8987bc8d21dee5904400d0d4ed82376/datarobot-3.17.0rc1-py3-none-any.whl", hash = "sha256:b18454e18ddaf6cb89887a89628a7fe8c85698eab647cfbca35250585a7dfb38", size = 898637, upload-time = "2026-06-16T23:26:10.672Z" },
 ]
 
 [package.optional-dependencies]
@@ -922,7 +922,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.16.5" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "core", editable = "../core" },
-    { name = "datarobot", extras = ["auth-authlib", "core"], specifier = ">=3.15.0" },
+    { name = "datarobot", extras = ["auth-authlib", "core"], specifier = ">=3.17.0rc1" },
     { name = "datarobot-asgi-middleware", specifier = ">=0.2.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.11" },
     { name = "greenlet", specifier = ">=3.2.1" },

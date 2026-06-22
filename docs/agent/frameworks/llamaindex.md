@@ -248,6 +248,14 @@ workflow = AgentWorkflow(
 - `root_agent`&mdash;the agent that processes the user's input first.
 - `initial_state`&mdash;shared state accessible to all agents via `Context`. Use it to pass structured data between agents.
 
+### Chat history
+
+This template's `FunctionAgent` system prompts and `AgentWorkflow` declare no `{chat_history}` placeholder, so as of `datarobot-genai` 0.16.0 the agent replays prior turns to the model by default (*structured history*): prior turns&mdash;including tool calls and their results&mdash;are passed to the workflow as native `ChatMessage` history, bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into its answer. To restore the previous single-turn behavior or change the bound, pass `structured_history=False` or `max_history_messages` to `MyAgent(...)` (in `register.py` and `myagent.py`):
+
+```python
+agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
+```
+
 ### How to modify
 
 - **Update agent behavior**&mdash;modify the `system_prompt` string in a `FunctionAgent` definition.

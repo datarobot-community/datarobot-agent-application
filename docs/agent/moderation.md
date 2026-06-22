@@ -2,14 +2,15 @@
 
 This guide explains how to configure **moderations** (guardrails) for agents in this template. Moderations evaluate prompts before the LLM runs and responses after, and can block, report, or replace content based on thresholds you define.
 
-The `datarobot-moderations[all]` package is already included in `pyproject.toml`. Guards share a single YAML schema; how you wire that schema depends on which **front server** serves the agent.
+The `datarobot-moderations[all]` package is already included in `pyproject.toml`. Guards are wired into the agent through the `datarobot_moderation` middleware declared in `workflow.yaml` and applied by the [DRAgent front server](./README.md#front-server).
 
 | Section | Description |
 |---|---|
 | [Overview](#overview) | How moderations fit into the agent request path. |
 | [Guard configuration file](#guard-configuration-file) | Shared YAML schema and file placement. |
-| [DRUM](#drum) | Runtime guardrails with the default DRUM front server. |
-| [DRAgent](#dragent) | Runtime guardrails with the DRAgent front server. |
+| [Wire the middleware](#wire-the-middleware) | Hook `datarobot_moderation` into your workflow. |
+| [Configure guards](#configure-guards) | Two ways to specify guards (external file or inline). |
+| [Test moderations locally](#test-moderations-locally) | Run prompts through your configured guards. |
 | [Environment variables](#environment-variables) | Credentials and runtime toggles. |
 | [Disabling moderations](#disabling-moderations) | Turn guards off without removing configuration. |
 | [Local evaluation](#local-evaluation) | Quality gates in Pytest (separate from runtime guards). |
@@ -22,12 +23,7 @@ Moderations run in two stages:
 1. **Pre-score (prompt)**&mdash;guards evaluate the user's input before the agent calls the LLM. Blocked prompts never reach the model.
 2. **Post-score (response)**&mdash;guards evaluate the agent's output after generation. Blocked responses are not returned to the caller.
 
-This template supports two front servers. Both use the same guard YAML, but the integration point differs:
-
-| Front server | Integration | Config file | When active |
-|---|---|---|---|
-| **DRUM** | DRUM wraps the `chat()` hook in `custom.py` automatically | `moderation_config.yaml` | Default (`ENABLE_DRAGENT_SERVER` unset or `false`) |
-| **DRAgent** | `datarobot_moderation` middleware in `workflow.yaml` | Inline `moderation` field or `moderation_config.yaml` | `ENABLE_DRAGENT_SERVER=true` |
+Both stages are implemented by the `datarobot_moderation` middleware on DRAgent, which loads guard definitions from either `moderation_config.yaml` or an inline `moderation` block in `workflow.yaml`.
 
 > [!NOTE]
 > Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see [Local evaluation](./evaluation.md).
@@ -36,16 +32,15 @@ This template supports two front servers. Both use the same guard YAML, but the 
 
 ### File location
 
-Place `moderation_config.yaml` at the root of the `agent/` directory, alongside `custom.py`, `dev.py`, and `workflow.yaml`:
+Place `moderation_config.yaml` at the root of the `agent/` directory, alongside `workflow.yaml`:
 
 ```
 agent/
-├── moderation_config.yaml   # Runtime guard configuration (DRUM and DRAgent)
-├── custom.py
-├── dev.py
+├── moderation_config.yaml   # Runtime guard configuration
 ├── workflow.yaml
 └── agent/
     ├── myagent.py
+    ├── register.py
     └── ...
 ```
 
@@ -107,76 +102,11 @@ For the complete list of guard types, LLM backends, intervention actions, and co
 ### Streaming performance
 
 > [!WARNING]
-> Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be **slow in streaming mode**. Post-score guards may run on **each streamed chunk** rather than only on the final response, so every chunk can trigger a separate judge or model invocation. This applies to both DRUM and DRAgent streaming paths.
+> Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be **slow in streaming mode**. Post-score guards may run on **each streamed chunk** rather than only on the final response, so every chunk can trigger a separate judge or model invocation.
 >
 > For streaming workloads, prefer lightweight local guards (for example `token_count`) or reserve LLM-as-a-judge and model guards for non-streaming requests. If guards time out during streaming, increase `timeout_sec` or set `timeout_action: score` while tuning thresholds.
 
-## DRUM
-
-**DRUM** (DataRobot User Model) is the default front server. When `moderation_config.yaml` is present in the agent directory, DRUM applies guards automatically around the `chat()` hook in `custom.py`. No changes to `custom.py` or `myagent.py` are required.
-
-### How it works
-
-1. A request arrives at the DRUM prediction server.
-2. Pre-score guards evaluate the prompt.
-3. If the prompt passes, DRUM calls `chat()` and the agent generates a response.
-4. Post-score guards evaluate the response.
-5. If a guard's intervention condition fires, the blocked message is returned instead of the agent output.
-
-The local development server (`dev.py`) sets `TARGET_NAME=response` and passes the agent directory as the model path so DRUM can locate `moderation_config.yaml` regardless of the working directory.
-
-### Local development
-
-Start the agent with DRUM (default):
-
-```sh
-dr run agent:dev
-```
-
-Or run the full application:
-
-```sh
-dr run dev
-```
-
-Send a test request:
-
-```sh
-task agent:cli -- execute --user_prompt '{"topic":"Generative AI"}'
-```
-
-If a guard blocks the request, the response contains the guard's `intervention.message` instead of the agent's normal output.
-
-### Deployed environments
-
-When deployed as a DataRobot custom model, DRUM loads `moderation_config.yaml` from the model artifact. Redeploy after changing guard configuration so the new file is included in the deployment package.
-
-`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` must be available in the deployment environment for guards that call the DataRobot LLM Gateway or model deployments.
-
-## DRAgent
-
-**DRAgent** is the next-generation front server built on NAT (NeMo Agent Toolkit). Moderations are applied through the `datarobot_moderation` middleware declared in `workflow.yaml`.
-
-> [!IMPORTANT]
-> DRAgent is experimental. Enable it by setting `ENABLE_DRAGENT_SERVER=true` in your `.env` file. When DRAgent is enabled, the agent CLI is unavailable; use `task agent:cli` or `nat dragent` commands instead. See [Front servers](./README.md#front-servers) for details.
-
-### Enable DRAgent
-
-Add to `.env`:
-
-```sh
-ENABLE_DRAGENT_SERVER=true
-```
-
-Start the development server:
-
-```sh
-dr run agent:dev
-```
-
-This runs `nat dragent serve --config_file workflow.yaml` instead of the DRUM-based `dev.py` server.
-
-### Wire the middleware
+## Wire the middleware
 
 Generated `workflow.yaml` files include a `datarobot_moderation` middleware definition. For most frameworks (LangGraph, CrewAI, LlamaIndex, Base), the workflow also lists the middleware in the `workflow.middleware` block:
 
@@ -195,9 +125,9 @@ middleware:
 
 If no guards are configured, the middleware is a no-op. Add guards using one of the two methods below.
 
-#### NAT framework
+### NAT framework
 
-The NAT template ships with the `workflow.middleware` entry commented out. Uncomment it to enable moderations when running with DRAgent:
+The NAT template ships with the `workflow.middleware` entry commented out. Uncomment it to enable moderations:
 
 ```yaml
 workflow:
@@ -207,17 +137,17 @@ workflow:
     - datarobot_moderation
 ```
 
-#### Agent memory workflows
+### Agent memory workflows
 
 When agent memory (`mem0` or `datarobot_memory_service`) is enabled, the workflow type is `streaming_memory_agent` and the template does not add `datarobot_moderation` to the workflow's middleware list. Add it manually if you want runtime guardrails with memory-enabled agents.
 
-### Configure guards
+## Configure guards
 
 You can configure guards in two ways:
 
 **Option 1 &mdash; external file (recommended)**
 
-Create `moderation_config.yaml` at the agent directory root (same location as for DRUM). The middleware loads it automatically when no inline configuration is present:
+Create `moderation_config.yaml` at the agent directory root. The middleware loads it automatically when no inline configuration is present:
 
 ```yaml
 middleware:
@@ -255,18 +185,18 @@ middleware:
 
 Inline configuration takes precedence over `moderation_config.yaml` when both are present.
 
-### Test with DRAgent
+## Test moderations locally
 
-Run a one-off query without starting the dev server:
+Run a one-off query in-process (no server required):
 
 ```sh
 task agent:cli -- execute --user_prompt "What is generative AI?"
 ```
 
-Or query a running DRAgent server:
+Or start the DRAgent dev server and send requests from another terminal:
 
 ```sh
-task agent:cli START_DEV=1 -- execute --user_prompt "What is generative AI?"
+dr run agent:dev
 ```
 
 Blocked responses surface as content-filter events in the streaming path or as the guard's intervention message in non-streaming mode.
@@ -277,9 +207,7 @@ Blocked responses surface as content-filter events in the streaming path or as t
 |---|---|---|
 | `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (e.g., `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
 | `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot API token. Set in `.env` by `dr start`. |
-| `TARGET_NAME` | DRUM local dev / standalone Python | Response field name for post-score guards. DRUM sets this to `response` in `dev.py`. In deployed DRUM environments, the deployment `target_name` takes precedence. |
 | `DISABLE_MODERATION` | No | Set to `true` to disable all guards at runtime without removing configuration. |
-| `ENABLE_DRAGENT_SERVER` | DRAgent only | Set to `true` to use the DRAgent front server instead of DRUM. |
 
 ## Disabling moderations
 
@@ -293,13 +221,13 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 ## Local evaluation
 
-Runtime moderations (this guide) enforce guardrails on live agent traffic through DRUM or DRAgent.
+Runtime moderations (this guide) enforce guardrails on live agent traffic through the DRAgent middleware.
 
 For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
 
 | File | Purpose | Used by |
 |---|---|---|
-| `moderation_config.yaml` | Runtime guardrails on live traffic | DRUM, DRAgent middleware |
+| `moderation_config.yaml` | Runtime guardrails on live traffic | `datarobot_moderation` middleware in `workflow.yaml` |
 | `moderation.yaml` | Offline quality gates in tests | Pytest + `ModerationPipeline` |
 
 Both files use the same guard schema. You can maintain one file and symlink or copy it to the other name if you want identical thresholds for runtime and CI.
@@ -310,6 +238,6 @@ Both files use the same guard schema. You can maintain one file and symlink or c
 |---|---|
 | Guard types, LLM backends, and full YAML reference | [datarobot-moderations on PyPI](https://pypi.org/project/datarobot-moderations/) |
 | Local evaluation with Pytest | [Local evaluation](./evaluation.md) |
-| DRUM vs DRAgent front servers | [Front servers](./README.md#front-servers) |
+| DRAgent front server | [Front server](./README.md#front-server) |
 | DRAgent debugging and CLI | [Debugging](./debugging.md) |
 | `dr-moderation` CLI (evaluate configs without deploying) | [datarobot-moderations CLI docs](https://pypi.org/project/datarobot-moderations/) |

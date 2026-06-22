@@ -18,10 +18,11 @@ loading variables from environment, .env files, Pulumi outputs, and
 DataRobot credentials automatically.
 """
 
+import os
 from typing import Any
 
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 
 class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
@@ -39,6 +40,21 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     local_dev_port: int = Field(
         default=8842, validation_alias="AGENT_PORT", ge=1, le=65535
     )
+
+    otel_entity_id: str = ""
+    otel_exporter_otlp_endpoint: str = ""
+    otel_exporter_otlp_headers: str = ""
+
+    @field_validator("otel_exporter_otlp_headers", mode="before")
+    @classmethod
+    def _assemble_otel_headers(cls, v: object, info: ValidationInfo) -> object:
+        if v:
+            return v
+        entity_id = (info.data or {}).get("otel_entity_id", "")
+        api_token = os.environ.get("DATAROBOT_API_TOKEN", "")
+        if entity_id and api_token:
+            return f"x-datarobot-entity-id={entity_id},x-datarobot-api-key={api_token}"
+        return v
 
     @model_validator(mode="before")
     @classmethod

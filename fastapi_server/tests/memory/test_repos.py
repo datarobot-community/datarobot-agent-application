@@ -209,7 +209,9 @@ async def test_create_chat_registers_session_with_datarobot_user_id() -> None:
     with (
         memory_participant_id_context(dr_user_id),
         patch("app.memory.repos.Session.list", return_value=[]),
-        patch("app.memory.repos.Session.create", return_value=created) as create_mock,
+        patch(
+            "app.memory.sessions.Session.create", return_value=created
+        ) as create_mock,
     ):
         chat = await repo.create_chat(
             ChatCreate(
@@ -243,7 +245,7 @@ async def test_create_chat_registers_session() -> None:
     with (
         patch("app.memory.repos.Session.list", return_value=[]),
         patch(
-            "app.memory.repos.Session.create",
+            "app.memory.sessions.Session.create",
             return_value=created,
         ) as create_mock,
     ):

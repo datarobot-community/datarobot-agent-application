@@ -14,7 +14,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "core",
     "datarobot-asgi-middleware>=0.2.0",
-    "datarobot[auth-authlib,core]>=3.15.0",
+    "datarobot[auth-authlib,core]>=3.17.0rc1",
     "fastapi[standard]>=0.115.11",
     "greenlet>=3.2.1",
     "httpx>=0.28.1",

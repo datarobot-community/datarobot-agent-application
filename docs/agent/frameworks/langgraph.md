@@ -242,6 +242,12 @@ The template supports variables that are automatically populated at runtime:
 
 To change how user input is presented to the agent, modify this template. You can add more context, change the system message, or introduce additional variables. The variable names must match the keys returned by the `kickoff_inputs` mapping in the factory.
 
+By default the agent summarizes prior turns into `{chat_history}` as text. As of `datarobot-genai` 0.16.0, removing `{chat_history}` from the template switches the agent to *structured history*&mdash;prior turns (with tool calls preserved) are replayed to the model as native `HumanMessage`/`AIMessage`/`ToolMessage` objects, with prior-turn reasoning folded into its answer. Either way the replayed history is bounded by `max_history_messages` (default `20`); pass `structured_history=False` or `max_history_messages` to `MyAgent(...)` (in `register.py` and `myagent.py`) to force replay off or change the bound:
+
+```python
+agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
+```
+
 ### System prompts (per-node)
 
 Each node in the graph has its own system prompt passed to `create_agent()` via `make_system_prompt()`. This controls the behavior of that specific sub-agent:

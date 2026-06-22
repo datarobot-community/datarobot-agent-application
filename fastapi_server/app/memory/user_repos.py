@@ -24,10 +24,14 @@ from uuid import UUID, uuid4
 from datarobot.models.memory import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.memory.constants import USER_METADATA_VERSION, user_by_email_description
-from app.memory.locks import memory_space_lock
+from app.memory.constants import (
+    USER_METADATA_VERSION,
+    user_by_email_description,
+    user_email_deduplication_key,
+)
 from app.memory.metadata_keys import session_metadata
 from app.memory.repos import memory_space_participant_id
+from app.memory.sessions import create_memory_session
 from app.memory.user_attachments import UserIdentitySource, attach_user_identities
 from app.memory.user_registry import UserSessionRegistry
 from app.users.user import LanguageEnum, ThemeEnum, User, UserCreate
@@ -156,49 +160,51 @@ class MemoryUserRepository:
         return await attach_user_identities(user, self._identity_repo)
 
     async def create_user(self, user_data: UserCreate) -> User:
-        lock_key = f"{self._memory_space_id}:user:email:{user_data.email}"
-        async with memory_space_lock(lock_key):
-            existing = await self.get_user(email=user_data.email)
-            if existing is not None:
-                raise IntegrityError(
-                    "duplicate user email",
-                    {},
-                    Exception("duplicate user email"),
-                )
-
-            user_uuid = uuid4()
-            user_id = _synthetic_user_id(user_uuid)
-            user = User(
-                id=user_id,
-                uuid=user_uuid,
-                created_at=datetime.now(timezone.utc),
-                **user_data.model_dump(),
-                identities=[],
+        existing = await self.get_user(email=user_data.email)
+        if existing is not None:
+            raise IntegrityError(
+                "duplicate user email",
+                {},
+                Exception("duplicate user email"),
             )
-            metadata = user_to_metadata(user)
-            description = user_by_email_description(user.email)
 
-            def _create() -> Session:
-                return Session.create(
-                    self._memory_space_id,
-                    _user_session_participants(user.uuid),
-                    metadata=metadata,
-                    description=description,
-                )
+        user_uuid = uuid4()
+        user_id = _synthetic_user_id(user_uuid)
+        user = User(
+            id=user_id,
+            uuid=user_uuid,
+            created_at=datetime.now(timezone.utc),
+            **user_data.model_dump(),
+            identities=[],
+        )
+        metadata = user_to_metadata(user)
+        description = user_by_email_description(user.email)
 
-            session = await asyncio.to_thread(_create)
-            if session.id is None:
-                raise ValueError("Memory service returned a session without id")
-            self._registry.register(
-                session_id=session.id,
-                email=user.email,
-                user_uuid=user.uuid,
-                user_id=user_id,
+        session, duplicated = await create_memory_session(
+            self._memory_space_id,
+            _user_session_participants(user.uuid),
+            deduplication_key=user_email_deduplication_key(user.email),
+            metadata=metadata,
+            description=description,
+        )
+        if duplicated:
+            raise IntegrityError(
+                "duplicate user email",
+                {},
+                Exception("duplicate user email"),
             )
-            user = self._session_to_user(session)
-            attached = await attach_user_identities(user, self._identity_repo)
-            assert attached is not None
-            return attached
+        if session.id is None:
+            raise ValueError("Memory service returned a session without id")
+        self._registry.register(
+            session_id=session.id,
+            email=user.email,
+            user_uuid=user.uuid,
+            user_id=user_id,
+        )
+        user = self._session_to_user(session)
+        attached = await attach_user_identities(user, self._identity_repo)
+        assert attached is not None
+        return attached
 
     async def update_user_settings(
         self,

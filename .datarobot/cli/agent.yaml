@@ -3,6 +3,7 @@ root:
     type: string
     default: "8842"
     help: "Enter the local port to access the agent. Should be a unique value."
+
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT
     type: string
     default: "[DataRobot] Python 3.11 GenAI Agents"
@@ -10,6 +11,11 @@ root:
     help: "Enter the default execution environment for the agent's custom model."
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID
     type: string
-    default: "6a143de8b391ac076d78fd19"
+    default: "6a3919cb62ca0dc60197d473"
     optional: true
     help: "Enter the default execution environment version ID for the agent's custom model."
+  - env: ENABLE_DRAGENT_SERVER
+    type: string
+    default: "true"
+    optional: true
+    help: "Whether to use the `dragent` as frontserver for your agent"

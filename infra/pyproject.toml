@@ -8,7 +8,7 @@ requires-python = ">=3.11, <3.14"
 
 dependencies = [
     "datarobot>=3.8.2",
-    "datarobot-pulumi-utils>=0.1.5",
+    "datarobot-pulumi-utils>=0.1.6",
     # pulumi-datarobot 0.10.36+ checks ENABLE_AGENTIC_MEMORY_API for MemorySpace (terraform-provider-datarobot FLEET-5577).
     "pulumi-datarobot>=0.10.36",
     "litellm>=1.72.1,<2.0.0,!=1.82.7,!=1.82.8",

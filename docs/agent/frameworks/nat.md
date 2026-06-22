@@ -85,6 +85,7 @@ async def custompy_adaptor(completion_create_params):
 When no MCP server is configured, `forwarded_headers` may be an empty dict. NAT loads tools declaratively from `workflow.yaml` rather than through the MCP tools context.
 
 `workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on **DRUM** and **DRAgent** via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
+
 The `workflow.yaml` defines everything:
 
 **Functions** (sub-agents)&mdash;defined as `chat_completion` types with system prompts:
