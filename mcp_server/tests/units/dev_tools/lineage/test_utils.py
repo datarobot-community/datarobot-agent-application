@@ -16,7 +16,7 @@ from typing import Iterator
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-import yaml  # type: ignore[import-untyped]
+import yaml
 from fastmcp.prompts import Prompt
 from fastmcp.resources import Resource
 from fastmcp.tools import Tool

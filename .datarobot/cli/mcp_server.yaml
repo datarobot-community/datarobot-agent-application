@@ -19,7 +19,7 @@ root:
     help: "Enter the default execution environment for the MCP server."
   - env: DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID
     type: string
-    default: "69d60611798486a3db734045"
+    default: "6a3919cb62ca0dc60197d473"
     optional: true
     help: "Enter the default execution environment version ID for the MCP server."
   - key: enabled_tools
@@ -36,9 +36,9 @@ root:
         value: "gdrive"
       - name: "Enable Microsoft Graph tools (requires Microsoft OAuth)"
         value: "microsoft_graph"
-      - name: "Enable Jira tools (requires Atlassian OAuth)"
+      - name: "Enable Jira tools (requires OAuth)"
         value: "jira"
-      - name: "Enable Confluence tools (requires Atlassian OAuth)"
+      - name: "Enable Confluence tools (requires OAuth)"
         value: "confluence"
       - name: "Enable Perplexity tools (requires Perplexity API key)"
         value: "perplexity"
@@ -48,3 +48,54 @@ root:
         value: "dynamic_tools"
       - name: "Register DataRobot dynamic prompts on startup"
         value: "dynamic_prompts"
+      - name: "Configure tool credentials via environment variables"
+        value: "config_auth"
+        requires: auth_config
+
+auth_config:
+  - env: AUTH_RESOLUTION_STRATEGY
+    help: |
+      Config mode supports API-key and token-based tools only.
+      OAuth 2 tools (Google Drive, Microsoft Graph) are not supported in config mode;
+      use HTTP auth (default) for OAuth-based integrations instead.
+      Use config mode only for a personal agent that is not shared with other users;
+      otherwise everyone will use tools with the owner's API keys.
+    optional: true
+    default: "config"
+  - env: PERPLEXITY_API_KEY
+    type: secret_string
+    optional: true
+    help: |
+      Perplexity API key. Required only if Perplexity tools are enabled above.
+  - env: TAVILY_API_KEY
+    type: secret_string
+    optional: true
+    help: |
+      Tavily API key. Required only if Tavily tools are enabled above.
+  - key: configure_atlassian_tools
+    help: |
+      Configure Atlassian credentials for Jira/Confluence tools.
+      Select Configure only if you enabled Jira or Confluence above.
+    always_prompt: true
+    optional: true
+    options:
+      - name: "Configure Atlassian credentials"
+        value: "yes"
+        requires: atlassian_tools
+
+atlassian_tools:
+  - env: ATLASSIAN_API_TOKEN
+    type: secret_string
+    optional: false
+    help: |
+      Atlassian API token for Jira/Confluence tools (OAuth access token or personal API token).
+  - env: ATLASSIAN_EMAIL
+    type: string
+    optional: false
+    help: |
+      Atlassian account email for API token authentication (HTTP Basic auth).
+  - env: ATLASSIAN_SITE_URL
+    type: string
+    optional: false
+    help: |
+      Atlassian site URL for API token authentication (e.g. https://your-org.atlassian.net).

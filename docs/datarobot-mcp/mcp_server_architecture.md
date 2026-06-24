@@ -24,12 +24,10 @@ The generated project includes the MCP server application, supporting developmen
 │   ├── docs/
 │   ├── tests/
 │   ├── .env.template
-│   ├── metadata.yaml
 │   ├── pyproject.toml
 │   ├── pytest.ini
 │   ├── Taskfile.yaml
 │   ├── test_interactive.py
-│   ├── user-metadata.yaml
 │   └── uv.lock
 ```
 
@@ -107,29 +105,12 @@ Add application-specific settings in `mcp_server/app/core/user_config.py`. The g
 Example:
 
 ```python
-from datarobot_genai.drmcp import RUNTIME_PARAM_ENV_VAR_NAME_PREFIX
-from pydantic import AliasChoices, Field
-from pydantic_settings import BaseSettings
+from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 
 
-class UserAppConfig(BaseSettings):
-    user_name: str = Field(
-        default="default-user",
-        validation_alias=AliasChoices(
-            RUNTIME_PARAM_ENV_VAR_NAME_PREFIX + "USER_NAME",
-            "USER_NAME",
-        ),
-        description="Name of the user being used",
-    )
-
-    custom_api_endpoint: str = Field(
-        default="https://api.example.com",
-        validation_alias=AliasChoices(
-            RUNTIME_PARAM_ENV_VAR_NAME_PREFIX + "CUSTOM_API_ENDPOINT",
-            "CUSTOM_API_ENDPOINT",
-        ),
-        description="Custom API endpoint for an external service",
-    )
+class UserAppConfig(DataRobotAppFrameworkBaseSettings):
+    user_name: str = "default-user"
+    custom_api_endpoint: str = "https://api.example.com"
 ```
 
-Configuration values are loaded from runtime parameters, environment variables, or the `.env` file, depending on how each field is defined.
+`DataRobotAppFrameworkBaseSettings` automatically loads values from (in priority order): environment variables (including `MLOPS_RUNTIME_PARAM_*`), `.env` file, file secrets, and `pulumi_config.json`. Fields are matched by name — `user_name` reads from `USER_NAME` env var.

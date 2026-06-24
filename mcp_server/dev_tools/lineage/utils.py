@@ -16,7 +16,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Set
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 from datarobot_genai.drmcp.core.dr_mcp_server import DataRobotMCPServer
 from datarobot_genai.drmcp.core.mcp_instance import mcp
 

@@ -4,7 +4,7 @@ These tools help AI agents understand what input data a deployment expects and c
 
 ## Tools overview
 
-### `get_deployment_features`
+### `deployment_get_info`
 
 Use this tool to inspect the features required by a deployment.
 
@@ -48,7 +48,7 @@ Example response:
 }
 ```
 
-### `get_deployment_training_data_sample`
+### `deployment_generate_prediction_sample`
 
 Use this tool to retrieve sample training data for the deployment.
 
@@ -71,7 +71,7 @@ It returns:
 
 Typical use case: an agent needs a valid starting point that it can fill in with user-specific values.
 
-### `validate_prediction_data`
+### `deployment_validate_prediction_data`
 
 Use this tool to confirm that a dataset can be used for prediction.
 

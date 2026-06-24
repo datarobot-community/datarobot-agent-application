@@ -2,7 +2,7 @@
 
 ### Create a tool
 
-Add custom tools under `mcp_server/app/tools/`. If you create a new module, make sure it is imported from `app/tools/__init__.py` so the decorator runs when the server starts.
+Add custom tools under `mcp_server/app/tools/`.
 
 Example:
 

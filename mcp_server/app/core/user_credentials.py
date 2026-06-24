@@ -14,18 +14,11 @@
 
 from typing import Optional
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 
 
-class UserAppCredentials(BaseSettings):
+class UserAppCredentials(DataRobotAppFrameworkBaseSettings):
     """User-specific application credentials."""
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        case_sensitive=False,
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
 
 
 # Global credentials instance

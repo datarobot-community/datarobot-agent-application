@@ -1,11 +1,13 @@
 [project]
 
 name = "mcp_server"
-version = "11.4.0"
+# Recipe release pipeline owns this version (not the component template).
+# copier: skip
+version = "0.0.0"
 description = "DataRobot MCP Server"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[drmcp]>=0.15.45,<0.16.0",
+    "datarobot-genai[drmcp]>=0.18.13,<0.19.0",
 ]
 
 [project.optional-dependencies]

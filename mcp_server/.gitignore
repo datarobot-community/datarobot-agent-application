@@ -173,7 +173,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-/model-metadata.yaml
 /docker/requirements.txt
 
 # temp files

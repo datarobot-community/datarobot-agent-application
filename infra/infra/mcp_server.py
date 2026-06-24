@@ -14,8 +14,7 @@
 
 import os
 import re
-import textwrap
-from typing import Sequence, Final
+from typing import Final
 
 import pulumi
 import pulumi_datarobot
@@ -26,11 +25,14 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from dev_tools.lineage.pulumi_managers import MCPToolMetadataPulumiManager
 from dev_tools.lineage.pulumi_managers import MCPPromptMetadataPulumiManager
 from dev_tools.lineage.pulumi_managers import MCPResourceMetadataPulumiManager
-from dev_tools.lineage.utils import is_lineage_feature_enabled
 
 from . import project_dir, use_case
 
 from .mcp_server_user_params import MCP_USER_RUNTIME_PARAMETERS
+from .mcp_server_api_keys import (
+    auth_resolution_strategy,
+    custom_model_runtime_parameters as api_keys_runtime_parameters,
+)
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
@@ -101,68 +103,10 @@ mcp_server_asset_name: str = f"[{PROJECT_NAME}] [mcp_server]"
 deployments_application_path = project_dir.parent / "mcp_server"
 
 
-def _prep_metadata_yaml(
-    runtime_parameter_values: Sequence[
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-    ],
-) -> None:
-    from jinja2 import BaseLoader, Environment
-
-    runtime_parameter_specs = "\n".join(
-        [
-            textwrap.dedent(
-                f"""\
-            - fieldName: {param.key}
-              type: {param.type}
-        """
-            )
-            for param in runtime_parameter_values
-        ]
-    )
-    if not runtime_parameter_specs:
-        runtime_parameter_specs = "    []"
-
-    # Read both templates
-    with open(deployments_application_path / "metadata.yaml") as f:
-        base_template_content = f.read()
-
-    recipe_template_path = deployments_application_path / "user-metadata.yaml"
-    recipe_template_content = ""
-    if recipe_template_path.exists():
-        with open(recipe_template_path) as rf:
-            recipe_template_content = rf.read()
-
-    # Combine template contents
-    combined_template = base_template_content
-    if recipe_template_content:
-        # Assuming both templates have a runtimeParameterDefinitions section
-        # Remove the header from recipe template and append its content
-        recipe_lines = recipe_template_content.split("\n")
-        for i, line in enumerate(recipe_lines):
-            if line.strip() == "runtimeParameterDefinitions:":
-                recipe_content = "\n".join(recipe_lines[i + 1 :])
-                combined_template = combined_template.rstrip() + "\n" + recipe_content
-
-    # Render the combined template
-    template = Environment(loader=BaseLoader()).from_string(combined_template)
-    (deployments_application_path / "model-metadata.yaml").write_text(
-        template.render(
-            additional_params=runtime_parameter_specs,
-        )
-    )
-
-
-def get_deployments_app_files(
-    runtime_parameter_values: Sequence[
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs,
-    ],
-) -> list[tuple[str, str]]:
-    _prep_metadata_yaml(runtime_parameter_values)
-
+def get_deployments_app_files() -> list[tuple[str, str]]:
     # Essential files only - whitelist approach to stay under 100 file limit
     essential_files = [
         "app/",
-        "model-metadata.yaml",
         "pyproject.toml",
         "uv.lock",
     ]
@@ -274,7 +218,7 @@ def _enabled_tools_runtime_params() -> list[
             key="enable_predictive_tools",
             type="boolean",
             value=_bool_from_env_or_cli(
-                "ENABLE_PREDICTIVE_TOOLS", "predictive", "true"
+                "ENABLE_PREDICTIVE_TOOLS", "predictive", "false"
             ),
         ),
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
@@ -395,9 +339,9 @@ deployments_model_runtime_parameters: list[
         value=str(os.getenv("OTEL_ENABLED_HTTP_INSTRUMENTORS", "false")).lower(),
     ),
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="enable_memory_management",
-        type="boolean",
-        value=str(os.getenv("ENABLE_MEMORY_MANAGEMENT", "false")).lower(),
+        key="auth_resolution_strategy",
+        type="string",
+        value=auth_resolution_strategy(),
     ),
     *_enabled_tools_runtime_params(),
 ]
@@ -441,83 +385,9 @@ if otel_entity_id := os.getenv("OTEL_ENTITY_ID"):
         )
     )
 
-# Only add AWS credentials if they are provided
-if aws_access_key_id := os.getenv("AWS_ACCESS_KEY_ID"):
-    if aws_secret_access_key := os.getenv("AWS_SECRET_ACCESS_KEY"):
-        credential = pulumi_datarobot.AwsCredential(
-            resource_name=mcp_server_asset_name + " AWS Credential",
-            name=mcp_server_asset_name,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            aws_session_token=os.getenv("AWS_SESSION_TOKEN"),
-        )
-        deployments_model_runtime_parameters.extend(
-            [
-                pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                    key="aws_credential", type="credential", value=credential.id
-                ),
-            ]
-        )
-
-if aws_predictions_s3_bucket := os.getenv("AWS_PREDICTIONS_S3_BUCKET"):
-    deployments_model_runtime_parameters.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="aws_predictions_s3_bucket",
-            type="string",
-            value=aws_predictions_s3_bucket,
-        )
-    )
-
-if aws_predictions_s3_prefix := os.getenv("AWS_PREDICTIONS_S3_PREFIX"):
-    deployments_model_runtime_parameters.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="aws_predictions_s3_prefix",
-            type="string",
-            value=aws_predictions_s3_prefix,
-        )
-    )
-
-# Check if both Google OAuth credentials are provided
-is_google_oauth_configured = bool(
-    os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET")
-)
-
-deployments_model_runtime_parameters.append(
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="is_google_oauth_provider_configured",
-        type="boolean",
-        value=str(is_google_oauth_configured).lower(),
-    )
-)
-
-# Check if Microsoft OAuth credentials are provided
-is_microsoft_oauth_configured = bool(
-    os.getenv("MICROSOFT_CLIENT_ID") and os.getenv("MICROSOFT_CLIENT_SECRET")
-)
-
-deployments_model_runtime_parameters.append(
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="is_microsoft_oauth_provider_configured",
-        type="boolean",
-        value=str(is_microsoft_oauth_configured).lower(),
-    )
-)
-
-# Check if Atlassian OAuth credentials are provided
-is_atlassian_oauth_configured = bool(
-    os.getenv("ATLASSIAN_CLIENT_ID") and os.getenv("ATLASSIAN_CLIENT_SECRET")
-)
-
-deployments_model_runtime_parameters.append(
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="is_atlassian_oauth_provider_configured",
-        type="boolean",
-        value=str(is_atlassian_oauth_configured).lower(),
-    )
-)
-
 deployments_model_runtime_parameters.extend(MCP_USER_RUNTIME_PARAMETERS)
-custom_model_files = get_deployments_app_files(deployments_model_runtime_parameters)
+deployments_model_runtime_parameters.extend(api_keys_runtime_parameters)
+custom_model_files = get_deployments_app_files()
 
 
 use_mcp = os.getenv("USE_MCP_TARGET_TYPE", "true").lower() == "true"
@@ -613,44 +483,45 @@ mcp_custom_model_runtime_parameters: list[
     )
 ]
 
-if is_lineage_feature_enabled():
-    mcp_tool_metadata_pulumi_manager = MCPToolMetadataPulumiManager()
-    mcp_tool_metadata_entities = mcp_tool_metadata_pulumi_manager.load_metadata()
-    mcp_tool_metadata_pulumi_resources = (
-        mcp_tool_metadata_pulumi_manager.create_pulumi_resources(
-            mcp_tool_metadata_entities,
-            mcp_server_asset_name,
-            custom_model.version_id,
-        )
-    )
-    mcp_tool_metadata_pulumi_manager.export_to_pulumi_stack(
-        mcp_tool_metadata_pulumi_resources
-    )
 
-    mcp_prompt_metadata_pulumi_manager = MCPPromptMetadataPulumiManager()
-    mcp_prompt_metadata_entities = mcp_prompt_metadata_pulumi_manager.load_metadata()
-    mcp_prompt_metadata_pulumi_resources = (
-        mcp_prompt_metadata_pulumi_manager.create_pulumi_resources(
-            mcp_prompt_metadata_entities,
-            mcp_server_asset_name,
-            custom_model.version_id,
-        )
+mcp_tool_metadata_pulumi_manager = MCPToolMetadataPulumiManager()
+mcp_tool_metadata_entities = mcp_tool_metadata_pulumi_manager.load_metadata()
+mcp_tool_metadata_pulumi_resources = (
+    mcp_tool_metadata_pulumi_manager.create_pulumi_resources(
+        mcp_tool_metadata_entities,
+        mcp_server_asset_name,
+        custom_model.version_id,
     )
-    mcp_prompt_metadata_pulumi_manager.export_to_pulumi_stack(
-        mcp_prompt_metadata_pulumi_resources
-    )
+)
+mcp_tool_metadata_pulumi_manager.export_summary_to_pulumi_stack(
+    mcp_server_asset_name,
+    mcp_tool_metadata_pulumi_resources,
+)
 
-    mcp_resource_metadata_pulumi_manager = MCPResourceMetadataPulumiManager()
-    mcp_resource_metadata_entities = (
-        mcp_resource_metadata_pulumi_manager.load_metadata()
+mcp_prompt_metadata_pulumi_manager = MCPPromptMetadataPulumiManager()
+mcp_prompt_metadata_entities = mcp_prompt_metadata_pulumi_manager.load_metadata()
+mcp_prompt_metadata_pulumi_resources = (
+    mcp_prompt_metadata_pulumi_manager.create_pulumi_resources(
+        mcp_prompt_metadata_entities,
+        mcp_server_asset_name,
+        custom_model.version_id,
     )
-    mcp_resource_metadata_pulumi_resources = (
-        mcp_resource_metadata_pulumi_manager.create_pulumi_resources(
-            mcp_resource_metadata_entities,
-            mcp_server_asset_name,
-            custom_model.version_id,
-        )
+)
+mcp_prompt_metadata_pulumi_manager.export_summary_to_pulumi_stack(
+    mcp_server_asset_name,
+    mcp_prompt_metadata_pulumi_resources,
+)
+
+mcp_resource_metadata_pulumi_manager = MCPResourceMetadataPulumiManager()
+mcp_resource_metadata_entities = mcp_resource_metadata_pulumi_manager.load_metadata()
+mcp_resource_metadata_pulumi_resources = (
+    mcp_resource_metadata_pulumi_manager.create_pulumi_resources(
+        mcp_resource_metadata_entities,
+        mcp_server_asset_name,
+        custom_model.version_id,
     )
-    mcp_resource_metadata_pulumi_manager.export_to_pulumi_stack(
-        mcp_resource_metadata_pulumi_resources
-    )
+)
+mcp_resource_metadata_pulumi_manager.export_summary_to_pulumi_stack(
+    mcp_server_asset_name,
+    mcp_resource_metadata_pulumi_resources,
+)

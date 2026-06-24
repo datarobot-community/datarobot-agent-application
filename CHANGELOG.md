@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.4
+- Updated `agent` component from 11.10.41 to 11.10.42:
+  - Updated `datarobot-genai` from 0.18.9 to 0.19.3:
+    - Fix missing agent traces in Deployments
+
 ## 11.10.3
 - DRAgent front server enabled by default for agent component (read more in [docs/agent/README.md#front-server](docs/agent/README.md#front-server)).
 - `dr start` does not prompt for an agent memory provider during local project setup.

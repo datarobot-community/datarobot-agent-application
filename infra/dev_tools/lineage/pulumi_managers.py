@@ -115,6 +115,19 @@ class MCPToolMetadataPulumiManager:
                 pulumi_resource_creation_output.pulumi_resource.id,
             )
 
+    @classmethod
+    def export_summary_to_pulumi_stack(
+        cls,
+        resource_name_prefix: str,
+        pulumi_resource_creation_outputs: Set[
+            MCPToolMetadataPulumiResourceCreateOutput
+        ],
+    ) -> None:
+        pulumi.export(
+            f"{resource_name_prefix} Number of MCP tool metadata records created",
+            len(pulumi_resource_creation_outputs),
+        )
+
 
 class MCPPromptMetadataPulumiManager:
     def __init__(self):
@@ -167,6 +180,19 @@ class MCPPromptMetadataPulumiManager:
                 pulumi_resource_creation_output.name,
                 pulumi_resource_creation_output.pulumi_resource.id,
             )
+
+    @classmethod
+    def export_summary_to_pulumi_stack(
+        cls,
+        resource_name_prefix: str,
+        pulumi_resource_creation_outputs: Set[
+            MCPPromptMetadataPulumiResourceCreateOutput
+        ],
+    ) -> None:
+        pulumi.export(
+            f"{resource_name_prefix} Number of MCP prompt metadata records created",
+            len(pulumi_resource_creation_outputs),
+        )
 
 
 class MCPResourceMetadataPulumiManager:
@@ -221,3 +247,16 @@ class MCPResourceMetadataPulumiManager:
                 pulumi_resource_creation_output.name,
                 pulumi_resource_creation_output.pulumi_resource.id,
             )
+
+    @classmethod
+    def export_summary_to_pulumi_stack(
+        cls,
+        resource_name_prefix: str,
+        pulumi_resource_creation_outputs: Set[
+            MCPResourceMetadataPulumiResourceCreateOutput
+        ],
+    ) -> None:
+        pulumi.export(
+            f"{resource_name_prefix} Number of MCP resource metadata records created",
+            len(pulumi_resource_creation_outputs),
+        )
