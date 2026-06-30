@@ -84,7 +84,8 @@ class DBCtx:
                 )
 
         if self._persistence_fs and self._persistence_fs.exists(self._db_path):
-            self._persistence_fs.get(self._db_path, self._db_path)
+            db_path = cast(str, self._db_path)
+            self._persistence_fs.get(db_path, db_path)
 
         async with self._session() as session:
             event.listen(session.sync_session, "before_flush", prevent_writes)
@@ -95,16 +96,18 @@ class DBCtx:
         async with self._lock:
             checksum: bytes | None = None
             if self._persistence_fs and self._persistence_fs.exists(self._db_path):
-                self._persistence_fs.get(self._db_path, self._db_path)
-                checksum = calculate_checksum(cast(str, self._db_path))
+                db_path = cast(str, self._db_path)
+                self._persistence_fs.get(db_path, db_path)
+                checksum = calculate_checksum(db_path)
 
             async with self._session() as session:
                 yield session
 
             if self._persistence_fs:
-                new_checksum = calculate_checksum(cast(str, self._db_path))
+                db_path = cast(str, self._db_path)
+                new_checksum = calculate_checksum(db_path)
                 if new_checksum != checksum:
-                    self._persistence_fs.put(self._db_path, self._db_path)
+                    self._persistence_fs.put(db_path, db_path)
 
     @asynccontextmanager
     async def session(

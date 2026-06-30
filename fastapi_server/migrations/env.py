@@ -131,8 +131,9 @@ async def run_async_migrations() -> None:
     checksum: bytes | None = None
 
     if fs and fs.exists(db_path):
+        db_path = cast(str, db_path)
         fs.get(db_path, db_path)
-        checksum = calculate_checksum(cast(str, db_path))
+        checksum = calculate_checksum(db_path)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
@@ -140,7 +141,8 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
     if fs:
-        new_checksum = calculate_checksum(cast(str, db_path))
+        db_path = cast(str, db_path)
+        new_checksum = calculate_checksum(db_path)
         if new_checksum != checksum:
             fs.put(db_path, db_path)
 

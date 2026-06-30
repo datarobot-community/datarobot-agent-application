@@ -11,4 +11,9 @@ root:
     type: string
     default: ""
     optional: true
-    help: "Enter the default Use Case for this application. If not set, a new Use Case will be created automatically."
+    help: "Enter the default use case for this application. If not set, a new use case will be created automatically."
+  - env: OTEL_SDK_DISABLED
+    type: string
+    default: ""
+    optional: true
+    help: "Set to 'true' to disable all OpenTelemetry tracing. Leave empty to keep tracing enabled."

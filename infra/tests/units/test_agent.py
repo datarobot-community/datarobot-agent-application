@@ -28,6 +28,9 @@ AGENT_MEMORY_TTL_SECONDS = "AGENT_MEMORY_TTL_SECONDS"
 @pytest.fixture(autouse=True)
 def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
+    # Neutralize the module-level export() calls in infra.__init__ before the
+    # first infra import below triggers them outside a pulumi Stack context.
+    monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
     # Mock infra.__init__ exported objects
     mock_use_case = MagicMock()
     mock_use_case.id = "mock-use-case-id"
@@ -111,30 +114,45 @@ def pulumi_mocks(monkeypatch, tmp_path):
         MagicMock(return_value=_default_ee_version),
     )
 
-    # Mock Output to behave like a Pulumi Output with .apply(), support subscript notation, and from_input
-    class MockOutput(MagicMock):
-        def __new__(cls, val=None, *args, **kwargs):
-            m = super().__new__(cls)
-            m.apply = MagicMock(side_effect=lambda fn: fn(val))
-            return m
+    # Mock Output to behave like a Pulumi Output with .apply(), from_input, and all.
+    _mock_output_format = MagicMock()
+
+    class MockOutput:
+        def __init__(self, val=None):
+            self._val = val
+
+        def apply(self, fn):
+            if isinstance(self._val, list):
+                return MockOutput(fn(self._val))
+            return MockOutput(fn(self._val))
+
+        @classmethod
+        def from_input(cls, val):
+            return cls(val or "")
+
+        @classmethod
+        def all(cls, *outputs):
+            combined = cls(None)
+
+            def lazy_apply(fn):
+                return cls("output-all-applied")
+
+            combined.apply = lazy_apply  # type: ignore[method-assign]
+            return combined
+
+        format = _mock_output_format
 
         @classmethod
         def __class_getitem__(cls, item):
             return cls
 
-    # Set from_input() and format() as class methods that can be tracked
-    MockOutput.from_input = MagicMock()
-    MockOutput.format = MagicMock()
     monkeypatch.setattr("pulumi.Output", MockOutput)
 
     # Mock ApiTokenCredential to return a mock with .id as a pulumi.Output
     # This prevents MagicMock objects from being serialized to YAML
     def create_api_token_credential(*args, **kwargs):
         credential = MagicMock()
-        # Create a mock that will be recognized as pulumi.Output by isinstance check
-        output_mock = MagicMock(spec=MockOutput)
-        output_mock.__class__ = MockOutput
-        credential.id = output_mock
+        credential.id = MockOutput("mock-credential-id")
         return credential
 
     monkeypatch.setattr(
@@ -571,6 +589,7 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     agent_infra.pulumi_datarobot.Playground.reset_mock()
     agent_infra.pulumi_datarobot.LlmBlueprint.reset_mock()
     agent_infra.pulumi.export.reset_mock()
+    agent_infra.pulumi.Output.format.reset_mock()
     importlib.reload(agent_infra)
 
     # Check that Agentic Playground was created
@@ -599,9 +618,13 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     assert "Agent Playground URL " + agent_infra.agent_asset_name in export_names  # fmt: skip
 
     # Check the format of the URL
-    agent_infra.pulumi.Output.format.assert_any_call(
+    from datarobot_pulumi_utils.common import get_datarobot_url
+
+    expected_web_url = get_datarobot_url().removesuffix("/api/v2")
+    agent_infra.pulumi.Output.format.assert_called_once()
+    assert agent_infra.pulumi.Output.format.call_args.args == (
         "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
-        "https://example.datarobot.com",
+        expected_web_url,
         "mock-use-case-id",
         agent_infra.agent_playground.id,
     )

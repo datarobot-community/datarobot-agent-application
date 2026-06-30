@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.5
+- Updated `agent` component from 11.10.42 to 11.10.45:
+  - Updated `task agent:dev` to support the DR experimentation plugin.
+  - Added configuration of the LLM for agent memory when selecting `datarobot_memory_service`.
+- Updated `base` component:
+  - DataRobot agent skills are available for use by the coding agent.
+  - Pre-deploy checklist step added to `AGENTS.md`.
+  - Optional local OpenTelemetry tracing enabled.
+  - The DataRobot experimentation plugin (dr xp) is installed for all users. Enables a local dashboard for visualizing DataRobot tracing and run data.
+
 ## 11.10.4
 - Updated `agent` component from 11.10.41 to 11.10.42:
   - Updated `datarobot-genai` from 0.18.9 to 0.19.3:

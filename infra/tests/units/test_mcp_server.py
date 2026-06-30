@@ -31,6 +31,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 @pytest.fixture(autouse=True)
 def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
+    # Neutralize the module-level export() calls in infra.__init__ before the
+    # first infra import below triggers them outside a pulumi Stack context.
+    monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
     # Mock infra.__init__ exported objects
     mock_use_case = MagicMock()
     mock_use_case.id = "mock-use-case-id"

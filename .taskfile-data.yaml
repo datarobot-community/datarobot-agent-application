@@ -5,6 +5,9 @@
 # Development server ports
 # Displayed when running the dev task
 ports:
+  - name: infra
+    port: 8090
+    print_url: true
   - name: agent
     port: 8842
   - name: mcp_server
