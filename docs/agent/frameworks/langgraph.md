@@ -51,31 +51,6 @@ MyAgent = datarobot_agent_class_from_langgraph(graph_factory, prompt_template)
 
 **Note:** DataRobot templates use `langchain.agents.create_agent` with `system_prompt=`. Some community examples use `langgraph.prebuilt.create_react_agent` with `prompt=`&mdash;these are different APIs.
 
-## `custompy_adaptor`
-
-When using the DRUM front server, `custom.py` delegates to `custompy_adaptor` in `myagent.py`. This function loads MCP **outside** `MyAgent`, then invokes the agent:
-
-```python
-async def custompy_adaptor(completion_create_params):
-    forwarded_headers = completion_create_params.get("forwarded_headers", {})
-    authorization_context = completion_create_params.get("authorization_context", {})
-    mcp_config = MCPConfig(
-        forwarded_headers=forwarded_headers,
-        authorization_context=authorization_context,
-    )
-    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)
-    agent = MyAgent(
-        llm=get_llm(model_name=...),
-        verbose=completion_create_params.get("verbose", True),
-        forwarded_headers=forwarded_headers,
-    )
-    return await agent_chat_completion_wrapper(
-        agent, completion_create_params, mcp_tools_factory
-    )
-```
-
-`custom.py` sets `forwarded_headers` and `authorization_context` on `completion_create_params` before calling this function. The agent is constructed without tools; `agent_chat_completion_wrapper` calls `mcp_tools_factory` to load MCP tools and supplies them to the agent (via `tools=` or `set_tools()`) before `invoke()` runs.
-
 ## `register.py`
 
 DRAgent registration uses `LanggraphAgentConfig` with workflow type `langgraph_agent` and `LLMFrameworkEnum.LANGCHAIN` for LLM and tool wrappers:
@@ -163,9 +138,9 @@ LangGraph agents receive tools through three channels, all merged into a single 
 
 ### MCP tools
 
-MCP tools are loaded by calling `mcp_tools_context()` in `custompy_adaptor` (DRUM) or `register.py` (DRAgent)&mdash;**outside** `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
+MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)&mdash;**outside** `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
 
-### Workflow tools (DRAgent only)
+### Workflow tools
 
 When you use the DRAgent front server, NAT resolves additional tools (for example, A2A remote agents) from `workflow.yaml` `tool_names`, merges them with MCP tools, and passes the combined set to `MyAgent`.
 

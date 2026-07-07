@@ -15,8 +15,9 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 
 from ag_ui.core import RunAgentInput
-from datarobot_genai.core.telemetry_agent import instrument
+from datarobot_genai.core.telemetry.agent import instrument
 from datarobot_genai.dragent.frontends.response import DRAgentEventResponse
+from datarobot_genai.langgraph.telemetry import instrument as instrument_langgraph
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
 from nat.cli.register_workflow import register_per_user_function
@@ -24,7 +25,8 @@ from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
 
 # INSTRUMENTATION CALL IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR AGENTS
-instrument(framework="langgraph")
+instrument()
+instrument_langgraph()
 
 
 class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ignore[call-arg, misc]

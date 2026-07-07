@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.6
+- Updated `agent` component from 11.10.45 to 11.11.2:
+  - Removed deprecated option to use a deprecated frontserver `drum`
+  - Fix wide CLI prompts
+  - Fixed deployed-LLM memory space routing.
+  - Updated `datarobot-genai` from 0.19.3 to 0.22.0:
+    - Implemented CrewAI instrumentation for `akickoff`
+    - Fixed issue with `dragent` not setting expected attributes in OpenTelemetry Traces
+    - Fixed CrewAI agents stalling when a local MCP server is unreachable; the adapter is now skipped with a warning
+    - Fixed CVEs in transitive dependencies (`cryptography`, `PyJWT`, and `starlette`)
+
 ## 11.10.5
 - Updated `agent` component from 11.10.42 to 11.10.45:
   - Updated `task agent:dev` to support the DR experimentation plugin.

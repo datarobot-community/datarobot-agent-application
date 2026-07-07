@@ -72,6 +72,8 @@ class ServerLifecycle(BaseServerLifecycle):
         # asyncio.create_task(self._background_task())
         # await self._send_startup_notification()
 
+        self._logger.info("Post-server start user actions completed.")
+
     async def pre_server_shutdown(self, mcp: FastMCP) -> None:
         """
         Clean up user-specific resources before shutdown.

@@ -78,18 +78,18 @@ def graph_factory(llm, tools, verbose=False):
 
 ### 4. LLM Resolution
 
-The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `custompy_adaptor`:
+The LLM is resolved by NAT based on `workflow.yaml` in `register.py`:
 
 ```python
-from datarobot_genai.langgraph.llm import get_llm
-
+llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.CREWAI)
+...
 agent = MyAgent(
-    llm=get_llm(model_name=model_name),
+    llm=llm,
     ...
 )
 ```
 
-**CRITICAL**: Do NOT instantiate LLMs directly. Always use `get_llm()` which handles DataRobot LLM Gateway integration, deployed models, and external LLM providers. To add primary/fallback provider support, use `get_router_llm()` instead — see [LLM provider fallback](../docs/agent/llm-fallback.md).
+**CRITICAL**: Do NOT instantiate LLMs directly. Always use `builder.get_llm` which handles DataRobot LLM Gateway integration, deployed models, router models, and external LLM providers.
 
 ### 5. Agent tools
 

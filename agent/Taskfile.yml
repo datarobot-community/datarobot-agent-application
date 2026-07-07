@@ -88,81 +88,24 @@ tasks:
     silent: true
   cli:
     desc: 🖥️ Run the CLI with provided arguments
-    vars:
-      START_DEV: '{{.START_DEV}}'
     deps: [auth-check]
     cmds:
       - echo "Running CLI {{.CLI_ARGS}}"
       - |
         # DRAgent mode: forward cli.py commands to nat dragent and exit.
-        if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-workflow.yaml}"
-          set -- {{.CLI_ARGS}}
-          if [ $# -eq 0 ]; then
-            echo "Usage: task agent:cli -- <execute|execute-deployment> [flags]"; exit 1
-          fi
-          CMD="$1"; shift
-          case "$CMD" in
-            execute-deployment) {{.UV_CMD}} run nat dragent query "$@" ;;
-            execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
-            execute) {{.UV_CMD}} run nat dragent run "$@" ;;
-            *) echo "Unknown command '$CMD'. Supported: execute, execute-deployment"; exit 1 ;;
-          esac
-          exit $?
+        export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-workflow.yaml}"
+        set -- {{.CLI_ARGS}}
+        if [ $# -eq 0 ]; then
+          echo "Usage: task agent:cli -- <execute|execute-deployment> [flags]"; exit 1
         fi
-        if [ "{{.START_DEV}}" -eq "1" ]; then
-          # Kill any existing dev server processes
-          pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || true
-
-          # Start dev server in background
-          echo "🚀 Starting dev server in background..."
-          {{.UV_CMD}} run python dev.py &
-          DEV_SERVER_PID=$!
-          echo "Dev server started with PID: $DEV_SERVER_PID"
-
-          # Wait for server to be ready
-          echo "⏳ Waiting for dev server to be ready..."
-          _AGENT_ENDPOINT="http://localhost:{{.AGENT_PORT}}"
-          i=0
-          while [ $i -lt 30 ]; do
-            if curl --silent --fail --max-time 2 "$_AGENT_ENDPOINT/" >/dev/null 2>&1; then
-              echo "✅ Dev server is ready!"
-              break
-            fi
-            sleep 1
-            i=$((i + 1))
-            if [ $i -eq 30 ]; then
-              echo "❌ Dev server failed to start within 30 seconds"
-              pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || true
-              exit 1
-            fi
-          done
-        fi
-      - |
-        if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then exit 0; fi
-        # Run CLI and handle cleanup regardless of exit code
-        CLI_EXIT_CODE=0
-        UV_PROJECT={{.TASKFILE_DIR}} {{.UV_CMD}} run cli.py {{.CLI_ARGS}} || CLI_EXIT_CODE=$?
-        echo "CLI exited with code: $CLI_EXIT_CODE"
-
-        # Check if command failed and contains "execute"
-        if [ $CLI_EXIT_CODE -eq 1 ] && echo "{{.CLI_ARGS}}" | grep -q "execute "; then
-          echo ""
-          echo "❌ CLI command failed with exit status 1"
-          echo "💡 It looks like you're trying to execute an agent that requires a dev server."
-          echo "   Try one of these options:"
-          echo "   1. Start the dev server first: task agent:dev"
-          echo "   2. Or run with auto dev server: task agent:cli START_DEV=1 -- {{.CLI_ARGS}}"
-          echo ""
-        fi
-
-        # Clean up dev server processes if we started them
-        if [ "{{.START_DEV}}" -eq "1" ]; then
-          echo "🛑 Stopping dev server..."
-          pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || true
-          echo "✅ Dev server stopped"
-        fi
-        exit $CLI_EXIT_CODE
+        CMD="$1"; shift
+        case "$CMD" in
+          execute-deployment) {{.UV_CMD}} run nat dragent query "$@" ;;
+          execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
+          execute) {{.UV_CMD}} run nat dragent run "$@" ;;
+          *) echo "Unknown command '$CMD'. Supported: execute, execute-deployment"; exit 1 ;;
+        esac
+        exit $?
     silent: true
   dev:
     desc: 🔨 Run the development server
@@ -172,22 +115,14 @@ tasks:
         (cd .. && DR_SKIP_PLUGIN_UPDATE_CHECK=true dr xp --plain-output) &
         DR_XP_PID=$!
         trap "kill $DR_XP_PID 2>/dev/null || true" EXIT
-        if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          {{.UV_CMD}} run nat dragent serve --config_file workflow.yaml --reload true --port {{.AGENT_PORT}}
-        else
-          {{.UV_CMD}} run python dev.py --autoreload
-        fi
+        {{.UV_CMD}} run nat dragent serve --config_file workflow.yaml --reload true --port {{.AGENT_PORT}}
     silent: true
   dev-stop:
     desc: 🛑 Stop the development server
     cmds:
       - |
         echo "Stopping development server"
-        if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          pkill -f 'nat dragent serve' 2>/dev/null || echo "No development server process found"
-        else
-          pkill -f '{{.UV_CMD}} run python dev.py' 2>/dev/null || echo "No development server process found"
-        fi
+        pkill -f 'nat dragent serve' 2>/dev/null || echo "No development server process found"
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image
     vars:

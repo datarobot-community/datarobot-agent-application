@@ -93,7 +93,7 @@ workflow:
   memory_name: mem0_memory
   llm_name: datarobot_llm
   description: LangGraph planner/writer agent with automatic memory capture and retrieval
-  middleware: [datarobot_moderation]
+  middleware: [datarobot_moderation, datarobot_otel_conventions]
 middleware:
   datarobot_moderation:
     # Guards can be configured inline by adding the moderation field here.
@@ -101,6 +101,8 @@ middleware:
     # If there is no inline configuration then moderation_config.yaml will be loaded, if present.
     # If no guards are configured then the middleware is a no-op.
     _type: datarobot_moderation
+  datarobot_otel_conventions:
+    _type: datarobot_otel_conventions
 authentication:
   datarobot_auth:
     _type: datarobot_api_key

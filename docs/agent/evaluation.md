@@ -59,13 +59,12 @@ Local evaluation is configured through a `moderation.yaml` file that defines whi
 
 ### File location
 
-Place `moderation.yaml` at the root of the agent directory alongside `custom.py`:
+Place `moderation.yaml` at the root of the agent directory alongside `workflow.yaml`:
 
 ```
 agent/
 ├── moderation.yaml     # Evaluation configuration
-├── custom.py
-├── cli.py
+├── workflow.yaml
 └── ...
 ```
 

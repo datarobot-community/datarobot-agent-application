@@ -47,31 +47,6 @@ MyAgent = datarobot_agent_class_from_llamaindex(workflow, agents, extract_respon
 
 The `extract_response_text` function extracts the final output from the workflow state or events.
 
-## `custompy_adaptor`
-
-When using the DRUM front server, `custom.py` delegates to `custompy_adaptor` in `myagent.py`. This function loads MCP **outside** `MyAgent`, then invokes the agent:
-
-```python
-async def custompy_adaptor(completion_create_params):
-    forwarded_headers = completion_create_params.get("forwarded_headers", {})
-    authorization_context = completion_create_params.get("authorization_context", {})
-    mcp_config = MCPConfig(
-        forwarded_headers=forwarded_headers,
-        authorization_context=authorization_context,
-    )
-    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)
-    agent = MyAgent(
-        llm=get_llm(model_name=...),
-        verbose=completion_create_params.get("verbose", True),
-        forwarded_headers=forwarded_headers,
-    )
-    return await agent_chat_completion_wrapper(
-        agent, completion_create_params, mcp_tools_factory
-    )
-```
-
-The agent is constructed without tools; `agent_chat_completion_wrapper` calls `mcp_tools_factory` to load MCP tools and supplies them to the agent (via `tools=` or `set_tools()`) before `invoke()` runs.
-
 ## `register.py`
 
 DRAgent registration uses `LlamaindexAgentConfig` with workflow type `llamaindex_agent` and `LLMFrameworkEnum.LLAMA_INDEX` for LLM and tool wrappers:
@@ -159,11 +134,11 @@ LlamaIndex agents receive tools through three channels:
 
 ### MCP tools
 
-MCP tools are loaded by calling `mcp_tools_context()` in `custompy_adaptor` (DRUM) or `register.py` (DRAgent)&mdash;**outside** `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
+MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)&mdash;**outside** `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
 
-### Workflow tools (DRAgent only)
+### Workflow tools
 
-When you use the DRAgent front server, additional tools (e.g. A2A remote agents) resolve by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.LLAMA_INDEX` and merge with MCP tools.
+Additional tools (e.g. A2A remote agents) resolve by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.LLAMA_INDEX` and merge with MCP tools.
 
 ### Custom local tools
 

@@ -13,7 +13,9 @@ root:
     type: string
     default: "6a3919cb62ca0dc60197d473"
     optional: true
-    help: "Enter the default execution environment version ID for the agent's custom model."
+    help: |
+      Enter the default execution environment version ID for the agent's
+      custom model.
   - env: ENABLE_DRAGENT_SERVER
     type: string
     default: "true"

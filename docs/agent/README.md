@@ -39,7 +39,7 @@ The agent is implemented in the `agent/` directory. The inner `agent/agent/` pac
 ```
 agent/
 ├── agent/                  # Agent Python package (your code goes here)
-│   ├── __init__.py         # Package exports: MyAgent, Config, custompy_adaptor
+│   ├── __init__.py         # Package exports: MyAgent, Config
 │   ├── myagent.py          # Agent definition (framework-specific)
 │   ├── config.py           # Configuration management
 │   └── register.py         # DRAgent/NAT registration (framework-specific)
@@ -48,7 +48,6 @@ agent/
 │   ├── conftest.py
 │   ├── test_agent.py
 │   └── ...
-├── cli.py                  # CLI for local testing and deployment validation
 ├── pyproject.toml          # Python dependencies and project metadata
 ├── Taskfile.yml            # Task runner definitions (install, lint, test)
 └── uv.lock                 # Dependency lockfile
@@ -171,21 +170,6 @@ The agent component runs on the **DRAgent** front server&mdash;a NAT (NeMo Agent
 - **Deployment**&mdash;the `ENABLE_DRAGENT_SERVER` runtime parameter on the custom model is set automatically by the infrastructure (see `template/infra/infra/<agent_app_name>.py`).
 
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
-
-### DRUM fallback (deprecated, temporary)
-
-The legacy DRUM front server (`custom.py` + `dev.py`) is **deprecated and scheduled for removal**. It remains in the template only as a temporary escape hatch in case you hit a blocker with DRAgent.
-
-To disable DRAgent and fall back to DRUM, set in your `.env` file:
-
-```sh
-ENABLE_DRAGENT_SERVER=false
-```
-
-Then restart the dev server (`dr run agent:dev` / `dr run dev`). In deployed environments, override the `ENABLE_DRAGENT_SERVER` runtime parameter on the custom model to `false`.
-
-> [!WARNING]
-> When DRUM is active, [A2A](./agent2agent.md), [agent memory](./agent-memory.md), and the [`datarobot_moderation` middleware](./moderation.md) are unavailable. Do not rely on `ENABLE_DRAGENT_SERVER=false` for production workloads; report any DRAgent issues so the underlying bug can be fixed before DRUM is removed.
 
 ## Agent types
 

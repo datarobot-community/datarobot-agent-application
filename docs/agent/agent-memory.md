@@ -4,9 +4,6 @@
 
 The agent template can wire in **persistent, per-user memory** so the agent recalls facts across conversations. Memory is configured at project generation time with the Copier variable `use_agent_memory` and implemented declaratively in `workflow.yaml`.
 
-> [!IMPORTANT]
-> Memory runs on the [DRAgent front server](./README.md#front-server) (the only supported front server). The deprecated DRUM fallback (`ENABLE_DRAGENT_SERVER=false`) does **not** load the memory wrapper — leave DRAgent enabled if you rely on memory.
-
 Memory is **not** implemented in `myagent.py`. The template wraps your framework agent in a `streaming_memory_agent` workflow that automatically retrieves relevant memories before each turn and captures new ones after.
 
 | Section | Description |
@@ -83,10 +80,6 @@ You do not call memory APIs from application code. The wrapper:
 2. **Captures**&mdash;after the inner agent responds, uses the configured LLM to decide which parts of the exchange are worth persisting, then writes them to the memory backend.
 
 The LLM used for capture and retrieval is the workflow `llm_name` (typically `datarobot_llm`).
-
-### DRAgent requirement
-
-Memory is configured entirely in `workflow.yaml` and runs through DRAgent middleware. The deprecated DRUM fallback (`ENABLE_DRAGENT_SERVER=false`) does not load the memory wrapper, so memory is silently disabled if you fall back to DRUM. See [Front server](./README.md#front-server).
 
 > [!NOTE]
 > When memory is enabled, the generated `workflow.yaml` uses `streaming_memory_agent` as the top-level workflow type instead of the framework agent type directly (for example `langgraph_agent` or `per_user_tool_calling_agent`). Your framework-specific agent moves into the `functions` section as the `inner_agent_name`.

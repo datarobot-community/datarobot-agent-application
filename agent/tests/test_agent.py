@@ -26,7 +26,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from langchain_core.prompts import ChatPromptTemplate
@@ -118,37 +118,3 @@ class TestMyAgentLangGraph:
             assert workflow is not None
             assert "planner_node" in workflow.nodes
             assert "writer_node" in workflow.nodes
-
-    @pytest.mark.parametrize(
-        "model_value, expected_model_name",
-        [
-            ("unknown", None),
-            ("gpt-4", "gpt-4"),
-            ("datarobot-deployed-llm", "datarobot-deployed-llm"),
-            (None, None),
-        ],
-    )
-    @patch("agent.myagent.get_llm", return_value=Mock())
-    @patch("agent.myagent.agent_chat_completion_wrapper", new_callable=AsyncMock)
-    @patch("agent.myagent.mcp_tools_context")
-    def test_custompy_adaptor_filters_placeholder_models(
-        self,
-        mock_mcp_ctx,
-        mock_wrapper,
-        mock_get_llm,
-        model_value,
-        expected_model_name,
-    ):
-        from agent.myagent import custompy_adaptor
-
-        completion_create_params = {
-            "model": model_value,
-            "messages": [{"role": "user", "content": "hi"}],
-        }
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            custompy_adaptor(completion_create_params)
-        )
-        mock_get_llm.assert_called_once()
-        assert mock_get_llm.call_args[1]["model_name"] == expected_model_name

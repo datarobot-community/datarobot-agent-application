@@ -20,10 +20,10 @@ Both are present by default. You do not need to add them — this doc explains w
 
 ## Instrumentation (`agent/agent/register.py`)
 
-Near the top of `agent/agent/register.py`, `instrument()` from `datarobot_genai.core.telemetry_agent` is called right after the module imports:
+Near the top of `agent/agent/register.py`, `instrument()` from `datarobot_genai.core.telemetry.agent` is called right after the module imports:
 
 ```python
-from datarobot_genai.core.telemetry_agent import instrument
+from datarobot_genai.core.telemetry.agent import instrument
 # ... other module imports ...
 
 # INSTRUMENTATION CALL IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR AGENTS

@@ -12,31 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
 
 import litellm
-from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
-from datarobot_genai.core.agents.base import UsageMetrics
-from datarobot_genai.core.chat import agent_chat_completion_wrapper
-from datarobot_genai.core.mcp import MCPConfig
+from datarobot_genai.core.agents import make_system_prompt
 from datarobot_genai.langgraph.agent import datarobot_agent_class_from_langgraph
-from datarobot_genai.langgraph.llm import get_llm
-from datarobot_genai.langgraph.mcp import mcp_tools_context
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool, tool
 from langgraph.graph import END, START, MessagesState, StateGraph
-from openai.types.chat import CompletionCreateParams
-
-if TYPE_CHECKING:
-    from ragas import MultiTurnSample
 
 litellm.modify_params = True
-
-_PLACEHOLDER_MODELS = frozenset({"unknown"})
-
 
 prompt_template = ChatPromptTemplate.from_messages(
     [
@@ -130,27 +117,3 @@ def graph_factory(
 
 
 MyAgent = datarobot_agent_class_from_langgraph(graph_factory, prompt_template)
-
-
-async def custompy_adaptor(
-    completion_create_params: CompletionCreateParams,
-) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
-    forwarded_headers = completion_create_params.get("forwarded_headers", {})
-    authorization_context = completion_create_params.get("authorization_context", {})
-    mcp_config = MCPConfig(
-        forwarded_headers=forwarded_headers,
-        authorization_context=authorization_context,
-    )
-    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
-    model_name = completion_create_params.get("model")
-    agent = MyAgent(
-        llm=get_llm(
-            model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
-        ),
-        verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
-        timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
-        forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-    )
-    return await agent_chat_completion_wrapper(
-        agent, completion_create_params, mcp_tools_factory
-    )

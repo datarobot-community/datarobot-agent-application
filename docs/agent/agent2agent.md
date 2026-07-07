@@ -2,8 +2,6 @@
 
 Template agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol. For authentication configuration, see [A2A Authentication](./agent2agent-auth.md).
 
-A2A runs on the [DRAgent front server](./README.md#front-server) (the only supported front server). If you have temporarily set `ENABLE_DRAGENT_SERVER=false`, A2A is unavailable until you re-enable DRAgent.
-
 To expose an agent via A2A:
 
 - Ensure the template has a `general.front_end.a2a` configuration block. Templates include this by default.
