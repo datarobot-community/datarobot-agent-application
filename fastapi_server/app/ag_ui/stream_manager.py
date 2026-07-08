@@ -22,7 +22,6 @@ from uuid import UUID
 from ag_ui.core import BaseEvent, RunAgentInput
 
 from app.ag_ui.base import AGUIAgent
-from app.ag_ui.dr import DataRobotAGUIAgent
 from app.ag_ui.dragent import DRAgentAGUIAgent
 from app.ag_ui.storage import AGUIAgentWithStorage
 from app.config import Config
@@ -80,17 +79,6 @@ class AGUIStreamManager(Generic[P]):
         return iterate_queue()
 
 
-def _normalize_model_id(raw_model: str) -> str:
-    """
-    Add datarobot as a provider and handle any other provider string fixes for
-    litellm
-    """
-    if raw_model.startswith("datarobot/"):
-        return raw_model
-    # fallback to datarobot provider
-    return f"datarobot/{raw_model}"
-
-
 def create_storage_dr_agent(
     name: str,
     chat_repo: ChatRepositoryLike,
@@ -99,10 +87,8 @@ def create_storage_dr_agent(
     user_id: UUID,
     headers: Dict[str, str],
 ) -> AGUIAgent:
-    if config.enable_dragent_server:
-        dr_agui: AGUIAgent = DRAgentAGUIAgent(name, config, headers)
-    else:
-        dr_agui = DataRobotAGUIAgent(name, config, headers)
+
+    dr_agui: AGUIAgent = DRAgentAGUIAgent(name, config, headers)
 
     storage = AGUIAgentWithStorage(
         name=name,

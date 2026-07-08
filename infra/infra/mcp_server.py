@@ -122,7 +122,7 @@ def get_deployments_app_files() -> list[tuple[str, str]]:
                 for py_file in file_path.rglob("*.py"):
                     if py_file.is_file():
                         rel_path = py_file.relative_to(deployments_application_path)
-                        source_files.append((str(py_file), str(rel_path)))
+                        source_files.append((str(py_file), rel_path.as_posix()))
 
     # Filter out any files that match exclude patterns (safety check)
     source_files = [

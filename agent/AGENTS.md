@@ -121,7 +121,7 @@ dr task run agent:test
 Run the following shell command to validate the agent after deployment. If the response has no errors then the deployment is successful.
 
 ```shell
-task agent:cli -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
+dr task run agent:cli -- -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
 ```
 
 ## Setting up custom metric and report values

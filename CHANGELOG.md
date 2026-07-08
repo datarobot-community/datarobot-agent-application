@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.7
+- Hotfix to remove enable_dragent_server from the fastapi config
+
 ## 11.10.6
 - Updated `agent` component from 11.10.45 to 11.11.2:
   - Removed deprecated option to use a deprecated frontserver `drum`
