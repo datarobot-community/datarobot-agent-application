@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
-## 11.10.8
+## 11.11.0
 - Enabled selection of the agent memory provider when running `dr start`.
 - Updated `agent` component from 11.11.2 to 11.11.9:
   - Updated the development server entry point, `agent/dev.py` to use `dragent` instead of `drum`.
