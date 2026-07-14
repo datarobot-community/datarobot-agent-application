@@ -42,7 +42,7 @@ Unlike the other frameworks, NAT agents are defined entirely in `workflow.yaml`.
 
 ## `workflow.yaml`
 
-`workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on **DRUM** and **DRAgent** via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
+`workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on **DRAgent** via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
 
 The `workflow.yaml` defines everything:
 

@@ -13,9 +13,6 @@ Tracing is wired up by two pieces that the template generates automatically:
 
 Both are present by default. You do not need to add them — this doc explains what they are so you know not to remove them and how to recognize them.
 
-> [!NOTE]
-> Tracing as described here applies to the **DRAgent** front server (`_type: dragent_fastapi`). For DRUM-based agents, see [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
-
 ---
 
 ## Instrumentation (`agent/agent/register.py`)

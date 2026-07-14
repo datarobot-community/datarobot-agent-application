@@ -26,7 +26,7 @@ Moderations run in two stages:
 Both stages are implemented by the `datarobot_moderation` middleware on DRAgent, which loads guard definitions from either `moderation_config.yaml` or an inline `moderation` block in `workflow.yaml`.
 
 > [!NOTE]
-> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see [Local evaluation](./evaluation.md).
+> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see the [datarobot-moderations docs](https://pypi.org/project/datarobot-moderations/).
 
 ## Guard configuration file
 
@@ -223,7 +223,7 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 Runtime moderations (this guide) enforce guardrails on live agent traffic through the DRAgent middleware.
 
-For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
+For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in the [datarobot-moderations docs](https://pypi.org/project/datarobot-moderations/).
 
 | File | Purpose | Used by |
 |---|---|---|
@@ -237,7 +237,7 @@ Both files use the same guard schema. You can maintain one file and symlink or c
 | Topic | Link |
 |---|---|
 | Guard types, LLM backends, and full YAML reference | [datarobot-moderations on PyPI](https://pypi.org/project/datarobot-moderations/) |
-| Local evaluation with Pytest | [Local evaluation](./evaluation.md) |
+| Local evaluation with Pytest | [datarobot-moderations docs](https://pypi.org/project/datarobot-moderations/) |
 | DRAgent front server | [Front server](./README.md#front-server) |
 | DRAgent debugging and CLI | [Debugging](./debugging.md) |
 | `dr-moderation` CLI (evaluate configs without deploying) | [datarobot-moderations CLI docs](https://pypi.org/project/datarobot-moderations/) |

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "CI=true vite",
+    "dev": "cross-env CI=true vite",
     "build": "cross-env NODE_ENV=production vite build",
     "lint": "npm run prettier && eslint .",
     "lint:fix": "npm run prettier:fix && eslint . --fix",

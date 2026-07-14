@@ -11,13 +11,8 @@ root:
     help: "Enter the default execution environment for the agent's custom model."
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID
     type: string
-    default: "6a3919cb62ca0dc60197d473"
+    default: "6a4e0e5874d3a4076d933c72"
     optional: true
     help: |
       Enter the default execution environment version ID for the agent's
       custom model.
-  - env: ENABLE_DRAGENT_SERVER
-    type: string
-    default: "true"
-    optional: true
-    help: "Whether to use the `dragent` as frontserver for your agent"

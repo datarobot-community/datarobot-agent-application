@@ -168,15 +168,15 @@ Choose **Mem0** when you already use Mem0 or want a third-party memory service. 
 
 ## Configuration and runtime parameters
 
-Memory-related settings are loaded through `agent/config.py` (for TTL) and standard DataRobot runtime parameters (for provider credentials and space ID).
+Memory-related settings are loaded through `agent/config.py` and standard DataRobot runtime parameters (for provider credentials and space ID).
 
 ### TTL (time to live)
 
-| Setting | Env / runtime parameter | Default | Description |
-|---|---|---|---|
-| `agent_memory_default_ttl_seconds` | `AGENT_MEMORY_TTL_SECONDS` | `2592000` (30 days) | How long stored memories are retained before expiration. Set via the `AGENT_MEMORY_TTL_SECONDS` runtime parameter at deploy time or in `.env` for local development. |
+| Env / runtime parameter | Default | Description |
+|---|---------|---|
+| `AGENT_MEMORY_TTL_DAYS` | `30`    | How long stored memories are retained before expiration. Set via the `AGENT_MEMORY_TTL_DAYS` runtime parameter at deploy time or in `.env` for local development. |
 
-The constant `AGENT_MEMORY_TTL_SECONDS` in `config.py` mirrors the default (`2_592_000` seconds).
+The constant `AGENT_MEMORY_TTL_DAYS` in `config.py` mirrors the default (`30` days).
 
 ### Mem0 provider
 
@@ -186,9 +186,9 @@ The constant `AGENT_MEMORY_TTL_SECONDS` in `config.py` mirrors the default (`2_5
 
 ### DataRobot Memory Service provider
 
-| Setting | Env / runtime parameter | Description |
-|---|---|---|
-| &mdash; | `AGENT_MEMORY_SPACE_ID` | UUID of the DataRobot Memory Space. Set automatically by Pulumi; exported as `Agent Memory Space ID <agent_name>`. |
+| Env / runtime parameter | Description |
+|---|---|
+| `AGENT_MEMORY_SPACE_ID` | UUID of the DataRobot Memory Space. Set automatically by Pulumi; exported as `Agent Memory Space ID <agent_name>`. |
 
 ##### Memory space LLM (DataRobot Memory Service)
 
@@ -217,7 +217,7 @@ To configure a memory space LLM that differs from the agent LLM component, set o
 
 When memory is enabled, `infra/infra/<agent_app_name>.py` adds runtime parameters to the agent custom model:
 
-1. **`AGENT_MEMORY_TTL_SECONDS`**&mdash;always added (string type, default `2592000`). Override at deploy time with the `AGENT_MEMORY_TTL_SECONDS` environment variable in your Pulumi stack.
+1. **`AGENT_MEMORY_TTL_DAYS`**&mdash;always added (string type, default `30`). Override at deploy time with the `AGENT_MEMORY_TTL_DAYS` environment variable in your Pulumi stack.
 
 2. **Provider-specific parameter:**
    - **Mem0**&mdash;`MEM0_API_KEY` credential, created when `MEM0_API_KEY` is set in the Pulumi environment.
@@ -240,7 +240,7 @@ For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMO
 
    Optionally override TTL in `.env`:
    ```sh
-   AGENT_MEMORY_TTL_SECONDS=86400
+   AGENT_MEMORY_TTL_DAYS=1
    ```
 
    Optionally configure the memory space LLM independently of the agent LLM component:

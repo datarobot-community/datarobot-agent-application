@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.10.8
+- Enabled selection of the agent memory provider when running `dr start`.
+- Updated `agent` component from 11.11.2 to 11.11.9:
+  - Updated the development server entry point, `agent/dev.py` to use `dragent` instead of `drum`.
+  - Added overrides to the agent `pyproject.toml` to enforce CVE fixes.
+  - Updated `datarobot-genai` from 0.22.0 to 0.23.0:
+    - Added AG-UI `ToolCall*` events and per-agent `Step*` boundaries for CrewAI agents.
+    - Switched `AGENT_MEMORY_TTL_SECONDS -> AGENT_MEMORY_TTL_DAYS` for agent memory configuration.
+  - Removed remaining `drum` frontserver leftovers from CLI and dotenv templates.
+  - Agent runtimes now use only the `dragent` frontserver.
+
 ## 11.10.7
 - Hotfix to remove enable_dragent_server from the fastapi config
 

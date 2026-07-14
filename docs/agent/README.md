@@ -17,7 +17,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
 | [Moderation and guardrails](./moderation.md) | Configure runtime guardrails with `datarobot_moderation` middleware in `workflow.yaml`. |
 | [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
-| [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
+| [Local evaluation](./moderation.md#local-evaluation) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
@@ -167,7 +167,6 @@ The agent component runs on the **DRAgent** front server&mdash;a NAT (NeMo Agent
 - **Execution model**&mdash;fully asynchronous (native `async`/`await`).
 - **Streaming**&mdash;native async streaming via `DRAgentEventResponse`.
 - **Local dev**&mdash;the Taskfile runs `nat dragent serve --config_file workflow.yaml` on port `AGENT_PORT` (default `8842`). CLI commands (`task agent:cli -- execute …`) are forwarded to `nat dragent run`/`query` and run the workflow in-process without a server.
-- **Deployment**&mdash;the `ENABLE_DRAGENT_SERVER` runtime parameter on the custom model is set automatically by the infrastructure (see `template/infra/infra/<agent_app_name>.py`).
 
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
 

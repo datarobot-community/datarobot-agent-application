@@ -62,7 +62,6 @@ tasks:
         --data include_taskfile_infra=no \
         --data mcp_answers_file=.datarobot/answers/drmcp-mcp_server.yml \
         --data llm_answers_file=.datarobot/answers/llm-llm.yml \
-        --data use_agent_memory=none \
         {{.COPIER_FLAGS}} -w --quiet
       - task build-agents-md
       - dr task compose
