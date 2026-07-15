@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 11.4.20
+_commit: 11.11.3-2-g6404351
 _src_path: https://github.com/datarobot/af-component-llm.git
 base_answers_file: .datarobot/answers/base.yml
 llm_app_name: llm

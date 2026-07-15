@@ -89,12 +89,12 @@ Not all event types are supported by every framework. The following table shows 
 | State management events | - | - | - | - |
 | Reasoning events | + | - | - | - |
 
-**Legend:** `+` supported, `-` not yet implemented.
+Legend: `+` supported, `-` not yet implemented.
 
-- **Lifecycle** and **text message** events are supported across all frameworks&mdash;every agent emits `RunStarted`/`RunFinished` and streams text via `TextMessageContent` events.
-- **Tool events** are supported in NAT, LlamaIndex, and LangGraph. CrewAI does not yet emit tool call events.
-- **State management events** are not implemented in any framework.
-- **Reasoning events** are only supported in NAT, which exposes internal planning and reasoning steps.
+- Lifecycle and text message events are supported across all frameworks&mdash;every agent emits `RunStarted`/`RunFinished` and streams text via `TextMessageContent` events.
+- Tool events are supported in NAT, LlamaIndex, and LangGraph. CrewAI does not yet emit tool call events.
+- State management events are not implemented in any framework.
+- Reasoning events are only supported in NAT, which exposes internal planning and reasoning steps.
 
 ## Using AG-UI in the Base agent
 

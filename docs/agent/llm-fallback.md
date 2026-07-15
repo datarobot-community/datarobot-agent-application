@@ -1,6 +1,6 @@
 # LLM provider fallback
 
-> **Also known as:** failover, model fallback, provider fallback, model routing, graceful degradation, backup provider, secondary model, circuit breaker
+> **Also known as**: failover, model fallback, provider fallback, model routing, graceful degradation, backup provider, secondary model, circuit breaker
 
 
 The agent component supports configuring primary and fallback LLM providers so that if the primary provider is unavailable or returns an error, the agent automatically retries using a fallback provider. This is powered by [litellm.Router](https://docs.litellm.ai/docs/routing) and requires `datarobot-genai>=0.15.20`.

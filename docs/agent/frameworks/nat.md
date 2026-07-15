@@ -4,25 +4,25 @@ The NAT (NVIDIA NeMo Agent Toolkit) agent uses a YAML-first configuration to def
 
 ## NAT `workflow.yaml` requirements (read this first)
 
-**NAT validates `workflow.yaml` with a fixed schema.** Other parts of this repository document LangGraph-oriented patterns; those are **not** valid inside NAT’s `functions` block unless a NAT discriminator explicitly supports them.
+NAT validates `workflow.yaml` with a fixed schema. Other parts of this repository document LangGraph-oriented patterns; those are not valid inside NAT’s `functions` block unless a NAT discriminator explicitly supports them.
 
-1. **Do not use `python_function` in `functions`.** Some examples in the ecosystem use `_type: python_function` with `module_path` and `function_name` to point at Python callables. That is **not** a valid [NAT function discriminator](https://docs.nvidia.com/nemo/agent-toolkit/index.html). You will get errors such as: `Input tag 'python_function' found using discriminator() does not match any of the expected tags`. For custom code, use **`nat_tool` in `register.py` plus a matching `functions` entry** (see [Custom local tools](#custom-local-tools) below) or only [built-in NAT `/_type` values](https://docs.nvidia.com/nemo/agent-toolkit/index.html).
+1. Do not use `python_function` in `functions`. Some examples in the ecosystem use `_type: python_function` with `module_path` and `function_name` to point at Python callables. That is not a valid [NAT function discriminator](https://docs.nvidia.com/nemo/agent-toolkit/index.html). You will get errors such as: `Input tag 'python_function' found using discriminator() does not match any of the expected tags`. For custom code, use `nat_tool` in `register.py` plus a matching `functions` entry (see [Custom local tools](#custom-local-tools) below) or only [built-in NAT `/_type` values](https://docs.nvidia.com/nemo/agent-toolkit/index.html).
 
-2. **Every name in `workflow.tool_names` must exist** as a key under `functions:` and/or `function_groups:`. If you add `nat_tool(my_fn, "my_tool", ...)` in `register.py` but omit `functions.my_tool` in `workflow.yaml`, you will get: `ValueError: Function 'my_tool' not found in list of functions`. Python registration alone does not create the YAML entry the NeMo builder loads.
+2. Every name in `workflow.tool_names` must exist as a key under `functions:` and/or `function_groups:`. If you add `nat_tool(my_fn, "my_tool", ...)` in `register.py` but omit `functions.my_tool` in `workflow.yaml`, you will get: `ValueError: Function 'my_tool' not found in list of functions`. Python registration alone does not create the YAML entry the NeMo builder loads.
 
-3. **A2A and `functions` are different.** The `general.front_end.a2a` block (skills, server name, examples) is for Agent2Agent discovery and must be valid YAML, but it **does not** define callable tools. Tools are still declared under `functions` / `function_groups` and listed in `workflow.tool_names` as in this document. For `skills` / `examples`, **avoid unquoted flow sequences** like `[a?, b: c]`&mdash;characters such as `?` or `:` after a word can confuse the YAML parser; use a block list (lines starting with `-`) or **double-quoted** strings in flow style.
+3. A2A and `functions` are different. The `general.front_end.a2a` block (skills, server name, examples) is for Agent2Agent discovery and must be valid YAML, but it does not define callable tools. Tools are still declared under `functions` / `function_groups` and listed in `workflow.tool_names` as in this document. For `skills` / `examples`, avoid unquoted flow sequences like `[a?, b: c]`&mdash;characters such as `?` or `:` after a word can confuse the YAML parser; use a block list (lines starting with `-`) or double-quoted strings in flow style.
 
-4. **Prefer `typing.Annotated` on parameters** for custom `nat_tool` functions so the LLM sees clear argument descriptions (see [Custom local tools](#custom-local-tools)).
+4. Prefer `typing.Annotated` on parameters for custom `nat_tool` functions so the LLM sees clear argument descriptions (see [Custom local tools](#custom-local-tools)).
 
-5. **Do not combine `from __future__ import annotations` with `dict[str, Any]` return types on multi-argument tools.** NAT wraps tools that have more than one parameter in an internal pydantic adapter inside NeMo’s `function_info` module. Deferred annotations such as `-> dict[str, Any]` are re-evaluated there, where bare `Any` is not in scope, which surfaces at runtime as `NameError: name 'Any' is not defined` while building `web_research` (or your first custom function). Prefer plain annotations without `__future__` annotations, or return a concrete type / `dict[str, object]` instead of `dict[str, Any]`.
+5. Do not combine `from __future__ import annotations` with `dict[str, Any]` return types on multi-argument tools. NAT wraps tools that have more than one parameter in an internal pydantic adapter inside NeMo’s `function_info` module. Deferred annotations such as `-> dict[str, Any]` are re-evaluated there, where bare `Any` is not in scope, which surfaces at runtime as `NameError: name 'Any' is not defined` while building `web_research` (or your first custom function). Prefer plain annotations without `__future__` annotations, or return a concrete type / `dict[str, object]` instead of `dict[str, Any]`.
 
-6. **`register.py` must be imported at startup** when it contains `nat_tool(...)` calls. The `nat_tool` helper registers your tool with NeMo’s workflow registry when the module **loads**. Generated NAT projects ship a stub `register.py` and `import agent.register  # noqa: F401` in `myagent.py` so adding `nat_tool` later does not require wiring a new import. If you remove that import, add it back (or import `register` at the top of `agent/__init__.py` *before* `from agent.myagent import ...`) before relying on custom tools; otherwise the runtime can fail when resolving tool implementations.
+6. `register.py` must be imported at startup when it contains `nat_tool(...)` calls. The `nat_tool` helper registers your tool with NeMo’s workflow registry when the module loads. Generated NAT projects ship a stub `register.py` and `import agent.register  # noqa: F401` in `myagent.py` so adding `nat_tool` later does not require wiring a new import. If you remove that import, add it back (or import `register` at the top of `agent/__init__.py` *before* `from agent.myagent import ...`) before relying on custom tools; otherwise the runtime can fail when resolving tool implementations.
 
-7. **NAT rejects an empty `tool_names` on tool-calling workflows.** The generated template defaults to `planner`, `writer`, and `mcp_tools` under a `per_user_tool_calling_agent`. For a tool-less assistant, edit `workflow.yaml` to use a root `chat_completion` workflow — see [Tool-less `chat_completion` workflow](../../../{{agent_app_name}}/AGENTS.md#tool-less-chat_completion-workflow) in the project `AGENTS.md`.
+7. NAT rejects an empty `tool_names` on tool-calling workflows. The generated template defaults to `planner`, `writer`, and `mcp_tools` under a `per_user_tool_calling_agent`. For a tool-less assistant, edit `workflow.yaml` to use a root `chat_completion` workflow — see [Tool-less `chat_completion` workflow](../../../{{agent_app_name}}/AGENTS.md#tool-less-chat_completion-workflow) in the project `AGENTS.md`.
 
 ## Checklist: every custom nat_tool must appear in functions (do not skip)
 
-**NeMo builds the callable list from the `functions` (and `function_groups`) section of `workflow.yaml`.** `nat_tool` in Python does not remove the need for YAML. For **each** name you pass as the second argument to `nat_tool`, you **must** add a matching `functions` entry, or you will get `ValueError: Function '…' not found in list of functions`.
+NeMo builds the callable list from the `functions` (and `function_groups`) section of `workflow.yaml`. `nat_tool` in Python does not remove the need for YAML. For each name you pass as the second argument to `nat_tool`, you must add a matching `functions` entry, or you will get `ValueError: Function '…' not found in list of functions`.
 
 Use this table whenever you add, rename, or remove a custom tool:
 
@@ -32,7 +32,7 @@ Use this table whenever you add, rename, or remove a custom tool:
 | 2 | Add a name to `workflow.tool_names` | It must be a `functions` key, a `function_groups` key (e.g. `mcp_tools`), or it will fail at runtime |
 | 3 | Remove a tool | Remove it from `nat_tool` calls, `functions`, and `workflow.tool_names` together |
 
-**Quick self-check (before `dr run` / `task agent:cli`):** For `per_user_tool_calling_agent`, take every name listed under `workflow.tool_names`. For each name, confirm either `functions.<name>` exists **or** `function_groups.<name>` exists. Anything else is an error.
+Quick self-check (before `dr run` / `task agent:cli`): For `per_user_tool_calling_agent`, take every name listed under `workflow.tool_names`. For each name, confirm either `functions.<name>` exists or `function_groups.<name>` exists. Anything else is an error.
 
 Details and examples: [Custom local tools](#custom-local-tools).
 
@@ -42,11 +42,11 @@ Unlike the other frameworks, NAT agents are defined entirely in `workflow.yaml`.
 
 ## `workflow.yaml`
 
-`workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on **DRAgent** via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
+`workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on DRAgent via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
 
 The `workflow.yaml` defines everything:
 
-**Functions** (sub-agents)&mdash;defined as `chat_completion` types with system prompts:
+Functions (sub-agents)&mdash;defined as `chat_completion` types with system prompts:
 
 ```yaml
 functions:
@@ -62,7 +62,7 @@ functions:
       You are a content writer...
 ```
 
-**Workflow**&mdash;a `per_user_tool_calling_agent` that orchestrates which functions to call:
+Workflow&mdash;a `per_user_tool_calling_agent` that orchestrates which functions to call:
 
 ```yaml
 workflow:
@@ -79,7 +79,7 @@ workflow:
     Return only the final blog post.
 ```
 
-**LLMs**&mdash;configured directly in YAML rather than in Python:
+LLMs&mdash;configured directly in YAML rather than in Python:
 
 ```yaml
 llms:
@@ -125,11 +125,11 @@ function_groups:
 ### Custom local tools
 
 The template ships with a `word_counter` tool that counts words in a given text. It is defined in `register.py`, registered via `nat_tool`, and declared in `workflow.yaml`. You can remove it or replace it with your own tools.
-To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
+To add a custom tool to a NAT agent, define a plain Python function and register it with `nat_tool(fn, tool_name, ...)` from `datarobot_genai.nat.tool` in `register.py` (a call at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
 
-**Do not** use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
+Do not use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
 
-**Step 1**&mdash;Define the tool function (e.g. in `agent/agent/tools.py`):
+Step 1&mdash;Define the tool function (e.g. in `agent/agent/tools.py`):
 
 ```python
 from typing import Annotated
@@ -146,7 +146,7 @@ def word_counter(
 
 Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses these to generate the tool schema for the LLM.
 
-**Step 2**&mdash;Register the tool in `register.py`:
+Step 2&mdash;Register the tool in `register.py`:
 
 ```python
 from datarobot_genai.nat.tool import nat_tool
@@ -157,9 +157,9 @@ nat_tool(word_counter, "word_counter", description="Count words in a given text.
 
 The second argument is the name of the tool as it will appear in `workflow.yaml`.
 
-**Step 2b**&mdash;Ensure `register.py` is loaded (see [`myagent.py`](#myagentpy)): generated NAT projects already include `import agent.register  # noqa: F401`. If you removed it, add it back before relying on `nat_tool` registrations; otherwise the package may never import `register.py`, and tool implementations will not be registered with NeMo.
+Step 2b&mdash;Ensure `register.py` is loaded (see [`myagent.py`](#myagentpy)): generated NAT projects already include `import agent.register  # noqa: F401`. If you removed it, add it back before relying on `nat_tool` registrations; otherwise the package may never import `register.py`, and tool implementations will not be registered with NeMo.
 
-**Step 3**&mdash;Add the tool to `workflow.yaml` (required: a `functions` entry for **each** custom tool name, not only `tool_names` on the workflow):
+Step 3&mdash;Add the tool to `workflow.yaml` (required: a `functions` entry for each custom tool name, not only `tool_names` on the workflow):
 
 ```yaml
 functions:
@@ -185,7 +185,7 @@ For more on NAT tool types, see the [NVIDIA NeMo Agent Toolkit documentation](ht
 
 ## Prompt modification
 
-NAT agents define all prompts declaratively in `workflow.yaml`. You configure two levels: **function system prompts** (sub-agent behavior) and the **workflow system prompt** (orchestrator behavior).
+NAT agents define all prompts declaratively in `workflow.yaml`. You configure two levels: function system prompts (sub-agent behavior) and the workflow system prompt (orchestrator behavior).
 
 ### Function system prompts
 
@@ -238,11 +238,11 @@ This prompt should clearly describe the execution order and what each tool/funct
 
 ### How to modify
 
-- **Update function prompts**&mdash;edit the `system_prompt` field in any `functions` entry.
-- **Change the orchestration logic**&mdash;modify the `workflow.system_prompt` to change how the orchestrator sequences function calls.
-- **Assign different LLMs**&mdash;set `llm_name` per function to use different models for different tasks (e.g. a fast model for planning, a capable model for writing).
-- **Add new functions**&mdash;create a new entry in `functions` with `_type: chat_completion`, a `system_prompt`, and a `description`. Then add it to `workflow.tool_names`.
-- **Change function descriptions**&mdash;update `description` to influence when the orchestrator calls a function.
+- Update function prompts&mdash;edit the `system_prompt` field in any `functions` entry.
+- Change the orchestration logic&mdash;modify the `workflow.system_prompt` to change how the orchestrator sequences function calls.
+- Assign different LLMs&mdash;set `llm_name` per function to use different models for different tasks (e.g. a fast model for planning, a capable model for writing).
+- Add new functions&mdash;create a new entry in `functions` with `_type: chat_completion`, a `system_prompt`, and a `description`. Then add it to `workflow.tool_names`.
+- Change function descriptions&mdash;update `description` to influence when the orchestrator calls a function.
 
 ### Tips
 
@@ -253,6 +253,25 @@ This prompt should clearly describe the execution order and what each tool/funct
 - Test prompt changes by editing `workflow.yaml` and running `task agent:cli -- execute --user_prompt "..."`. No code changes needed.
 
 For more on NAT prompt configuration, see the [NVIDIA NeMo Agent Toolkit documentation](https://docs.nvidia.com/nemo/agent-toolkit/index.html).
+
+## Chat history
+
+NAT agents receive prior turns through DRAgent as `RunAgentInput.messages`. To surface them as text inside YAML-defined prompts, add `{chat_history}` as a final section of a `system_prompt` (function or workflow level):
+
+```yaml
+functions:
+  planner:
+    _type: chat_completion
+    llm_name: datarobot_llm
+    system_prompt: |
+      You are a content planner for the topic.
+
+      {chat_history}
+```
+
+When no `{chat_history}` placeholder is present, underlying framework agents (for example, `langgraph_agent` referenced from NAT `functions`) follow that framework's structured-history defaults.
+
+See [Multi-turn chat history](../chat-history.md) for injection modes, CLI testing, and how this differs from [agent memory](../agent-memory.md).
 
 ## When to use
 

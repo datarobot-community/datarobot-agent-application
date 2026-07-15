@@ -57,14 +57,15 @@ The MCP server requires you to install the following tools:
 - [Taskfile.dev](https://taskfile.dev/#/installation) (task runner)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager)
 - [Pulumi](https://www.pulumi.com/docs/iac/download-install/) (infrastructure as code)
-- [Homebrew](https://docs.brew.sh/Installation) (package manager, **macOS only**)
+- [Homebrew](https://docs.brew.sh/Installation) (package manager, macOS only)
 
-> **NOTE**: If you are using DataRobot codespaces, these prerequisites are already installed for you.
+> [!NOTE]
+> If you are using DataRobot codespaces, these prerequisites are already installed for you.
 
 ## DataRobot codespaces setup
 
 When developing inside a DataRobot codespace, you must modify your codespace session environment to expose several ports.
-Ports can be accessed from the **Session environment** tab, as shown below:
+Ports can be accessed from the Session environment tab, as shown below:
 
 ![](./img/codespace-ports.png)
 
@@ -125,9 +126,9 @@ git config --global core.symlink true
 
 ## Optional
 
-- [**Docker**](https://docs.docker.com/engine/install/): For containerized deployment
-- [**AWS Credentials**](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html): If using AWS-related features (S3 predictions or memory).
-- [**Node.js**](https://nodejs.org/en/download/): Required for Claude Desktop MCP client setup
+- [Docker](https://docs.docker.com/engine/install/): For containerized deployment
+- [AWS Credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html): If using AWS-related features (S3 predictions or memory).
+- [Node.js](https://nodejs.org/en/download/): Required for Claude Desktop MCP client setup
 
 # Get started
 
@@ -138,9 +139,10 @@ To add or update the MCP component in a project that uses the DataRobot App Fram
 
 ## Install dependencies
 
-> **NOTE**: This installs dependencies for both the MCP application and infrastructure components.
+> [!NOTE]
+> This installs dependencies for both the MCP application and infrastructure components.
 
-From the **project root** (recommended when working in the full application template):
+From the project root (recommended when working in the full application template):
 
 ```bash
 dr run install
@@ -154,7 +156,7 @@ task install
 
 ## Configure environment variables
 
-Create or edit a `.env` file. When using the full application template, use the **project root** `.env` (e.g. via `dr dotenv setup` or `dr dotenv edit`). For MCP-only development, create a `.env` file in the `mcp_server/` directory:
+Create or edit a `.env` file. When using the full application template, use the project root `.env` (e.g. via `dr dotenv setup` or `dr dotenv edit`). For MCP-only development, create a `.env` file in the `mcp_server/` directory:
 
 ```bash
 # For MCP-only development (from repo root):
@@ -198,10 +200,11 @@ SESSION_SECRET_KEY=[YOUR_SESSION_SECRET_KEY]
 
 Open the DataRobot UI to locate and copy your DataRobot API key and endpoint to your environment variables in `.env`.
 
-> **Note**: For full details, see the [DataRobot API keys documentation](https://docs.datarobot.com/en/docs/get-started/acct-mgmt/acct-settings/api-key-mgmt.html).
+> [!NOTE]
+> For full details, see the [DataRobot API keys documentation](https://docs.datarobot.com/en/docs/get-started/acct-mgmt/acct-settings/api-key-mgmt.html).
 
 1. Log in to your DataRobot account.
-2. Click the user icon in the top right of the UI and select **API keys and tools**.
+2. Click the user icon in the top right of the UI and select API keys and tools.
 
   <img src="./img/api-keys-tools.png" width="250" />
 
@@ -222,7 +225,7 @@ Open the DataRobot UI to locate and copy your DataRobot API key and endpoint to 
 
 ## Run locally
 
-**When using the full application template**, start all services (including the MCP server) from the project root:
+When using the full application template, start all services (including the MCP server) from the project root:
 
 ```bash
 dr run dev
@@ -230,7 +233,7 @@ dr run dev
 
 The MCP server will use the development port configured for the template (e.g. 9000). See the main [README](../README.md) and [Ports reference](../README.md#ports-reference).
 
-**When running the MCP server alone** from the `mcp_server/` directory:
+When running the MCP server alone from the `mcp_server/` directory:
 
 ```bash
 task dev
@@ -241,7 +244,8 @@ Once the DataRobot logo appears, the server is running properly.
 
 <img src="./img/mcp-logo.png" width="300" />
 
-> **Note**: When finished, press `Ctrl+C` to stop the server.
+> [!NOTE]
+> When finished, press `Ctrl+C` to stop the server.
 
 From here, you can perform some optional interactive testing on the local server using the steps in the next section. If you would like to skip straight to deploying a server, proceed to [Deployment](#deployment).
 
@@ -270,16 +274,17 @@ The interactive mode displays detailed logs showing:
 
 <img src="./img/interactive-testing-mode.png" width="600" alt="Interactive Testing Mode showing AI agent connected to MCP server with debug output" />
 
-> **Note**: The interactive testing requires an internet connection for the LLM, but all tool execution happens locally through your MCP server.
+> [!NOTE]
+> The interactive testing requires an internet connection for the LLM, but all tool execution happens locally through your MCP server.
 
 ### Error handling and debugging
 
 When developing tools, you'll encounter errors that need quick resolution. The MCP server provides detailed error information to help you iterate rapidly. The `test-interactive` command displays all of these in one place for you to see as you are testing the tools:
 
-- **Server logs** show real-time error details, including stack traces
-- **Tool execution errors** are captured and displayed with context
-- **Validation errors** highlight parameter issues immediately
-- **Connection errors** provide clear diagnostic information
+- Server logs show real-time error details, including stack traces
+- Tool execution errors are captured and displayed with context
+- Validation errors highlight parameter issues immediately
+- Connection errors provide clear diagnostic information
 
 <img src="./img/mcp_error.png" width="600" alt="MCP server error display showing formatted error messages and stack traces" />
 
@@ -294,19 +299,19 @@ Common debugging steps:
 
 Now that the local test passed, you can deploy the server to DataRobot.
 
-**When using the full application template**, deploy from the **project root** with `dr run deploy` (or `task deploy`). Use the root `.env` (e.g. `dr dotenv`); do not copy `mcp_server/.env` to root for deployment—the root environment is already used.
+When using the full application template, deploy from the project root with `dr run deploy` (or `task deploy`). Use the root `.env` (e.g. `dr dotenv`); do not copy `mcp_server/.env` to root for deployment—the root environment is already used.
 
-**When deploying the MCP server alone** (standalone use), follow the steps below.
+When deploying the MCP server alone (standalone use), follow the steps below.
 
-**What gets deployed**
+What gets deployed
 
 After deployment is successful, it creates the following resources:
 
-- **Execution Environment**: Docker-based Python 3.12 environment (or uses an existing environment)
-- **Custom Model**: MCP server packaged as an unstructured custom model
-- **Registered Model**: Versioned model registration
-- **Prediction Environment**: DataRobot Serverless platform
-- **Deployment**: Active deployment with direct access endpoints
+- Execution Environment: Docker-based Python 3.12 environment (or uses an existing environment)
+- Custom Model: MCP server packaged as an unstructured custom model
+- Registered Model: Versioned model registration
+- Prediction Environment: DataRobot Serverless platform
+- Deployment: Active deployment with direct access endpoints
 
 ## Pulumi login
 
@@ -333,7 +338,8 @@ cp mcp_server/.env .env
 
 2. Deploy to DataRobot using Pulumi:
 
-> **Note**: During this process, you will be prompted to provide a new stack name and your Pulumi access token.
+> [!NOTE]
+> During this process, you will be prompted to provide a new stack name and your Pulumi access token.
 > If prompted to perform an update, select "yes". Deployment can take several minutes to complete.
 
 ```bash
@@ -370,7 +376,7 @@ task destroy
 
 ## Connect to the deployed MCP server
 
-Use the `MCP_SERVER_MCP_ENDPOINT` URL (shown in the **outputs** section in the screenshot above) to connect your MCP clients to the deployed server.
+Use the `MCP_SERVER_MCP_ENDPOINT` URL (shown in the outputs section in the screenshot above) to connect your MCP clients to the deployed server.
 
 # Next steps
 
@@ -462,16 +468,16 @@ Access configuration in your app via `get_user_config()` (for example, `get_user
 
 ### Check logs
 
-**Server logs** (local development):
+Server logs (local development):
 
 - Logs print to console where you ran `task dev`
 - Control verbosity with `MCP_SERVER_LOG_LEVEL` and `APP_LOG_LEVEL`
 
-**MCP Client logs**:
+MCP Client logs:
 
-- **Cursor**: View "MCP Logs" in the Output panel (View → Output → MCP Logs)
-- **Claude Desktop**: Check `~/Library/Logs/Claude/mcp*.log`
-- **VSCode**: Check the Output panel for MCP-related logs
+- Cursor: View "MCP Logs" in the Output panel (View → Output → MCP Logs)
+- Claude Desktop: Check `~/Library/Logs/Claude/mcp*.log`
+- VSCode: Check the Output panel for MCP-related logs
 
 ### Common issues
 
@@ -510,12 +516,12 @@ task dev
 
 If you encounter issues or have questions:
 
-- **Check Documentation**: Review the guides in `/docs/`
-- **FastMCP Documentation**: [GitHub Repository](https://github.com/jlowin/fastmcp)
-- **MCP Protocol**: [Model Context Protocol Specification](https://modelcontextprotocol.io/)
-- **DataRobot Support**: [Contact Support](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html)
-- **Open an Issue**: [GitHub Issues](https://github.com/datarobot-community/af-component-datarobot-mcp/issues)
-- **Security Issues**: Email oss-community-management@datarobot.com
+- Check Documentation: Review the guides in `/docs/`
+- FastMCP Documentation: [GitHub Repository](https://github.com/jlowin/fastmcp)
+- MCP Protocol: [Model Context Protocol Specification](https://modelcontextprotocol.io/)
+- DataRobot Support: [Contact Support](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html)
+- Open an Issue: [GitHub Issues](https://github.com/datarobot-community/af-component-datarobot-mcp/issues)
+- Security Issues: Email oss-community-management@datarobot.com
 
 # Contributions
 

@@ -6,10 +6,10 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that c
 
 This component provides:
 
-- **DataRobot tools**&mdash;Pre-built tools for interacting with DataRobot deployments, datasets, and the platform API.
-- **Dynamic tool registration**&mdash;Automatically turn tagged DataRobot deployments into callable MCP tools.
-- **Custom tool authoring**&mdash;Add domain-specific tools using FastMCP's decorator pattern.
-- **OpenTelemetry tracing**&mdash;Built-in observability for monitoring tool calls in production.
+- DataRobot tools&mdash;Pre-built tools for interacting with DataRobot deployments, datasets, and the platform API.
+- Dynamic tool registration&mdash;Automatically turn tagged DataRobot deployments into callable MCP tools.
+- Custom tool authoring&mdash;Add domain-specific tools using FastMCP's decorator pattern.
+- OpenTelemetry tracing&mdash;Built-in observability for monitoring tool calls in production.
 
 ## Use cases
 
@@ -121,9 +121,9 @@ task test
 
 ## Best practices
 
-- **Keep `.env` out of version control**&mdash;It is already in `.gitignore`. Never commit API tokens.
-- **Write descriptive tool docstrings**&mdash;LLMs use docstrings to decide which tool to call. Write as if explaining the tool to a non-technical user.
-- **Use type hints for all tool parameters**&mdash;FastMCP generates the MCP tool schema from Python type annotations; missing or incorrect types cause runtime errors.
-- **Tag deployments consistently**&mdash;Use a naming convention for deployment tags so dynamic registration produces predictable tool names.
-- **Enable OpenTelemetry in production**&mdash;Set `OTEL_ENABLED=true` to trace tool calls through the DataRobot monitoring UI.
-- **Anti-pattern: returning raw exceptions to the client**&mdash;Catch specific exceptions in tool implementations and return structured error messages; unhandled exceptions expose internal details.
+- Keep `.env` out of version control&mdash;It is already in `.gitignore`. Never commit API tokens.
+- Write descriptive tool docstrings&mdash;LLMs use docstrings to decide which tool to call. Write as if explaining the tool to a non-technical user.
+- Use type hints for all tool parameters&mdash;FastMCP generates the MCP tool schema from Python type annotations; missing or incorrect types cause runtime errors.
+- Tag deployments consistently&mdash;Use a naming convention for deployment tags so dynamic registration produces predictable tool names.
+- Enable OpenTelemetry in production&mdash;Set `OTEL_ENABLED=true` to trace tool calls through the DataRobot monitoring UI.
+- Anti-pattern: returning raw exceptions to the client&mdash;Catch specific exceptions in tool implementations and return structured error messages; unhandled exceptions expose internal details.

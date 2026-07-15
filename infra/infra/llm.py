@@ -1,1 +1,1 @@
-../configurations/llm/gateway_direct.py
+../configurations/llm/blueprint_with_external_llm.py

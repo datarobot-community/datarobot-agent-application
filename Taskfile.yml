@@ -97,11 +97,11 @@ tasks:
       - |
         if [ -n "$VIRTUAL_ENV" ]; then
           echo "Installing datarobot_early_access[core] into active virtualenv: $VIRTUAL_ENV"
-          uv pip install "datarobot_early_access[core]>=3.13.0.2026.2.2.173832"
+          uv pip install "datarobot_early_access[core]>=3.17.0"
         else
           uv tool update-shell
           echo "Installing datarobot_early_access[core] as a uv tool"
-          uv tool install --force "datarobot_early_access[core]>=3.13.0.2026.2.2.173832"
+          uv tool install --force "datarobot_early_access[core]>=3.17.0"
         fi
       - dr task run install
   test:

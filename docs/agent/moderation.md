@@ -1,6 +1,6 @@
 # Moderation and guardrails
 
-This guide explains how to configure **moderations** (guardrails) for agents in this template. Moderations evaluate prompts before the LLM runs and responses after, and can block, report, or replace content based on thresholds you define.
+This guide explains how to configure moderations (guardrails) for agents in this template. Moderations evaluate prompts before the LLM runs and responses after, and can block, report, or replace content based on thresholds you define.
 
 The `datarobot-moderations[all]` package is already included in `pyproject.toml`. Guards are wired into the agent through the `datarobot_moderation` middleware declared in `workflow.yaml` and applied by the [DRAgent front server](./README.md#front-server).
 
@@ -20,13 +20,13 @@ The `datarobot-moderations[all]` package is already included in `pyproject.toml`
 
 Moderations run in two stages:
 
-1. **Pre-score (prompt)**&mdash;guards evaluate the user's input before the agent calls the LLM. Blocked prompts never reach the model.
-2. **Post-score (response)**&mdash;guards evaluate the agent's output after generation. Blocked responses are not returned to the caller.
+1. Pre-score (prompt)&mdash;guards evaluate the user's input before the agent calls the LLM. Blocked prompts never reach the model.
+2. Post-score (response)&mdash;guards evaluate the agent's output after generation. Blocked responses are not returned to the caller.
 
 Both stages are implemented by the `datarobot_moderation` middleware on DRAgent, which loads guard definitions from either `moderation_config.yaml` or an inline `moderation` block in `workflow.yaml`.
 
 > [!NOTE]
-> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see the [datarobot-moderations docs](https://pypi.org/project/datarobot-moderations/).
+> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see [Local evaluation](./evaluation.md).
 
 ## Guard configuration file
 
@@ -46,7 +46,7 @@ agent/
 
 ### Example configuration
 
-LLM-as-a-judge guards route through the DataRobot LLM Gateway via `llm_type: llmGateway` and `llm_gateway_model_id`&mdash;no separate judge deployment is required. Use a judge model that is **different from the model your agent uses** for more objective scoring.
+LLM-as-a-judge guards route through the DataRobot LLM Gateway via `llm_type: llmGateway` and `llm_gateway_model_id`&mdash;no separate judge deployment is required. Use a judge model that is different from the model your agent uses for more objective scoring.
 
 ```yaml
 # moderation_config.yaml
@@ -84,7 +84,7 @@ guards:
 
 ### LLM judge backends
 
-Guards that call an LLM to score text (`faithfulness`, `task_adherence`, `agent_goal_accuracy`, and others) require an `llm_type`. This template's examples use **`llmGateway`**, which routes through the DataRobot LLM Gateway using `llm_gateway_model_id`&mdash;no judge deployment required. Alternatively, set `llm_type: datarobot` with a 24-character `deployment_id` to use a dedicated DataRobot LLM deployment as the judge.
+Guards that call an LLM to score text (`faithfulness`, `task_adherence`, `agent_goal_accuracy`, and others) require an `llm_type`. This template's examples use `llmGateway`, which routes through the DataRobot LLM Gateway using `llm_gateway_model_id`&mdash;no judge deployment required. Alternatively, set `llm_type: datarobot` with a 24-character `deployment_id` to use a dedicated DataRobot LLM deployment as the judge.
 
 ### Common guard types
 
@@ -102,7 +102,7 @@ For the complete list of guard types, LLM backends, intervention actions, and co
 ### Streaming performance
 
 > [!WARNING]
-> Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be **slow in streaming mode**. Post-score guards may run on **each streamed chunk** rather than only on the final response, so every chunk can trigger a separate judge or model invocation.
+> Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be slow in streaming mode. Post-score guards may run on each streamed chunk rather than only on the final response, so every chunk can trigger a separate judge or model invocation.
 >
 > For streaming workloads, prefer lightweight local guards (for example `token_count`) or reserve LLM-as-a-judge and model guards for non-streaming requests. If guards time out during streaming, increase `timeout_sec` or set `timeout_action: score` while tuning thresholds.
 
@@ -223,7 +223,7 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 Runtime moderations (this guide) enforce guardrails on live agent traffic through the DRAgent middleware.
 
-For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in the [datarobot-moderations docs](https://pypi.org/project/datarobot-moderations/).
+For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
 
 | File | Purpose | Used by |
 |---|---|---|
@@ -237,7 +237,7 @@ Both files use the same guard schema. You can maintain one file and symlink or c
 | Topic | Link |
 |---|---|
 | Guard types, LLM backends, and full YAML reference | [datarobot-moderations on PyPI](https://pypi.org/project/datarobot-moderations/) |
-| Local evaluation with Pytest | [datarobot-moderations docs](https://pypi.org/project/datarobot-moderations/) |
+| Local evaluation with Pytest | [Local evaluation](./evaluation.md) |
 | DRAgent front server | [Front server](./README.md#front-server) |
 | DRAgent debugging and CLI | [Debugging](./debugging.md) |
 | `dr-moderation` CLI (evaluate configs without deploying) | [datarobot-moderations CLI docs](https://pypi.org/project/datarobot-moderations/) |

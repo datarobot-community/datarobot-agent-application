@@ -393,6 +393,9 @@ class OTel:
                 # - /health$ matches the health endpoint
                 # - /assets/.* matches static asset paths
                 excluded_urls=r"//[^/]+/$,/health$,/assets/.*",
+                # Streaming (SSE) responses emit one ASGI "http send" span per
+                # chunk, which floods traces with thousands of low-value spans.
+                exclude_spans=["receive", "send"],
             )
             logging.getLogger(__name__).info(
                 "Auto-instrumentation enabled for FastAPI application"

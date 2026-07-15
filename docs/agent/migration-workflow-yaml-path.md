@@ -1,15 +1,15 @@
 # `workflow.yaml` path migration (11.9.3)
 
-This guide covers the breaking layout change introduced in agent component **11.9.3**.
+This guide covers the breaking layout change introduced in agent component 11.9.3.
 
 ## Summary
 
-`workflow.yaml` moved out of the inner Python package to the **agent component root**:
+`workflow.yaml` moved out of the inner Python package to the agent component root:
 
 | | Path (from repository root) |
 |---|---|
-| **Before** | `agent/agent/workflow.yaml` |
-| **After** | `agent/workflow.yaml` |
+| Before | `agent/agent/workflow.yaml` |
+| After | `agent/workflow.yaml` |
 
 `workflow.yaml` is the top-level NeMo Agent Toolkit (NAT) configuration loaded by the [DRAgent front server](./README.md#front-server) to build the FastAPI front server, tools, LLMs, middleware, and workflow graph for every framework.
 
@@ -25,18 +25,18 @@ git mv agent/agent/workflow.yaml agent/workflow.yaml
 
 Remove any leftover copy under `agent/agent/` so only one `workflow.yaml` exists.
 
-### 2. Update `workflow_path` in NAT `myagent.py` (DRUM fallback only)
+### 2. Update legacy `workflow_path` in NAT `myagent.py` (DRAgent detail)
 
 > [!NOTE]
-> Only relevant if you use the deprecated [DRUM fallback](./README.md#drum-fallback-deprecated-temporary) with the NAT framework. DRAgent loads `workflow.yaml` directly via `--config_file` and ignores `workflow_path`.
+> This is only relevant for older NAT layouts that still set `workflow_path` in `myagent.py`. DRAgent now loads `workflow.yaml` directly via `--config_file`, but updating this legacy path avoids stale references during migration.
 
-**Before** (file co-located with `myagent.py`):
+Before (file co-located with `myagent.py`):
 
 ```python
 workflow_path: Path = Path(__file__).parent / "workflow.yaml",
 ```
 
-**After** (`workflow.yaml` one directory up):
+After (`workflow.yaml` one directory up):
 
 ```python
 workflow_path: Path = Path(__file__).parent.parent / "workflow.yaml",

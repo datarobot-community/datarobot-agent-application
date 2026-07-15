@@ -24,6 +24,14 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv]
+# numpy is a transitive dep (datarobot/duckdb/fsspec). 2.5 ships PEP 695 `type`
+# stubs that mypy only parses when targeting >=3.12; we type-check against the 3.11
+# floor, and core has no lockfile so `uv sync` otherwise resolves the latest (2.5.x)
+# and mypy fails parsing numpy/__init__.pyi. Cap below 2.5 (drop when mypy's
+# python_version is raised).
+constraint-dependencies = ["numpy<2.5"]
+
 [dependency-groups]
 dev = [
     "mypy>=1.15.0",

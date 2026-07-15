@@ -14,7 +14,7 @@ This guide covers migrating a LlamaIndex agent from the class-based layout (pre-
 
 ### 1. Update imports
 
-**Before:**
+**Before**:
 
 ```python
 from datarobot_genai.llama_index import DataRobotLiteLLM
@@ -25,7 +25,7 @@ from llama_index.core.tools import BaseTool
 from agent.config import Config
 ```
 
-**After:**
+**After**:
 
 ```python
 from datarobot_genai.llama_index.agent import datarobot_agent_class_from_llamaindex
@@ -46,7 +46,7 @@ llm = LiteLLM(model="placeholder")
 
 ### 3. Move state tools to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(LlamaIndexAgent):
@@ -59,7 +59,7 @@ class MyAgent(LlamaIndexAgent):
         return "Notes recorded."
 ```
 
-**After:**
+**After**:
 
 ```python
 async def planner_notes_tool(ctx: Context, notes: str, notes_title: str) -> str:
@@ -75,7 +75,7 @@ These are now plain module-level async functions.
 
 ### 4. Move agents to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(LlamaIndexAgent):
@@ -91,7 +91,7 @@ class MyAgent(LlamaIndexAgent):
         )
 ```
 
-**After:**
+**After**:
 
 ```python
 agent_planner = FunctionAgent(
@@ -111,7 +111,7 @@ Key differences:
 
 ### 5. Move workflow to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(LlamaIndexAgent):
@@ -123,7 +123,7 @@ class MyAgent(LlamaIndexAgent):
         )
 ```
 
-**After:**
+**After**:
 
 ```python
 agents: list[BaseWorkflowAgent] = [agent_planner, agent_writer]
@@ -137,7 +137,7 @@ workflow = AgentWorkflow(
 
 ### 6. Move `extract_response_text` to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(LlamaIndexAgent):
@@ -147,7 +147,7 @@ class MyAgent(LlamaIndexAgent):
         ...
 ```
 
-**After:**
+**After**:
 
 ```python
 def extract_response_text(result_state: Any, events: list[Any]) -> str:
@@ -177,7 +177,7 @@ The entire `__init__` method and the `llm()` method are no longer needed. Remove
 
 ### 10. Update `custompy_adaptor`
 
-**Before:**
+**Before**:
 
 ```python
 async def custompy_adaptor(completion_create_params, ...):
@@ -190,7 +190,7 @@ async def custompy_adaptor(completion_create_params, ...):
     )
 ```
 
-**After:**
+**After**:
 
 ```python
 _PLACEHOLDER_MODELS = frozenset({"unknown"})

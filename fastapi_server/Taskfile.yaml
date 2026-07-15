@@ -111,6 +111,11 @@ tasks:
       - docker compose -f tests/integration/oauth/docker-compose.yml down
       - echo "✓ Mock OAuth2 server stopped"
 
+  test-load:
+    desc: "🔥 Load-test the AGUI chat endpoint (manual; requires a running server)"
+    cmds:
+      - "{{.UV_CMD}} run python loadtest/chat_load_test.py {{.CLI_ARGS}}"
+
   copyright:
     aliases:
       - license

@@ -2,8 +2,8 @@
 
 This page outlines how to configure authentication for Agent-to-Agent (A2A) communication. There are two supported authentication methods:
 
-1. **DataRobot API key** — A simple bearer token auth for DataRobot-hosted agents. Configured by default in all templates.
-2. **Okta cross-application access (XAA)** — A two-step token exchange for federated Okta environments (hybrid RFC 8693 / RFC 7523 flow). Opt-in via `workflow.yaml`.
+1. DataRobot API key — A simple bearer token auth for DataRobot-hosted agents. Configured by default in all templates.
+2. Okta cross-application access (XAA) — A two-step token exchange for federated Okta environments (hybrid RFC 8693 / RFC 7523 flow). Opt-in via `workflow.yaml`.
 
 Both methods use the `authenticated_a2a_client` function group on the client side. See [Agent2Agent](./agent2agent.md) for how to expose A2A endpoints and connect to remote agents.
 
@@ -54,10 +54,10 @@ Use this when calling an agent protected by Okta's federated identity model. The
 
 Both are loaded automatically from env vars, `.env`, or DataRobot Runtime Parameters when you do not set `principal_id` or `private_jwk` on the `okta_cross_app_access` block.
 
-You can instead define **`principal_id`** and **`private_jwk`** directly under `authentication.okta_auth` (or whichever key holds `_type: okta_cross_app_access`) in `workflow.yaml`:
+You can instead define `principal_id` and `private_jwk` directly under `authentication.okta_auth` (or whichever key holds `_type: okta_cross_app_access`) in `workflow.yaml`:
 
-- **Static values** — Use a plain string for the Okta principal ID or for the private JWK (same formats as the `IDP_AGENT_ID` / `IDP_AGENT_PRIVATE_KEY_JWK` environment variables).
-- **Dynamic values** — Use placeholders of the form `${VAR_NAME}` so the value is read from an environment variable at **runtime** when the workflow is loaded. This requires the **ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS** feature flag to be enabled in DataRobot so `${VAR_NAME}` entries in `workflow.yaml` are substituted from the environment.
+- Static values — Use a plain string for the Okta principal ID or for the private JWK (same formats as the `IDP_AGENT_ID` / `IDP_AGENT_PRIVATE_KEY_JWK` environment variables).
+- Dynamic values — Use placeholders of the form `${VAR_NAME}` so the value is read from an environment variable at runtime when the workflow is loaded. This requires the ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS feature flag to be enabled in DataRobot so `${VAR_NAME}` entries in `workflow.yaml` are substituted from the environment.
 
 ### Installation
 
@@ -86,7 +86,7 @@ general:
             - "dr.impersonation"
 ```
 
-**Step 2** — Add the Okta auth provider (client-side). Uncomment the `okta_auth` block in the `authentication` section:
+Step 2 — Add the Okta auth provider (client-side). Uncomment the `okta_auth` block in the `authentication` section:
 
 ```yaml
 authentication:
@@ -119,8 +119,8 @@ Set both in your `.env` file before running `dr run deploy`.
 
 The XAA flow operates in two steps:
 
-1. **Token Exchange (RFC 8693)** — The caller's incoming Okta access token is exchanged for an ID-JAG (Identity Assertion Authorization Grant) via the org-level Authorization Server (`token_exchange.trusted_issuer`).
-2. **JWT Bearer Grant (RFC 7523)** — The ID-JAG is exchanged for a scoped access token at the resource AS token endpoint (`token_request.token_url`), granting access to the target agent with the requested scopes.
+1. Token Exchange (RFC 8693) — The caller's incoming Okta access token is exchanged for an ID-JAG (Identity Assertion Authorization Grant) via the org-level Authorization Server (`token_exchange.trusted_issuer`).
+2. JWT Bearer Grant (RFC 7523) — The ID-JAG is exchanged for a scoped access token at the resource AS token endpoint (`token_request.token_url`), granting access to the target agent with the requested scopes.
 
 Both steps authenticate the client using a private JWT key, signing assertions with the key from `IDP_AGENT_PRIVATE_KEY_JWK`.
 

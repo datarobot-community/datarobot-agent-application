@@ -13,7 +13,7 @@ This guide covers migrating a CrewAI agent from the class-based layout (pre-11.8
 
 ### 1. Update imports
 
-**Before:**
+**Before**:
 
 ```python
 from crewai import LLM, Agent, Crew, Process, Task
@@ -23,7 +23,7 @@ from datarobot_genai.crewai.agent import CrewAIAgent
 from agent.config import Config
 ```
 
-**After:**
+**After**:
 
 ```python
 from crewai import Agent, Crew, Process, Task
@@ -35,7 +35,7 @@ Remove imports of `LLM`, `BaseTool` (if only used for type hints in `__init__`),
 
 ### 2. Move agents to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(CrewAIAgent):
@@ -52,7 +52,7 @@ class MyAgent(CrewAIAgent):
         )
 ```
 
-**After:**
+**After**:
 
 ```python
 llm = get_llm()
@@ -75,7 +75,7 @@ Key differences:
 
 ### 3. Move tasks to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(CrewAIAgent):
@@ -88,7 +88,7 @@ class MyAgent(CrewAIAgent):
         )
 ```
 
-**After:**
+**After**:
 
 ```python
 task_plan = Task(
@@ -100,7 +100,7 @@ task_plan = Task(
 
 ### 4. Move crew to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(CrewAIAgent):
@@ -114,7 +114,7 @@ class MyAgent(CrewAIAgent):
         )
 ```
 
-**After:**
+**After**:
 
 ```python
 crew = Crew(
@@ -130,7 +130,7 @@ Note: `stream` is set to `False` at module level. In DRAgent mode, `register.py`
 
 ### 5. Define `kickoff_inputs` at module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(CrewAIAgent):
@@ -141,7 +141,7 @@ class MyAgent(CrewAIAgent):
         }
 ```
 
-**After:**
+**After**:
 
 ```python
 kickoff_inputs = lambda user_prompt_content: {
@@ -149,6 +149,8 @@ kickoff_inputs = lambda user_prompt_content: {
     "chat_history": "",
 }
 ```
+
+The `"chat_history"` key is required for multi-turn text history; `datarobot-genai` populates it when prior messages are present. See [Multi-turn chat history](../chat-history.md).
 
 ### 6. Generate `MyAgent` with the factory
 
@@ -164,7 +166,7 @@ The entire `__init__` method and the `llm()` method are no longer needed. Remove
 
 ### 8. Update `custompy_adaptor`
 
-**Before:**
+**Before**:
 
 ```python
 async def custompy_adaptor(completion_create_params, ...):
@@ -178,7 +180,7 @@ async def custompy_adaptor(completion_create_params, ...):
     )
 ```
 
-**After:**
+**After**:
 
 ```python
 _PLACEHOLDER_MODELS = frozenset({"unknown"})

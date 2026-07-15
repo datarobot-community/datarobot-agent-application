@@ -72,13 +72,19 @@ suitable for development purposes. We recommend configuring it with a
 production grade hosted database that supports SQLAlchemy's 2.0+ async
 engine such as https://github.com/MagicStack/asyncpg.
 
+## Multi-turn chat history
+
+On each new user message, the AG-UI storage layer (`fastapi_server/app/ag_ui/storage.py`) rebuilds `RunAgentInput.messages` from the full stored chat before forwarding the request to the agent. Downstream agents therefore receive prior user and assistant turns automatically when using the starter UI&mdash;with the default SQLite store or with [Memory Space](#memory-space-chat-persistence-optional). No extra agent-side persistence code is required.
+
+This application-level thread history is separate from [agent memory](../agent/agent-memory.md) (persistent facts across conversations). See [Multi-turn chat history](../agent/chat-history.md) for how agents consume those messages.
+
 ## Memory Space chat persistence (optional)
 
 By default, chats, messages, users, and identities are stored in the SQLite database described above. To use a DataRobot Memory Space instead:
 
 1. Ensure your organization has agentic memory API access (`ENABLE_AGENTIC_MEMORY_API`).
 2. Set `USE_APPLICATION_MEMORY_SPACE=true` in your project `.env` (see `.env.template`).
-3. Run `task deploy-dev`. Pulumi provisions a Memory Space and wires `USE_APPLICATION_MEMORY_SPACE` and `APPLICATION_MEMORY_SPACE_ID` on the **FastAPI custom application** runtime (not the agent deployment).
+3. Run `task deploy-dev`. Pulumi provisions a Memory Space and wires `USE_APPLICATION_MEMORY_SPACE` and `APPLICATION_MEMORY_SPACE_ID` on the FastAPI custom application runtime (not the agent deployment).
 
 If you change `USE_APPLICATION_MEMORY_SPACE` later, rerun `task deploy-dev` before `task dev` so infrastructure and runtime parameters stay in sync with your `.env`.
 

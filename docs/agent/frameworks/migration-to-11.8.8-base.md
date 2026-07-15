@@ -15,7 +15,7 @@ Unlike the other frameworks, the base agent still uses a `MyAgent` class extendi
 
 ### 1. Update imports
 
-**Before:**
+**Before**:
 
 ```python
 from openai.types.chat import CompletionCreateParams
@@ -23,7 +23,7 @@ from openai.types.chat import CompletionCreateParams
 from agent.config import Config
 ```
 
-**After:**
+**After**:
 
 ```python
 from datarobot_genai.langgraph.llm import get_llm
@@ -34,7 +34,7 @@ Remove the `Config` import. Add the `get_llm` import.
 
 ### 2. Simplify `MyAgent` class
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(BaseAgent[None]):
@@ -65,7 +65,7 @@ class MyAgent(BaseAgent[None]):
         ...
 ```
 
-**After:**
+**After**:
 
 ```python
 class MyAgent(BaseAgent[None]):
@@ -77,7 +77,7 @@ The entire `__init__` method is removed. `BaseAgent` provides the constructor.
 
 ### 3. Update `custompy_adaptor`
 
-**Before:**
+**Before**:
 
 ```python
 async def custompy_adaptor(completion_create_params, ...):
@@ -90,7 +90,7 @@ async def custompy_adaptor(completion_create_params, ...):
     )
 ```
 
-**After:**
+**After**:
 
 ```python
 _PLACEHOLDER_MODELS = frozenset({"unknown"})

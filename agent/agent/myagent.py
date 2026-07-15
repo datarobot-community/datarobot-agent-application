@@ -30,8 +30,7 @@ prompt_template = ChatPromptTemplate.from_messages(
         (
             "system",
             "You are a helpful assistant that plans and writes content based on the "
-            "user's topic. Chat history is provided via {chat_history} (it may be empty). "
-            "Use it when helpful to stay consistent across turns.",
+            "user's topic.",
         ),
         (
             "user",

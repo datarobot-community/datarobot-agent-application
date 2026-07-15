@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.11.1
+- Updated `llm` component to correct issues with LLM Blueprint
+- Updated `agent` component from 11.11.9 to 11.11.17:
+  - Configured the LLM model name on the agent memory space when the DataRobot memory service is selected.
+  - Fixed docker build flows.
+  - Raised the DRAgent gunicorn worker timeout to 600s (from gunicorn's 30s default), tunable via the `AGENT_GUNICORN_WORKER_TIMEOUT` runtime parameter.
+  - Updated `datarobot-genai` from 0.23.0 to 0.24.0:
+    - Bumped `litellm` to 1.91.1 to fix `IndexError` when streaming.
+
 ## 11.11.0
 - Enabled selection of the agent memory provider when running `dr start`.
 - Updated `agent` component from 11.11.2 to 11.11.9:

@@ -14,7 +14,7 @@ This guide covers migrating a LangGraph agent from the class-based layout (pre-1
 
 ### 1. Update imports
 
-**Before:**
+**Before**:
 
 ```python
 from datarobot_genai.langgraph.agent import LangGraphAgent
@@ -23,7 +23,7 @@ from langchain_litellm.chat_models import ChatLiteLLM
 from agent.config import Config
 ```
 
-**After:**
+**After**:
 
 ```python
 from datarobot_genai.langgraph.agent import datarobot_agent_class_from_langgraph
@@ -34,23 +34,23 @@ Remove imports of `LangGraphAgent`, `ChatLiteLLM`, and `Config`.
 
 ### 2. Move `prompt_template` to module level
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(LangGraphAgent):
     @property
     def prompt_template(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful assistant. Chat history: {chat_history}"),
+            ("system", "You are a helpful assistant."),
             ("user", "The topic is {topic}."),
         ])
 ```
 
-**After:**
+**After**:
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant. Chat history: {chat_history}"),
+    ("system", "You are a helpful assistant."),
     ("user", "The topic is {topic}."),
 ])
 ```
@@ -59,7 +59,7 @@ prompt_template = ChatPromptTemplate.from_messages([
 
 Extract your `workflow` property and agent node properties into a standalone factory function. The function receives `llm`, `tools`, and `verbose` as arguments instead of reading them from `self`.
 
-**Before:**
+**Before**:
 
 ```python
 class MyAgent(LangGraphAgent):
@@ -92,7 +92,7 @@ class MyAgent(LangGraphAgent):
         return langgraph_workflow
 ```
 
-**After:**
+**After**:
 
 ```python
 def graph_factory(
@@ -136,13 +136,15 @@ Replace the entire `MyAgent` class with a single line:
 MyAgent = datarobot_agent_class_from_langgraph(graph_factory, prompt_template)
 ```
 
+Multi-turn context is injected automatically via structured history when the template omits `{chat_history}`. See [Multi-turn chat history](../chat-history.md).
+
 ### 5. Delete the `__init__` and `llm()` methods
 
 The entire `__init__` method (with `self.config`, `self.default_model`, `self._llm`, etc.) and the `llm()` method are no longer needed. Remove them.
 
 ### 6. Update `custompy_adaptor`
 
-**Before:**
+**Before**:
 
 ```python
 async def custompy_adaptor(completion_create_params, ...):
@@ -156,7 +158,7 @@ async def custompy_adaptor(completion_create_params, ...):
     return await agent_chat_completion_wrapper(agent, completion_create_params)
 ```
 
-**After:**
+**After**:
 
 ```python
 _PLACEHOLDER_MODELS = frozenset({"unknown"})

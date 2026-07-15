@@ -28,8 +28,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.api import router as api_router
 from app.config import Config
+from app.db import DBSyncScopeMiddleware
 from app.deps import Deps, create_deps
 from app.memory import MemoryParticipantMiddleware
+from app.profiling import PyInstrumentMiddleware
 from app.telemetry import configure_uvicorn_logging, init_logging, otel
 
 base_router = APIRouter()
@@ -152,6 +154,14 @@ def create_app(
 
     app = FastAPI(title=title, lifespan=lifespan)
 
+    # Middleware added later wraps middleware added earlier (last added runs
+    # first). Add the profiler before the auth middleware so it ends up
+    # nested inside DataRobotASGIMiddleware -- otherwise an unauthenticated
+    # request with ?profile=1 would reach the profiler and get its HTML
+    # output before authentication ever runs.
+    if config.profiling_enabled:
+        app.add_middleware(PyInstrumentMiddleware)
+
     # Add our middleware for DataRobot Custom Applications
     app.add_middleware(DataRobotASGIMiddleware, health_endpoint="/health")
 
@@ -178,7 +188,15 @@ def create_app(
     )
     app.add_middleware(MemoryParticipantMiddleware)
 
+    # Pull the persistent DB from remote storage at most once per request.
+    app.add_middleware(DBSyncScopeMiddleware)
+
     app.include_router(base_router)
+
+    if config.test_user_email:
+        from app.api.v1.dev import dev_router
+
+        app.include_router(dev_router, prefix="/api/v1")
 
     # This is the base path for the app, used to serve static files and templates
     assets_dir = STATIC_DIR / "assets"

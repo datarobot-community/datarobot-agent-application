@@ -51,7 +51,8 @@ The component references the existing deployment and its prediction environment.
 | `<LLM>_DEPLOYMENT_ID` | Yes | -- | Deployment ID of the existing LLM (e.g. `6510c7b7c4f3f9407e24a849`) |
 | `<LLM>_DEFAULT_MODEL` | No | `datarobot/datarobot-deployed-llm` | Model identifier |
 
-**Note:** The deployment ID variable was formerly named `TEXTGEN_DEPLOYMENT_ID`. Use `<LLM>_DEPLOYMENT_ID` in current templates.
+> [!NOTE]
+> The deployment ID variable was formerly named `TEXTGEN_DEPLOYMENT_ID`. Use `<LLM>_DEPLOYMENT_ID` in current templates.
 
 ### Stack outputs
 
@@ -80,7 +81,7 @@ Use this option when you already have an LLM from Azure, Bedrock, Anthropic, Ver
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `<LLM>_DEFAULT_MODEL` | No | `azure-openai-gpt-5-mini` | External LLM model name |
+| `<LLM>_DEFAULT_MODEL` | No | `azure/openai-gpt-5-mini` | External LLM model name (LiteLLM format) |
 | `<LLM>_DEFAULT_LLM_ID` | No | `azure-openai-gpt-5-mini` | LLM ID used in the Playground |
 | `<LLM>_DEFAULT_LLM_NAME` | No | `Azure OpenAI GPT-5 Mini` | Friendly name shown in the UI |
 
@@ -129,7 +130,8 @@ You must also configure credentials for your chosen provider:
 |---|---|
 | `TOGETHERAI_API_KEY` | API key |
 
-**Note:** The default `verify_llm` call in `blueprint_with_external_llm.py` assumes Azure OpenAI. For other providers, update the string passed to `verify_llm`. See [LiteLLM providers](https://docs.litellm.ai/docs/providers) for details on what string to pass.
+> [!NOTE]
+> The default `verify_llm` call in `blueprint_with_external_llm.py` assumes Azure OpenAI. For other providers, update the string passed to `verify_llm`. See [LiteLLM providers](https://docs.litellm.ai/docs/providers) for details on what string to pass.
 
 ### Stack outputs
 
@@ -179,8 +181,8 @@ Use this option when you have an existing registered model (not yet deployed) th
 
 This option creates two deployments:
 
-1. **Proxy deployment** -- deploys the registered model so it can be validated.
-2. **Blueprint deployment** -- creates an LLM Blueprint from the validated model, builds a new custom model from that blueprint, and deploys it with full monitoring.
+1. Proxy deployment -- deploys the registered model so it can be validated.
+2. Blueprint deployment -- creates an LLM Blueprint from the validated model, builds a new custom model from that blueprint, and deploys it with full monitoring.
 
 ### Resources created
 
@@ -284,10 +286,10 @@ In addition to the `.env` file changes, you can also edit the respective configu
 
 All options that deploy resources share these behaviors:
 
-- **Prediction environment** -- if `DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT` is set, the component uses that existing environment; otherwise, it creates a new serverless environment.
-- **Scaling** -- deployments default to `min_computes=0` and `max_computes=2`.
-- **Data collection** -- blueprint, gateway, and registered model deployments enable prediction data collection.
-- **Association IDs** -- deployments use `association_id` for tracking predictions.
+- Prediction environment -- if `DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT` is set, the component uses that existing environment; otherwise, it creates a new serverless environment.
+- Scaling -- deployments default to `min_computes=0` and `max_computes=2`.
+- Data collection -- blueprint, gateway, and registered model deployments enable prediction data collection.
+- Association IDs -- deployments use `association_id` for tracking predictions.
 
 ### Required feature flags
 

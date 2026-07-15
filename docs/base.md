@@ -6,8 +6,8 @@ The base component is required for every App Framework application template. It 
 
 | Sub-component | Optional | Description |
 |---|---|---|
-| **Infrastructure** | No | Pulumi project, task runner, and CI/CD scaffolding. |
-| **Core library** | Yes | Shared Python package included when your recipe has more than one component that needs common utilities. |
+| Infrastructure | No | Pulumi project, task runner, and CI/CD scaffolding. |
+| Core library | Yes | Shared Python package included when your recipe has more than one component that needs common utilities. |
 
 ## Infrastructure (IaC)
 
@@ -73,7 +73,7 @@ If your recipe has only one component, you can skip `core` and put shared code d
 
 DataRobot Applications are stateless by default. The `core.persistent_fs` module provides a persistent file system API backed by the DataRobot Key-Value store, giving your app durable storage without an external database.
 
-**`DRFileSystem`**&mdash;an [fsspec](https://filesystem-spec.readthedocs.io/)-compatible file system that reads and writes files to the DataRobot file storage API. It transparently syncs a local cache with remote storage, so you can use it with any library that accepts an fsspec file system.
+`DRFileSystem`&mdash;an [fsspec](https://filesystem-spec.readthedocs.io/)-compatible file system that reads and writes files to the DataRobot file storage API. It transparently syncs a local cache with remote storage, so you can use it with any library that accepts an fsspec file system.
 
 ```python
 from core.persistent_fs.dr_file_system import DRFileSystem
@@ -159,9 +159,9 @@ The base component records your answers in `.datarobot/answers/base.yml`. These 
 
 After `dr start`, OpenTelemetry is configured automatically. The `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` credentials are written to `pulumi_config.json` and read by `DataRobotAppFrameworkBaseSettings` — no `.env` editing required.
 
-**View traces:** Navigate to your Use Case in DataRobot and open the **Tracing** tab. Traces appear within a few seconds of a request completing.
+View traces: Navigate to your Use Case in DataRobot and open the Tracing tab. Traces appear within a few seconds of a request completing.
 
-**Disable tracing:** Set `OTEL_SDK_DISABLED=true` in `.env`, or omit `OTEL_EXPORTER_OTLP_ENDPOINT`.
+Disable tracing: Set `OTEL_SDK_DISABLED=true` in `.env`, or omit `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
 > The DataRobot OTel collector uses `experiment_container` as the Use Case entity type internally (not `use_case`). The credentials written by `dr start` use the correct type automatically.
 
@@ -174,7 +174,7 @@ After `dr start`, OpenTelemetry is configured automatically. The `OTEL_EXPORTER_
 
 ## Best practices
 
-- **Put only shared code in `core`**&mdash;Code that is only used by one component belongs in that component. `core` is for genuinely shared utilities.
-- **Use the persistent drivers in production**&mdash;`DRFileSystem`, `connect_dr_fs` (SQLite), and `connect_dr_fs` (DuckDB) all fall back gracefully to local-only mode when `APPLICATION_ID` is absent, so you can develop locally without any changes.
-- **Protect shared state with the RW lock**&mdash;If multiple FastAPI background tasks or request handlers access the same in-memory state, use `ThreadReadWriteLock` to avoid race conditions.
-- **Keep `configurations/` clean**&mdash;Only place swappable infrastructure modules in `configurations/`. Fixed resources that are always deployed belong directly in `infra/infra/`.
+- Put only shared code in `core`&mdash;Code that is only used by one component belongs in that component. `core` is for genuinely shared utilities.
+- Use the persistent drivers in production&mdash;`DRFileSystem`, `connect_dr_fs` (SQLite), and `connect_dr_fs` (DuckDB) all fall back gracefully to local-only mode when `APPLICATION_ID` is absent, so you can develop locally without any changes.
+- Protect shared state with the RW lock&mdash;If multiple FastAPI background tasks or request handlers access the same in-memory state, use `ThreadReadWriteLock` to avoid race conditions.
+- Keep `configurations/` clean&mdash;Only place swappable infrastructure modules in `configurations/`. Fixed resources that are always deployed belong directly in `infra/infra/`.

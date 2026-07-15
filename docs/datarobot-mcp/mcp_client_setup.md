@@ -40,13 +40,13 @@ For more information about DataRobot API keys, see the [DataRobot API keys docum
 
 Treat your DataRobot API key like a password.
 
-- **Do not hardcode real keys** in examples, screenshots, chat logs, or source control. Use placeholders in docs and samples; store real values separately.
-- **Prefer prompting or indirect configuration** so the key is not sitting in plain text when avoidable:
-  - **VS Code**: use [input variables](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration#_input-variables-for-sensitive-data) (`promptString` with `"password": true`). VS Code prompts once and stores the value for later use (see the deployed VS Code example below).
-  - **Cursor**: use [config interpolation](https://cursor.com/docs/context/mcp) with `${env:VAR}` in `headers` so the token lives in your environment, not in `mcp.json` (see the deployed Cursor example below).
-- **Protect client config files** on disk: restrict permissions where applicable (for example `chmod 600` on Unix-like systems for files that contain secrets).
-- **Use least privilege**: create keys with only the access your integration needs, and rotate or revoke a key if it may have been exposed.
-- **Project vs user config**: if you use a project-level `.vscode/mcp.json` or `.cursor/mcp.json`, avoid committing secrets. Use user-level configuration, `inputs`, or environment variables instead.
+- Do not hardcode real keys in examples, screenshots, chat logs, or source control. Use placeholders in docs and samples; store real values separately.
+- Prefer prompting or indirect configuration so the key is not sitting in plain text when avoidable:
+  - VS Code: use [input variables](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration#_input-variables-for-sensitive-data) (`promptString` with `"password": true`). VS Code prompts once and stores the value for later use (see the deployed VS Code example below).
+  - Cursor: use [config interpolation](https://cursor.com/docs/context/mcp) with `${env:VAR}` in `headers` so the token lives in your environment, not in `mcp.json` (see the deployed Cursor example below).
+- Protect client config files on disk: restrict permissions where applicable (for example `chmod 600` on Unix-like systems for files that contain secrets).
+- Use least privilege: create keys with only the access your integration needs, and rotate or revoke a key if it may have been exposed.
+- Project vs user config: if you use a project-level `.vscode/mcp.json` or `.cursor/mcp.json`, avoid committing secrets. Use user-level configuration, `inputs`, or environment variables instead.
 
 For remote connections, DataRobot expects `Authorization: Bearer <token>`. When the client supports custom headers, also send `x-datarobot-api-key` with the same key value.
 
@@ -100,7 +100,7 @@ After you update the file:
 
 ### VS Code
 
-Open your MCP configuration with **MCP: Open User Configuration** (or edit `.vscode/mcp.json` for workspace scope). VS Code expects `servers` at the top level of `mcp.json`; see the [MCP configuration reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration).
+Open your MCP configuration with MCP: Open User Configuration (or edit `.vscode/mcp.json` for workspace scope). VS Code expects `servers` at the top level of `mcp.json`; see the [MCP configuration reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration).
 
 Avoid hardcoding API keys. For deployed servers, use [input variables](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration#_input-variables-for-sensitive-data) so VS Code prompts for the key (with optional masked input) instead of storing it verbatim in the file.
 
@@ -346,8 +346,8 @@ If authentication fails:
 - confirm that the `Bearer` header is formatted correctly
 - confirm that the deployment ID is correct
 - make sure your account has access to the deployment
-- **Cursor**: confirm `DATAROBOT_API_TOKEN` is set in the environment of the Cursor process (fully quit and relaunch from a shell where it is exported, if needed)
-- **VS Code**: confirm you completed the input prompt for `${input:datarobot-api-key}` (or reset inputs if you entered the wrong value; see VS Code MCP documentation)
+- Cursor: confirm `DATAROBOT_API_TOKEN` is set in the environment of the Cursor process (fully quit and relaunch from a shell where it is exported, if needed)
+- VS Code: confirm you completed the input prompt for `${input:datarobot-api-key}` (or reset inputs if you entered the wrong value; see VS Code MCP documentation)
 - avoid pasting live tokens into chat, tickets, or screen shares; rotate the key if it may have leaked
 
 ### Claude Desktop issues

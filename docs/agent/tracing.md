@@ -1,8 +1,8 @@
 # Tracing and telemetry (DRAgent)
 
-> **Also known as:** OpenTelemetry, OTel, observability, instrumentation, spans, monitoring, telemetry, trace export
+> **Also known as**: OpenTelemetry, OTel, observability, instrumentation, spans, monitoring, telemetry, trace export
 
-Agents that use the **DRAgent** front server are instrumented for distributed tracing out of the box. Each agent run emits OpenTelemetry spans for LLM calls, tool invocations, HTTP requests, and framework-level steps, and exports them to DataRobot for monitoring on the deployment's **Monitoring > Data exploration** tab. This is powered by [OpenTelemetry](https://opentelemetry.io/) and the `datarobot-genai` `dragent` extra — no extra setup is required in a generated agent.
+Agents that use the DRAgent front server are instrumented for distributed tracing out of the box. Each agent run emits OpenTelemetry spans for LLM calls, tool invocations, HTTP requests, and framework-level steps, and exports them to DataRobot for monitoring on the deployment's Monitoring > Data exploration tab. This is powered by [OpenTelemetry](https://opentelemetry.io/) and the `datarobot-genai` `dragent` extra — no extra setup is required in a generated agent.
 
 Tracing is wired up by two pieces that the template generates automatically:
 
@@ -52,7 +52,7 @@ Regardless of framework, `instrument()` always:
 - Installs a global OpenTelemetry `TracerProvider` pointed at the DataRobot OTel ingest, so spans actually reach DataRobot.
 - Opts out of unrelated third-party telemetry (e.g., sets `RAGAS_DO_NOT_TRACK`, `DEEPEVAL_TELEMETRY_OPT_OUT`).
 
-The call is **idempotent** — calling it more than once is safe; each client and framework is instrumented at most once.
+The call is idempotent — calling it more than once is safe; each client and framework is instrumented at most once.
 
 ---
 
@@ -78,12 +78,12 @@ general:
 
 ## Local development vs. deployed
 
-The DataRobot exporter only activates when the DataRobot deployment environment is present. In local development (`task run` / the dev server), `instrument()` detects that the deployment env is incomplete and the tracer provider **silently no-ops** — your agent runs normally, you just won't see traces exported. Full traces appear once the agent is deployed to DataRobot.
+The DataRobot exporter only activates when the DataRobot deployment environment is present. In local development (`task run` / the dev server), `instrument()` detects that the deployment env is incomplete and the tracer provider silently no-ops — your agent runs normally, you just won't see traces exported. Full traces appear once the agent is deployed to DataRobot.
 
 ## Viewing traces
 
-For a deployed agent, open the deployment's **Monitoring > Data exploration** tab to see end-to-end request traces, including LLM calls, tool invocations, and agent actions. See [Debugging deployed agents](./debugging.md#debugging-deployed-agents) and the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
+For a deployed agent, open the deployment's Monitoring > Data exploration tab to see end-to-end request traces, including LLM calls, tool invocations, and agent actions. See [Debugging deployed agents](./debugging.md#debugging-deployed-agents) and the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
 
 ## Disabling tracing
 
-Tracing is on by default and recommended. To disable it, remove the `instrument()` block from `agent/agent/register.py` **and** the `telemetry` block from `agent/workflow.yaml`. Removing this code disables all monitoring, tracing, and telemetry for the agent.
+Tracing is on by default and recommended. To disable it, remove the `instrument()` block from `agent/agent/register.py` and the `telemetry` block from `agent/workflow.yaml`. Removing this code disables all monitoring, tracing, and telemetry for the agent.

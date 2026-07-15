@@ -154,15 +154,25 @@ tasks:
       - echo "Docker context created inside agent/docker_context"
   build-docker-image:
     # desc: 🐳 Build the Docker image
+    deps:
+      - install
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
+      - cp uv.lock docker_context/uv.lock
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t agent:latest .
   build-docker-context:
     desc: 🐳 Build the Docker image
     cmds:
       - task: create-docker-context
       - task: build-docker-image
-      - echo "Saving Docker image"
-      - docker save agent:latest | gzip -1 > docker_context.tar.gz
+      - |
+        # SKIP_DOCKER_SAVE=true (used by the docker-build CI workflow) verifies the
+        # image builds without paying the cost of exporting it to a tarball.
+        if [ "${SKIP_DOCKER_SAVE:-false}" = "true" ]; then
+          echo "Skipping Docker image save (SKIP_DOCKER_SAVE=true)"
+        else
+          echo "Saving Docker image"
+          docker save agent:latest | gzip -1 > docker_context.tar.gz
+        fi
     silent: true

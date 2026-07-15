@@ -10,18 +10,18 @@ To connect an agent to a remote agent via A2A:
 
 - Uncomment the `function_groups` and `workflow.tool_names` blocks in `workflow.yaml`.
 
-Enable the **ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS** feature flag in DataRobot to use environment variables in `workflow.yaml` files.
+Enable the ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS feature flag in DataRobot to use environment variables in `workflow.yaml` files.
 
 ### Agent cards and DataRobot deployments
 
 When the `ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT` feature flag is enabled and you deploy an agent that exposes A2A server endpoints, the agent card is stored in DataRobot during deployment. Use the following endpoints:
 
-- **List deployments with agent cards**&mdash;`GET deployments/?isA2AAgent=true`.
-- **Retrieve an agent card**&mdash;`GET deployments/DEPLOYMENT_ID/agentCard`.
+- List deployments with agent cards&mdash;`GET deployments/?isA2AAgent=true`.
+- Retrieve an agent card&mdash;`GET deployments/DEPLOYMENT_ID/agentCard`.
 
 ## Agent card resolution
 
-Before the first RPC call, the client fetches the remote agent's **agent card** — a JSON document describing the agent's capabilities and authentication requirements. There are two mutually exclusive ways to obtain it.
+Before the first RPC call, the client fetches the remote agent's agent card — a JSON document describing the agent's capabilities and authentication requirements. There are two mutually exclusive ways to obtain it.
 
 ### Direct fetch (`url`)
 
@@ -39,11 +39,11 @@ This approach is the simplest, but it assumes the card is accessible before auth
 
 ### Central registry (`registry`)
 
-Use this when calling a DataRobot-hosted agent protected by Okta XAA or any other flow where the card endpoint requires auth that is not yet available before the card is read. The **central agent card registry** exposes all agent cards in the tenant at a single endpoint that requires only a standard `DATAROBOT_API_TOKEN`, bypassing the per-agent auth requirement for card discovery.
+Use this when calling a DataRobot-hosted agent protected by Okta XAA or any other flow where the card endpoint requires auth that is not yet available before the card is read. The central agent card registry exposes all agent cards in the tenant at a single endpoint that requires only a standard `DATAROBOT_API_TOKEN`, bypassing the per-agent auth requirement for card discovery.
 
 The RPC base URL is derived from the card's advertised `url` — you do not need to specify it separately. When a workflow has many registry-backed function groups, all cards are resolved in a maximum of two HTTP calls (one for deployment IDs, one for external IDs) and cached in-memory until the TTL expires.
 
-**Lookup by deployment ID** — use when you know the DataRobot deployment ID of the remote agent:
+Lookup by deployment ID — use when you know the DataRobot deployment ID of the remote agent:
 
 ```yaml
 function_groups:
@@ -54,7 +54,7 @@ function_groups:
     auth_provider: okta_auth
 ```
 
-**Lookup by external ID** — use when the remote agent publishes a stable catalogue identifier via `general.front_end.a2a.external.id` in its `workflow.yaml`. This decouples your config from deployment IDs, which can change across environments:
+Lookup by external ID — use when the remote agent publishes a stable catalogue identifier via `general.front_end.a2a.external.id` in its `workflow.yaml`. This decouples your config from deployment IDs, which can change across environments:
 
 ```yaml
 function_groups:

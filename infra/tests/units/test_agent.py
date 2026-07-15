@@ -43,8 +43,8 @@ def pulumi_mocks(monkeypatch, tmp_path):
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.llm", mock_llm_module)
-    # Mock out the MCP Server and just expose the runtime parameters as it is the only public
-    # interface required for this module.
+    # Stub infra.mcp_server so generic tests stay MCP-agnostic; importing the real module
+    # runs its module-level Pulumi resource registration and breaks them.
     mock_mcp_module = MagicMock()
     mock_mcp_module.mcp_custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.mcp_server", mock_mcp_module)
@@ -486,8 +486,8 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 
-    # Should have 2 params: 1 SESSION_SECRET_KEY + 1 server param
-    assert len(runtime_parameter_values) == 2
+    # Should have 3 params: 1 SESSION_SECRET_KEY + 2 server params
+    assert len(runtime_parameter_values) == 3
 
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
@@ -496,6 +496,18 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
+
+    gunicorn_timeout_param = next(
+        (
+            p
+            for p in runtime_parameter_values
+            if p.key == "AGENT_GUNICORN_WORKER_TIMEOUT"
+        ),
+        None,
+    )
+    assert gunicorn_timeout_param is not None
+    assert gunicorn_timeout_param.type == "string"
+    assert gunicorn_timeout_param.value == "600"
 
     memory_ttl_param = next(
         (p for p in runtime_parameter_values if p.key == AGENT_MEMORY_TTL_DAYS),

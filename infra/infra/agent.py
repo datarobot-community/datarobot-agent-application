@@ -50,6 +50,9 @@ ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() =
 
 # Custom Model runtime parameters (concurrency configuration)
 DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5" if ENABLE_AGENT_HA_MODE else "2"
+# Gunicorn worker timeout (seconds) for the dragent front end, read by datarobot-genai.
+# Raised above gunicorn's 30s default so long agent turns aren't killed mid-stream.
+DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT: Final[str] = "600"
 # Custom Model resource bundle configuration
 DEFAULT_AGENT_RESOURCE_BUNDLE_ID: str = (
     "cpu.3xlarge" if ENABLE_AGENT_HA_MODE else "cpu.xlarge"
@@ -62,6 +65,7 @@ DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE el
 # Runtime parameters that are safe to include defaultValue in metadata
 SERVER_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "CUSTOM_MODEL_WORKERS",
+    "AGENT_GUNICORN_WORKER_TIMEOUT",
 }
 
 EXCLUDE_PATTERNS = [
@@ -465,6 +469,11 @@ agent_runtime_parameter_values.extend(
             key="CUSTOM_MODEL_WORKERS",
             type="numeric",
             value=DEFAULT_CUSTOM_MODEL_WORKERS,
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="AGENT_GUNICORN_WORKER_TIMEOUT",
+            type="string",  # string is type-agnostic; numeric fails str settings fields
+            value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
         ),
     ]
 )
