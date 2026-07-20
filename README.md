@@ -53,6 +53,7 @@ It supports local development and testing, as well as one-command deployments to
   - [Install prerequisite tools](#install-prerequisite-tools)
   - [Prepare your local development environment](#prepare-your-local-development-environment)
   - [Run your agent](#run-your-agent)
+  - [Local tracing with `dr xp`](#local-tracing-with-dr-xp)
 - [Develop your agent](#develop-your-agent)
   - [Component documentation](#component-documentation)
   - [DataRobot documentation](#datarobot-documentation)
@@ -260,6 +261,41 @@ From here, start customizing the agent by adding your own logic and functionalit
 
 > [!NOTE]
 > You can also start individual services in separate terminal windows; for example, `dr run agent:dev` (or `task agent:dev`) will start just the agent.
+
+## Local tracing with `dr xp`
+
+The [DataRobot experimentation plugin](https://docs.datarobot.com/en/docs/agentic-ai/cli/experimentation-plugin.html) (`dr xp`) provides a local tracing dashboard for visualizing OpenTelemetry spans while you develop. After `dr start`, OpenTelemetry credentials are written to `pulumi_config.json` automatically&mdash;no manual `.env` editing is required. See [Local Tracing (OTel)](docs/base.md#local-tracing-otel) and [Tracing and telemetry](docs/agent/tracing.md) for how instrumentation is wired in the template.
+
+### Install the plugin (one-time)
+
+`dr start` attempts to install the `xp` plugin during infrastructure setup. If you skipped that step or are working in an existing project, install it manually:
+
+```sh
+dr plugin install xp
+```
+
+### Start the tracing UI
+
+In a **separate terminal** from `dr run dev`, start the local tracing dashboard and point it at your Use Case:
+
+```sh
+dr xp --entity-id=<YOUR_USE_CASE_ID>
+```
+
+If `pulumi_config.json` already contains `DATAROBOT_USE_CASE_ID` (set during `dr start`), you can omit the flag and run `dr xp` from the project root.
+
+Your Use Case ID was created or specified during the `dr start` wizard (step 8). You can also find it in the DataRobot UI URL when viewing the Use Case, or in `pulumi_config.json` as `DATAROBOT_USE_CASE_ID`.
+
+Alternatively, run the template task that reads the Use Case ID from `pulumi_config.json` for you:
+
+```sh
+dr task run infra:dev
+```
+
+Copy the localhost URL that `dr xp` prints and open it in your browser. This tracing UI is separate from the chat interface at [http://localhost:5173](http://localhost:5173)&mdash;keep both open side by side. Send a test message in the chat; traces should populate in the `dr xp` tab in real time as the agent runs.
+
+> [!NOTE]
+> `dr xp` runs alongside `dr run dev`, not instead of it. When you start individual component dev servers (for example, `dr run agent:dev` or `dr run mcp_server:dev`), the tracing dashboard may start automatically in the background.
 
 # Develop your agent
 
