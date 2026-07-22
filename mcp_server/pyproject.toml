@@ -7,7 +7,7 @@ version = "0.0.0"
 description = "DataRobot MCP Server"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[drmcp]>=0.23.18,<0.24.0",
+    "datarobot-genai[drmcp]>=0.26.0,<0.27.0",
 ]
 
 [project.optional-dependencies]

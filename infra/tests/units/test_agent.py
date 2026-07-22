@@ -1428,15 +1428,20 @@ class TestServerRuntimeParameters:
             if param.key
             in [
                 "CUSTOM_MODEL_WORKERS",
+                "AGENT_GUNICORN_WORKER_TIMEOUT",
             ]
         }
 
         # Verify all parameters are present
-        assert len(server_params) == 1
+        assert len(server_params) == 2
 
         # Check CUSTOM_MODEL_WORKERS
         assert server_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
         assert server_params["CUSTOM_MODEL_WORKERS"].value == "2"
+
+        # Check AGENT_GUNICORN_WORKER_TIMEOUT
+        assert server_params["AGENT_GUNICORN_WORKER_TIMEOUT"].type == "string"
+        assert server_params["AGENT_GUNICORN_WORKER_TIMEOUT"].value == "600"
 
     def test_server_runtime_parameters_passed_to_custom_model(self, monkeypatch):
         """Test that server runtime parameters are passed to CustomModel."""
@@ -1454,6 +1459,7 @@ class TestServerRuntimeParameters:
         runtime_params = kwargs["runtime_parameter_values"]
         server_keys = [
             "CUSTOM_MODEL_WORKERS",
+            "AGENT_GUNICORN_WORKER_TIMEOUT",
         ]
 
         found_keys = [param.key for param in runtime_params if param.key in server_keys]

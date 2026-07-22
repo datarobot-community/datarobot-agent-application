@@ -20,6 +20,7 @@ from datarobot_pulumi_utils.pulumi import export
 import pulumi_datarobot as datarobot
 
 from .libllm import (
+    ensure_datarobot_prefix,
     validate_feature_flags,
     verify_llm,
     verify_llm_gateway_model_availability,
@@ -30,6 +31,7 @@ __all__ = [
     "custom_model_runtime_parameters",
     "default_model",
     "llm_application_name",
+    "llm_resource_name",
 ]
 
 REQUIRED_FEATURE_FLAGS = {
@@ -41,6 +43,7 @@ REQUIRED_FEATURE_FLAGS = {
 }
 
 llm_application_name: str = "llm"
+llm_resource_name: str = "[llm]"
 
 # This is the model_id that the DataRobot LLM Gateway expects.
 # You can get a list of these models by running:
@@ -57,11 +60,9 @@ print("\n.   - ".join(
     ]
 ))
 """
-default_model: str = os.environ.get(
-    "LLM_DEFAULT_MODEL", "datarobot/azure/gpt-5-mini-2025-08-07"
+default_model: str = ensure_datarobot_prefix(
+    os.environ.get("LLM_DEFAULT_MODEL", "datarobot/azure/gpt-5-mini-2025-08-07")
 )
-if not default_model.startswith("datarobot/"):
-    default_model = f"datarobot/{default_model}"
 
 # Verify everything is configured properly for this configuration option.
 validate_feature_flags(REQUIRED_FEATURE_FLAGS)

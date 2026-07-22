@@ -11,9 +11,10 @@ root:
 
       - If you already have a custom model deployed LLM and a deployment ID, select "DataRobot Deployed LLM" (this sets USE_DATAROBOT_LLM_GATEWAY=0 automatically).
 
-      - If you want to use your LLM provider credentials instead of the LLM gateway (e.g. Azure OpenAI,
+      - If you want to use your own LLM provider credentials (e.g. Azure OpenAI, AWS Bedrock,
 
-      AWS Bedrock, GCP VertexAI, Anthropic, Cohere, TogetherAI), select "External LLM".
+      GCP VertexAI, Anthropic, Cohere, TogetherAI) wrapped in a governed deployment, select
+      "LLM Blueprint with External LLM".
 
       - If you need full DataRobot governance and monitoring with LLM Blueprint support,
 
@@ -38,6 +39,10 @@ llm_gateway:
     type: llmgw_catalog
     optional: false
     help: "Choose an LLM from the DataRobot LLM Gateway catalog to use for your LLM Blueprint."
+  - env: USE_DATAROBOT_LLM_GATEWAY
+    type: string
+    default: "1"
+    hidden: true
 
 deployed_llm:
   - env: LLM_DEPLOYMENT_ID
@@ -52,9 +57,13 @@ deployed_llm:
 external_llm:
   - env: LLM_DEFAULT_MODEL
     type: string
-    default: "azure-openai-gpt-5-mini"
+    default: "datarobot/azure/gpt-5-mini"
     optional: true
-    help: "Enter the name of the external LLM model to use (e.g., gpt-5-mini)."
+    help: "Enter the external LLM model in provider/model form (e.g., azure/gpt-5-mini, bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0). Stored datarobot/-prefixed automatically."
+  - env: USE_DATAROBOT_LLM_GATEWAY
+    type: string
+    default: "0"
+    hidden: true
   - key: external_llm_provider
     optional: false
     options:
@@ -107,6 +116,10 @@ bedrock:
     type: string
     optional: false
     help: "Enter the AWS region name for Bedrock (e.g., us-east-1)."
+  - env: AWS_SESSION_TOKEN
+    type: string
+    optional: true
+    help: "Optional AWS session token for temporary Bedrock credentials."
 
 vertexai:
   - env: VERTEXAI_APPLICATION_CREDENTIALS
@@ -117,6 +130,10 @@ vertexai:
     type: string
     optional: false
     help: "Enter the Google service account email."
+  - env: GOOGLE_REGION
+    type: string
+    optional: true
+    help: "Optional Google Cloud region for Vertex AI (default: us-west1)."
 
 anthropic:
   - env: ANTHROPIC_API_KEY

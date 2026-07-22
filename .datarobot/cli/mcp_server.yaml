@@ -19,7 +19,7 @@ root:
     help: "Enter the default execution environment for the MCP server."
   - env: DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID
     type: string
-    default: "6a3919cb62ca0dc60197d473"
+    default: "6a5a69d3cd08a31cc2fe625f"
     optional: true
     help: "Enter the default execution environment version ID for the MCP server."
   - key: enabled_tools

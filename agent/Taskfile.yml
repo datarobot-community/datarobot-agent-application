@@ -154,8 +154,7 @@ tasks:
       - echo "Docker context created inside agent/docker_context"
   build-docker-image:
     # desc: 🐳 Build the Docker image
-    deps:
-      - install
+    deps: [install]
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml

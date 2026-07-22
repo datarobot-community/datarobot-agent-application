@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.11.2
+- Updated `agent` component from 11.11.17 to 11.11.22:
+  - Updated `datarobot-genai` from 0.24.0 to 0.26.2:
+    - Deprecated subpackage `datarobot-genai.nat`: it is merged with `datarobot-genai.dragent` now.
+    - Fixed issue with NAT having no active tool call event
+  - Add parmeter `AGENT_GUNICORN_WORKER_TIMEOUT` to control timeout in deployments
+- Updated external LLM configuration to include required runtime parameter
+- Upgraded MCP execution environment version ID and VDB tools in MCP server
+
 ## 11.11.1
 - Updated `llm` component to correct issues with LLM Blueprint
 - Updated `agent` component from 11.11.9 to 11.11.17:

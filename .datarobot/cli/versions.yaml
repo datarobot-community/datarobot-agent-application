@@ -1,7 +1,7 @@
 ---
 dr:
   name: DataRobot CLI
-  minimum-version: 0.2.74
+  minimum-version: 0.2.76
   command: dr self version
   url: https://github.com/datarobot-oss/cli
   install:
