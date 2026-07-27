@@ -4,8 +4,12 @@
 		"dockerfile": "Dockerfile"
 	},
     "features": {
-        "ghcr.io/devcontainers/features/node:1": {}
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainer-community/devcontainer-features/astral.sh-uv:1": {},
+        "ghcr.io/eitsupi/devcontainer-features/go-task:1": {},
+        "ghcr.io/devcontainer-community/devcontainer-features/pulumi.com:1": {}
     },
+    "onCreateCommand": "uv tool install pre-commit && pulumi plugin install resource datarobot ${PULUMI_DATAROBOT_PLUGIN_VERSION} --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/${PULUMI_DATAROBOT_PLUGIN_VERSION}/ && pulumi login --local",
     "customizations": {
         "jetbrains": {
             "plugins": [
