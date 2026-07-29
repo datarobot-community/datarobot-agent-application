@@ -53,6 +53,7 @@ It supports local development and testing, as well as one-command deployments to
   - [Install prerequisite tools](#install-prerequisite-tools)
   - [Prepare your local development environment](#prepare-your-local-development-environment)
   - [Run your agent](#run-your-agent)
+  - [Local tracing with `dr xp`](#local-tracing-with-dr-xp)
 - [Develop your agent](#develop-your-agent)
   - [Component documentation](#component-documentation)
   - [DataRobot documentation](#datarobot-documentation)
@@ -260,6 +261,29 @@ From here, start customizing the agent by adding your own logic and functionalit
 
 > [!NOTE]
 > You can also start individual services in separate terminal windows; for example, `dr run agent:dev` (or `task agent:dev`) will start just the agent.
+
+## Local tracing with `dr xp`
+
+The [DataRobot Experimentation plugin](https://docs.datarobot.com/en/docs/agentic-ai/cli/experimentation-plugin.html) (`dr xp`) provides a local tracing dashboard for visualizing [OpenTelemetry traces](docs/base.md#local-tracing-otel) during development, making it easier to debug issues, understand execution flow, and verify agent behavior without deploying your application.
+
+### Install the plugin (one-time)
+
+The `xp` plugin is automatically installed during `dr start` as part of infrastructure setup. If you're working in an existing project or the plugin isn't already installed, install it manually:
+
+```sh
+dr plugin install xp
+```
+
+### Start the tracing UI
+
+When you run `dr run dev`, it automatically starts the local development services and launches the local tracing dashboard at http://127.0.0.1:8090/, preconfigured to display traces for your Use Case.
+If you want to start the Experimentation plugin separately, run:
+
+```sh
+dr xp [--type TYPE] [--entity-id ID]
+```
+
+
 
 # Develop your agent
 

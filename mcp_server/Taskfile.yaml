@@ -28,7 +28,7 @@ tasks:
       - echo "🔨 Starting development server"
       - task: install
       - |
-        (cd .. && DR_SKIP_PLUGIN_UPDATE_CHECK=true dr xp --plain-output) &
+        (cd .. && dr --skip-plugin-update-check xp --plain-output) &
         DR_XP_PID=$!
         trap "kill $DR_XP_PID 2>/dev/null || true" EXIT
         {{.UV_CMD}} run app/main.py

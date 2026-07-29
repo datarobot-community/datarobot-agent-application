@@ -71,10 +71,7 @@ tasks:
     cmds:
       - |
         if command -v dr &> /dev/null; then
-          if dr plugin list 2>/dev/null | grep -qE '(^|[[:space:]])xp([[:space:]]|$)'; then
-            echo "ℹ️  DataRobot experimentation plugin 'xp' is already installed"
-            dr plugin update xp
-          else
+          if ! dr plugin list 2>/dev/null | grep -qE '(^|[[:space:]])xp([[:space:]]|$)'; then
             echo "⬇️ Installing DataRobot experimentation plugin 'xp'"
             dr plugin install xp || true
           fi
@@ -126,7 +123,7 @@ tasks:
     cmds:
       - |
         if dr plugin list 2>/dev/null | grep -qE '(^|[[:space:]])xp([[:space:]]|$)'; then
-            DR_SKIP_PLUGIN_UPDATE_CHECK=true dr xp --plain-output
+            dr --skip-plugin-update-check xp --plain-output
           else
             echo "DataRobot experimentation plugin not found. Please install it with 'dr plugin install xp' to use the tracing dashboard."
             exit 1

@@ -7,7 +7,13 @@ env:
 dotenv: ['.env', '.env.{{.ENV}}']
 vars:
   AGENT_VERSION:
-    sh: grep '^_commit:' .datarobot/answers/agent-agent.yml | awk '{print $2}'
+    sh: |
+      uv run --no-project python -c "
+      import re, pathlib
+      p = pathlib.Path('.datarobot/answers/agent-agent.yml')
+      m = re.search(r'_commit:\s*(\S+)', p.read_text() if p.exists() else '')
+      print(m[1] if m else '')
+      "
 
 includes:
   common:
