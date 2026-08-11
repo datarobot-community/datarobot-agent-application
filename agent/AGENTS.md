@@ -39,13 +39,12 @@ Define a `ChatPromptTemplate` that structures user input:
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are a helpful assistant.",
-    ),
+    ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
     ("user", "The topic is {topic}."),
 ])
 ```
+
+Prior turns from multi-turn requests are replayed as structured native messages automatically&mdash;see [Chat history](../docs/agent/chat-history.md).
 
 ### 3. Graph Factory
 

@@ -1,0 +1,25 @@
+---
+# eval/eval-config-base.yaml
+#
+# Shared NAT eval config. Inherits the agent workflow from workflow.yaml and adds
+# a dedicated judge LLM for DataRobot moderation evaluators.
+#
+# Required environment variables (in .env or exported before nat eval / pytest):
+#   DATAROBOT_ENDPOINT  — e.g. https://app.datarobot.com/api/v2
+#   DATAROBOT_API_TOKEN — your DataRobot API token
+#
+# Requires datarobot-genai >= 0.26.10 (nat eval moderation plugins).
+
+base: ../workflow.yaml
+
+llms:
+  judge_llm:
+    _type: datarobot-llm-component
+    temperature: 0
+
+eval:
+  general:
+    max_concurrency: 1
+    output:
+      dir: ./.tmp/nat-eval
+      cleanup: true

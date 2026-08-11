@@ -162,4 +162,5 @@ authentication:
 | `ValueError: Could not parse private_jwk` | `IDP_AGENT_PRIVATE_KEY_JWK` is neither valid base64-encoded JSON nor raw JSON. | Verify your JWK — try `echo $IDP_AGENT_PRIVATE_KEY_JWK | base64 -d | python -m json.tool`. |
 | `ValueError: Agent card ... missing required fields` | Remote agent card doesn't have the XAA extension. | Verify the remote agent has `cross_application_access` configured in its `workflow.yaml`. |
 | `RuntimeError: Failed to fetch agent card` | Network/auth issue reaching the agent card URL. | Check the `url` in your `function_groups` config and network connectivity. |
+| Agent card shows `"skills": []` when testing locally | Unauthenticated card fetch returns a redacted card. | Send `X-DataRobot-User-Id` (any value) or `X-DataRobot-Authorization-Context` on the request. See [Debugging agents → Local agent card](./debugging.md#local-agent-card). |
 | `IDP_AGENT_PRIVATE_KEY_JWK` not provisioned to runtime | The variable was not set in `.env` at deploy time. | Set `IDP_AGENT_PRIVATE_KEY_JWK` in your `.env` file and redeploy. |

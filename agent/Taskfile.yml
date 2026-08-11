@@ -63,7 +63,7 @@ tasks:
       - '{{.UV_CMD}} run ruff check . --fix'
       - '{{.UV_CMD}} run ruff format .'
       - '{{.UV_CMD}} run mypy --pretty .'
-      - "{{.UV_CMD}} run yamlfix . -e '.venv/**/*.yaml' -e '.venv/**/*.yml' -e 'build/**/*.yaml' -e 'build/**/*.yml'"
+      - '{{.UV_CMD}} run yamlfix *.yaml *.yml agent tests'
     silent: true
   lint-check:
     desc: 🧹 Check whether the codebase is linted
@@ -78,6 +78,18 @@ tasks:
   test:
     desc: 🧪 Run tests
     cmds: [echo "Running pytest on tests", '{{.UV_CMD}} run pytest -vv ./tests/']
+    silent: true
+  eval:
+    desc: 📊 Run NAT batch evaluation (pass eval config path as CLI_ARGS)
+    deps: [auth-check]
+    cmds:
+      - |
+        set -- {{.CLI_ARGS}}
+        if [ $# -eq 0 ]; then
+          echo "Usage: task agent:eval -- eval/eval-config-agent-goal-accuracy.yaml"; exit 1
+        fi
+        echo "Running nat eval with config $1"
+        {{.UV_CMD}} run nat eval --config_file "$1"
     silent: true
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it

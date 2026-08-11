@@ -17,14 +17,15 @@
 * Output specially exported variables to a configuration file
 """
 
-from infra import *  # noqa: F403
 import importlib
-from pathlib import Path
-import pulumi
 from os import getenv
+from pathlib import Path
 
+import pulumi
 from datarobot_pulumi_utils.common.feature_flags import check_feature_flags
 from datarobot_pulumi_utils.pulumi import default_collector, finalize
+
+importlib.import_module("infra")
 
 CONFIGURATIONS_DIR = Path(__file__).parent / "configurations"
 DEFAULT_EXPORT_PATH: Path = Path(

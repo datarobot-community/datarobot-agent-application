@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.11.4
+- Updated `agent` component from 11.11.22 to 11.11.37:
+  - Drop {chat_history} parameter from langgraph prompt for structured history
+  - Update datarobot-genai version with new moderations and ragas removal
+  - Document chat history
+  - Remove DRUM references
+  - Fix for .env files
+  - Add back the `datarobot-app-framework-agent-local-evaluation` skill and its evaluation docs
+  - Fixed `task lint` on Windows
+  - Introduced `cve-sync` integration to keep packages up to date with CVE fixes
+  - Require `uv >= 0.10.0`
+  - Bump `datarobot-genai` from 0.26.12 to 0.26.24
+    - Make unhandled streaming errors terminal AG-UI `RUN_ERROR` events
+    - Fix CrewAI agents when calling Azure provided LLMs
+    - Fix chat span nesting for deployed agent tracing
+    - Fix intermittent AG-UI event ordering bug when using `datarobot-moderation-middleware`
+    - Redact agent card when accessed without authentication
+    - Integrate `cve-sync` to keep packages up to date with CVE fixes
+- Do not install `drdev` if its present
+- If `APPLICATION_TEMPLATE_GIT_BASE_URL` is set, rewrite repositories urls in `.datarobot/answers` during `task start` to use GitHub mirrors in restricted environments
+- Added `agent:eval` task to run NAT batch evaluation via `nat eval`
+- Fixed `frontend_web` ESLint config, which scoped every rule to a `client/` directory that does not exist and so linted no source files, and added `eslint-plugin-jsx-a11y` accessibility linting
+
 ## 11.11.3
 - Bumped DR CLI version to 0.2.77
 - Added `xp` plugin for DR CLI

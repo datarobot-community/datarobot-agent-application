@@ -1,0 +1,12 @@
+---
+base: eval-config-base.yaml
+
+eval:
+  general:
+    dataset:
+      _type: json
+      file_path: ./eval/dataset/dataset-faithfulness.json
+  evaluators:
+    faithfulness:
+      _type: faithfulness
+      llm_name: judge_llm

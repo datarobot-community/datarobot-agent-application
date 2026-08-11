@@ -6,21 +6,18 @@ The LangGraph agent uses [LangGraph](https://langchain-ai.github.io/langgraph/) 
 
 The agent is defined through two building blocks:
 
-Prompt template&mdash;a `ChatPromptTemplate` that structures user input with variables like `{topic}`:
+**Prompt template**&mdash;a `ChatPromptTemplate` that structures user input with variables like `{topic}`:
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are a helpful assistant.",
-    ),
+    ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
     ("user", "The topic is {topic}."),
 ])
 ```
 
-Multi-turn context is injected automatically via structured history when the template omits `{chat_history}`. See [Multi-turn chat history](../chat-history.md).
+Prior conversation turns are **not** part of the template. They are replayed automatically as structured native messages&mdash;see [Chat history](../chat-history.md) and [Chat history (prompt modification)](#chat-history) below.
 
-Graph factory&mdash;a function that receives an LLM, tools, and verbosity flag, and returns a `StateGraph`. Nodes are created with `create_agent()` from LangChain and connected with edges:
+**Graph factory**&mdash;a function that receives an LLM, tools, and verbosity flag, and returns a `StateGraph`. Nodes are created with `create_agent()` from LangChain and connected with edges:
 
 ```python
 def graph_factory(llm, tools, verbose=False):
@@ -211,10 +208,7 @@ The `prompt_template` controls how the user's input is structured before it reac
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are a helpful assistant.",
-    ),
+    ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
     ("user", "The topic is {topic}."),
 ])
 ```
@@ -225,7 +219,13 @@ The template supports variables that are automatically populated at runtime:
 
 To change how user input is presented to the agent, modify this template. You can add more context, change the system message, or introduce additional variables. The variable names must match the keys returned by the `kickoff_inputs` mapping in the factory.
 
-By default this template uses *structured history*&mdash;prior turns (with tool calls preserved) are replayed as native `HumanMessage`/`AIMessage`/`ToolMessage` objects. To use text-summary injection instead, add a `{chat_history}` placeholder to the template. See [Multi-turn chat history](../chat-history.md#injection-modes) for details and [configuration](../chat-history.md#configuration) for `max_history_messages` and `structured_history`.
+### Chat history
+
+By default this template uses **structured history**: prior turns from the request (with tool calls preserved) replay to the model as native `HumanMessage` / `AIMessage` / `ToolMessage` objects before the current turn. The replay is bounded by `max_history_messages` (default `20`). See [Chat history](../chat-history.md) for the request format and testing.
+
+To use a **plain-text** history summary instead, add `{chat_history}` to the prompt template&mdash;the base class fills it with a `Prior conversation:\n...` block when prior turns exist.
+
+To disable history replay, pass `structured_history=False` or `max_history_messages=0` to `MyAgent(...)` in `register.py`:
 
 ```python
 agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
@@ -266,7 +266,7 @@ To modify agent behavior:
 - Keep system prompts focused on a single responsibility per node.
 - Use the prompt template for input formatting, not for behavior instructions.
 - Test prompt changes incrementally with `task agent:cli -- execute --user_prompt "..."`.
-- Multi-turn context is automatic when the template omits `{chat_history}`; add the placeholder only if you prefer text-summary injection.
+- Multi-turn behavior is automatic when clients send prior `messages`; see [Chat history](../chat-history.md).
 
 For more on LangGraph prompt patterns, see the [LangGraph documentation](https://langchain-ai.github.io/langgraph/).
 

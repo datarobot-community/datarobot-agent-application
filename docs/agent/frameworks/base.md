@@ -131,11 +131,11 @@ class MyAgent(BaseAgent[None]):
 
 ### How to modify
 
-- Change the system prompt&mdash;edit the `"system"` message content in the messages list.
-- Add chat history&mdash;read prior turns from `run_agent_input.messages` (excluding the latest user message) and insert them into your messages list before the current user turn. For shared helpers and patterns, see [Multi-turn chat history](../chat-history.md).
-- Implement multi-step workflows&mdash;make multiple LLM calls with different system prompts and aggregate the results.
-- Add structured output&mdash;include format instructions in the system prompt (e.g. "Respond in JSON with keys: title, summary").
-- Use `make_system_prompt()`&mdash;you can optionally import it from `datarobot_genai.core.agents` for consistent formatting, even though it's not required.
+- **Change the system prompt**&mdash;edit the `"system"` message content in the messages list.
+- **Add chat history**&mdash;use `self.history_messages(run_agent_input)` or `self.build_history_summary(run_agent_input)` from `BaseAgent`, or read `run_agent_input.messages` directly. See [Chat history](../chat-history.md).
+- **Implement multi-step workflows**&mdash;make multiple LLM calls with different system prompts and aggregate the results.
+- **Add structured output**&mdash;include format instructions in the system prompt (e.g. "Respond in JSON with keys: title, summary").
+- **Use `make_system_prompt()`**&mdash;you can optionally import it from `datarobot_genai.core.agents` for consistent formatting, even though it's not required.
 
 ### Tips
 

@@ -76,7 +76,6 @@ function tryParseArgs(args: string) {
   try {
     return JSON.parse(args);
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.debug('Error parsing arguments', e);
     return args;
   }

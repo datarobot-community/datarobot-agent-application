@@ -11,17 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
 import os
-from pathlib import Path
-import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
-from unittest.mock import Mock
+import sys
 from collections import namedtuple
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
-from dev_tools.lineage.pulumi_managers import MCPToolMetadataPulumiManager
-from dev_tools.lineage.pulumi_managers import MCPPromptMetadataPulumiManager
-from dev_tools.lineage.pulumi_managers import MCPResourceMetadataPulumiManager
+import pytest
+
+from dev_tools.lineage.pulumi_managers import (
+    MCPPromptMetadataPulumiManager,
+    MCPResourceMetadataPulumiManager,
+    MCPToolMetadataPulumiManager,
+)
 
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -31,8 +33,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 @pytest.fixture(autouse=True)
 def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
-    # Neutralize the module-level export() calls in infra.__init__ before the
-    # first infra import below triggers them outside a pulumi Stack context.
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
     # Mock infra.__init__ exported objects
     mock_use_case = MagicMock()
@@ -146,6 +146,7 @@ def test_execution_environment_not_set_uses_docker(monkeypatch):
     monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.reset_mock()
@@ -174,6 +175,7 @@ def test_execution_environment_default_set(monkeypatch):
     )
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     importlib.reload(mcp_infra)
@@ -205,6 +207,7 @@ def test_execution_environment_pinned_set(monkeypatch):
     )
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     importlib.reload(mcp_infra)
@@ -233,6 +236,7 @@ def test_execution_environment_custom_set(monkeypatch):
     )
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     importlib.reload(mcp_infra)
@@ -253,8 +257,9 @@ def test_execution_environment_custom_set(monkeypatch):
 
 def test_resolve_execution_environment_version_not_found_returns_none(monkeypatch):
     """When pinned EE version is not found in DataRobot, warn and return None (use latest)."""
-    import infra.mcp_server as mcp_infra
     from datarobot.errors import ClientError
+
+    import infra.mcp_server as mcp_infra
 
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID",
@@ -279,8 +284,9 @@ def test_resolve_execution_environment_version_not_found_returns_none(monkeypatc
 
 def test_resolve_execution_environment_version_found(monkeypatch):
     """When pinned version exists and build_status is SUCCESS, return its id."""
-    import infra.mcp_server as mcp_infra
     from datarobot.enums import EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS
+
+    import infra.mcp_server as mcp_infra
 
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID",
@@ -356,6 +362,7 @@ def test_reset_environment_between_tests():
     assert os.environ.get("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT") is None
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     importlib.reload(mcp_infra)
@@ -370,6 +377,7 @@ def test_prediction_environment_created_when_env_var_not_set(monkeypatch):
     monkeypatch.delenv("DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT", raising=False)
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     mcp_infra.pulumi_datarobot.PredictionEnvironment.reset_mock()
@@ -386,6 +394,7 @@ def test_prediction_environment_injected_when_env_var_set(monkeypatch):
     )
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     mcp_infra.pulumi_datarobot.PredictionEnvironment.reset_mock()
@@ -408,6 +417,7 @@ def test_custom_model_created(monkeypatch):
     monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
 
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     mcp_infra.pulumi_datarobot.CustomModel.reset_mock()
@@ -430,6 +440,7 @@ def test_custom_model_created(monkeypatch):
 
 def test_mcp_item_lineage_metadata(monkeypatch):
     import importlib
+
     import infra.mcp_server as mcp_infra
 
     load_tool_metadata = mcp_infra.MCPToolMetadataPulumiManager.load_metadata

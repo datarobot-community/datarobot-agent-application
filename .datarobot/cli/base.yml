@@ -17,3 +17,8 @@ root:
     default: ""
     optional: true
     help: "Set to 'true' to disable all OpenTelemetry tracing. Leave empty to keep tracing enabled."
+  - env: PYTHONUTF8
+    type: string
+    default: "1"
+    optional: true
+    help: "Set to '1' to enable Python's UTF-8 mode. Needed on Windows, where the system locale encoding is not UTF-8."

@@ -41,7 +41,7 @@ class MyAgent(LangGraphAgent):
     @property
     def prompt_template(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful assistant."),
+            ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
             ("user", "The topic is {topic}."),
         ])
 ```
@@ -50,10 +50,12 @@ class MyAgent(LangGraphAgent):
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant."),
+    ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
     ("user", "The topic is {topic}."),
 ])
 ```
+
+Prior turns are injected as structured native messages by default (no `{chat_history}` in the template). See [Chat history](../chat-history.md).
 
 ### 3. Replace the class with a `graph_factory` function
 

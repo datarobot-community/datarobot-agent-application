@@ -58,7 +58,6 @@ export function useChatList({ chatId, setChatId, showStartChat = false }: UseCha
   useEffect(() => {
     if (!chatId && !isLoadingChats && !showStartChat && !autoCreatedRef.current) {
       autoCreatedRef.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       addChatHandler();
     }
   }, [chatId, isLoadingChats, showStartChat]);

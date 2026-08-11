@@ -1,18 +1,16 @@
 # Local evaluation for agentic workflows
 
-This guide covers how to evaluate agentic workflows locally using the `datarobot-moderations` SDK and Pytest. It explains how to configure LLM-as-a-judge metrics, write assertions in test suites, and integrate quality gates into CI/CD pipelines.
+This guide covers how to evaluate agentic workflows locally using **`nat eval`** and DataRobot moderation metrics from `datarobot-genai`. It explains how to configure batch evaluation and optionally wrap runs in Pytest during development.
 
 > [!NOTE]
-> This guide covers offline evaluation in tests. To enforce guardrails on live agent traffic through DRAgent, see [Moderation and guardrails](./moderation.md).
+> This guide covers **local, offline evaluation** during development. It is not intended for CI/CD pipelines. To enforce guardrails on live agent traffic through DRAgent, see [Moderation and guardrails](./moderation.md).
 
 | Section | Description |
 |---|---|
 | [Why local evaluation](#why-local-evaluation) | When to use local evaluation vs. the Agentic Playground. |
 | [Prerequisites](#prerequisites) | Required environment variables and resources. |
-| [Configuration](#configuration) | `moderation.yaml` structure and available metrics. |
-| [Invoking the agent in tests](#invoking-the-agent-in-tests) | Run `MyAgent` in-process with `RunAgentInput`. |
-| [Usage examples](#usage-examples) | Pytest patterns for local evaluation. |
-| [CI/CD integration](#cicd-integration) | Running evaluation gates in automated pipelines. |
+| [Configuration](#configuration) | `eval/*.yaml` structure and available metrics. |
+| [Usage examples](#usage-examples) | CLI and optional Pytest patterns for local evaluation. |
 | [Troubleshooting](#troubleshooting) | Common errors and fixes. |
 | [Best practices](#best-practices) | Patterns and anti-patterns. |
 | [Further reading](#further-reading) | Related docs and components. |
@@ -21,12 +19,11 @@ This guide covers how to evaluate agentic workflows locally using the `datarobot
 
 ## Why local evaluation
 
-The DataRobot Agentic Playground provides a UI-based environment for evaluating deployed agents with built-in quality metrics and traces. Local evaluation with Pytest is the preferred approach when you need:
+The DataRobot Agentic Playground provides a UI-based environment for evaluating deployed agents with built-in quality metrics and traces. Local evaluation with `nat eval` is the preferred approach when you need:
 
-- Fast feedback loops&mdash;no deployment required; evaluation runs against your local agent code during development.
-- CI/CD quality gates&mdash;block a pipeline (`dr run deploy`) if agent responses fall below a quality threshold.
-- Reproducible assertions&mdash;define exact pass/fail thresholds as code in version control.
-- Programmatic control&mdash;compose evaluation with other test logic, parametrize across test cases, and generate structured reports.
+- **Fast feedback loops**&mdash;no deployment required; evaluation runs against your local `workflow.yaml` during development.
+- **Reproducible datasets**&mdash;define evaluation cases and metrics as code in version control.
+- **End-to-end coverage**&mdash;`nat eval` runs the same workflow path as `nat dragent serve`, then scores outputs in-process.
 
 The Playground remains the preferred environment for evaluating live deployed agents, inspecting real LLM traces, and exploring quality metrics interactively across conversation turns.
 
@@ -36,245 +33,183 @@ The Playground remains the preferred environment for evaluating live deployed ag
 
 ### Dependencies
 
-The `datarobot-moderations[all]` package is already included in `pyproject.toml` as a core agent dependency. No additional installation is needed.
+Local evaluation uses **`nat eval`** plugins shipped in `datarobot-genai` **0.26.10 or newer** (`dr_eval_plugins` entry point). The agent template already depends on `datarobot-genai[dragent, …]`; ensure your lockfile resolves to a version that includes the eval plugins.
+
+Pytest evaluation tests use `@pytest.mark.timeout`; `pytest-timeout` is included in the template's `dev` optional dependencies (`dr task run agent:install`).
+
+No separate `datarobot-moderations` install is required&mdash;evaluators call the same OOTB scorers in-process.
 
 ### Required environment variables
 
-`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` are written to your `.env` file by `dr start`. The Taskfile loads `.env` automatically; if you run `pytest` directly, export them first.
+`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` must be available before running evaluation. They are written to your `.env` file by `dr start`. The Taskfile loads `.env` automatically; if you run `nat eval` or `pytest` directly, export them first.
 
 | Variable | Description |
 |---|---|
 | `DATAROBOT_ENDPOINT` | Your DataRobot instance URL (e.g., `https://app.datarobot.com/api/v2`). |
 | `DATAROBOT_API_TOKEN` | A valid DataRobot API token. |
-| `TARGET_NAME` | Optional when you pass plain assistant text to `evaluate_response`. Required only when passing a deployment JSON envelope (e.g., `resultText`). |
 
-### Required resources
+### Judge LLM
 
-You need a DataRobot LLM deployment to act as the evaluator judge. Use a high-capability model that is different from the model your agent uses — a model scores its own outputs leniently, so an independent judge gives a more objective result. Record the 24-character deployment ID; you will reference it in `moderation.yaml`.
-
-> [!NOTE]
-> The DataRobot LLM gateway supports moderation inherently. Configurations using the LLM gateway do not require a separate judge model.
+Evaluators reference a judge LLM by `llm_name` (typically `judge_llm`) defined in `eval/eval-config-base.yaml` as a `datarobot-llm-component`. Use a high-capability model that is **different from the model your agent uses**&mdash;a model scores its own outputs leniently, so an independent judge gives a more objective result.
 
 <a name="configuration"></a>
 
 ## Configuration
 
-Local evaluation is configured through a `moderation.yaml` file that defines which metrics to calculate and the thresholds for pass/fail decisions.
+Local evaluation is configured through YAML files under `eval/`. Each file extends a shared base that inherits your agent's `workflow.yaml`.
 
-### File location
-
-Place `moderation.yaml` at the root of the agent directory alongside `workflow.yaml`:
+### File layout
 
 ```
 agent/
-├── moderation.yaml     # Evaluation configuration
 ├── workflow.yaml
-└── ...
+├── eval/
+│   ├── eval-config-base.yaml
+│   ├── eval-config-agent-goal-accuracy.yaml
+│   ├── dataset/
+│   │   └── dataset-agent-goal-accuracy.json
+│   └── ...
+└── tests/
+    └── test_agent_eval.py
 ```
 
-### Example configuration
+### Base config
+
+`eval/eval-config-base.yaml` inherits the agent workflow and adds a judge LLM plus output settings:
 
 ```yaml
-# moderation.yaml
-timeout_sec: 60
-timeout_action: block
+base: ../workflow.yaml
 
-guards:
-  - name: Agent Goal Accuracy
-    type: ootb
-    ootb_type: agent_goal_accuracy
-    stage: response
-    is_agentic: true
-    llm_type: datarobot
-    deployment_id: "<YOUR_JUDGE_LLM_DEPLOYMENT_ID>"
-    intervention:
-      action: block
-      message: "Agent failed to achieve the user's goal."
-      conditions:
-        - comparator: lessThan
-          comparand: 0.7   # Fail if accuracy score is below 70%
+llms:
+  judge_llm:
+    _type: datarobot-llm-component
+    temperature: 0
+
+eval:
+  general:
+    max_concurrency: 1
+    output:
+      dir: ./.tmp/nat-eval
+      cleanup: true
 ```
 
-`deployment_id` is the DataRobot deployment the library calls to run the LLM-as-a-judge evaluation. It sends your agent's response to this deployment and asks it to score the quality metric.
+`nat eval` runs the inherited workflow on each dataset row, then scores the generated response with the configured evaluators.
 
-### Available out-of-the-box metrics
+### Metric config
 
-| Metric (`ootb_type`) | Description | Requires `retrieved_contexts` |
+Each metric adds a dataset and evaluator block:
+
+```yaml
+# eval/eval-config-agent-goal-accuracy.yaml
+base: eval-config-base.yaml
+
+eval:
+  general:
+    dataset:
+      _type: json
+      file_path: ./eval/dataset/dataset-agent-goal-accuracy.json
+  evaluators:
+    agent_goal_accuracy:
+      _type: agent_goal_accuracy
+      llm_name: judge_llm
+```
+
+### Available evaluators
+
+| Evaluator (`_type`) | Description | Dataset fields |
 |---|---|---|
-| `agent_goal_accuracy` | Measures whether the agent achieved the user's stated goal. | No |
-| `faithfulness` | Detects hallucinations by comparing the response against retrieved context. | Yes (`copy_citations: true`) |
-| `task_adherence` | Measures how closely the response follows the instructions in the prompt. | No |
+| `agent_goal_accuracy` | Whether the agent achieved the user's stated goal. | `question`, `answer` |
+| `faithfulness` | Detects hallucinations by comparing the response to retrieved context. | `question`, `answer`, `context` (list of strings) |
+| `task_adherence` | How closely the response follows prompt instructions. | `question`, `answer` |
+| `agent_guideline_adherence` | Whether the response follows a fixed guideline string. | `question`, `answer`; set `agent_guideline` on the evaluator |
 
-### Configuration reference
+### Dataset format
 
-| Field | Description |
-|---|---|
-| `timeout_sec` | Seconds to wait for the evaluator LLM before applying `timeout_action`. |
-| `timeout_action` | What to do on timeout: `score` (treat as pass) or `block` (treat as fail). |
-| `guards[].name` | Unique label; used as the key in `result.metrics`. |
-| `guards[].ootb_type` | The metric to calculate (see table above). |
-| `guards[].deployment_id` | DataRobot LLM deployment ID for the judge model (exactly 24 hex characters). |
-| `guards[].copy_citations` | Set `true` to pass retrieved RAG context to the guard. Required for `faithfulness`. |
-| `guards[].is_agentic` | Set `true` for `agent_goal_accuracy` guards. |
-| `guards[].intervention.conditions[].comparand` | Numeric threshold for pass/fail. |
-| `guards[].intervention.conditions[].comparator` | Comparison operator: `lessThan`, `greaterThan`, `equals`. |
+Datasets are JSON arrays. Each row needs a unique `id`, a `question` (the user prompt `nat eval` sends to your workflow), and an `answer` (the reference response for the row):
 
-<a name="invoking-the-agent-in-tests"></a>
-
-## Invoking the agent in tests
-
-Agents run on the DRAgent front server in production. In Pytest, invoke `MyAgent` directly with a `RunAgentInput` built from AG-UI `Message` objects — the same shape the backend and CLI use.
-
-Add a small helper (for example in `agent/tests/eval_helpers.py`) and reuse it across evaluation tests:
-
-```python
-from ag_ui.core import EventType, Message, RunAgentInput
-from datarobot_genai.langgraph.llm import get_llm
-
-from agent import MyAgent
-
-
-def make_run_input(*messages: Message) -> RunAgentInput:
-    return RunAgentInput(
-        thread_id="eval-thread",
-        run_id="eval-run",
-        state=None,
-        messages=list(messages),
-        tools=[],
-        context=[],
-        forwarded_props=None,
-    )
-
-
-async def invoke_agent_text(run_input: RunAgentInput) -> str:
-    """Run MyAgent in-process and return the concatenated assistant text."""
-    agent = MyAgent(llm=get_llm(), tools=[], verbose=False)
-    parts: list[str] = []
-    async for event, _, _ in agent.invoke(run_input):
-        event_type = getattr(event, "type", None)
-        if event_type in (EventType.TEXT_MESSAGE_CONTENT, EventType.TEXT_MESSAGE_CHUNK):
-            parts.append(event.delta)
-    return "".join(parts)
+```json
+[
+  {
+    "id": "goal-accuracy-1",
+    "question": "What is the return policy?",
+    "answer": "Returns are accepted within 30 days of purchase."
+  }
+]
 ```
 
-> [!NOTE]
-> The default LangGraph template expects user input as JSON with a `topic` key (for example `'{"topic": "Generative AI"}'`). Adapt the `Message` content to match your `prompt_template` or framework.
+For faithfulness, include retrieved context:
 
-For multi-turn evaluation, include prior user and assistant messages in `make_run_input(...)`. See [Multi-turn chat history](./chat-history.md#multi-turn-in-tests).
+```json
+[
+  {
+    "id": "faithfulness-1",
+    "question": "What is the return policy?",
+    "answer": "Returns are accepted within 30 days of purchase.",
+    "context": ["Returns are accepted within 30 days of purchase."]
+  }
+]
+```
+
+NAT maps `question` to the workflow input and `answer` to the expected output (`expected_output_obj`). After a run, `nat eval` can populate `generated_answer` with the workflow response.
 
 <a name="usage-examples"></a>
 
 ## Usage examples
 
-Evaluation tests use `async def` with `await` because `pyproject.toml` sets `asyncio_mode = "auto"`, which makes pytest-asyncio handle all async test functions automatically.
+### Run evaluation from the CLI
 
-### Basic evaluation in Pytest
+```sh
+cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.yaml
+```
 
-Invoke your agent with `invoke_agent_text`, then pass the response text to `ModerationPipeline` for scoring. Add evaluation tests to `agent/tests/test_agent_eval.py`.
+On success, the CLI prints an `EVALUATION SUMMARY` with per-metric scores. Results are also written under `.tmp/nat-eval` at the agent root (configurable via `eval.general.output.dir`).
+
+### Optional Pytest wrapper
+
+You can wrap `nat eval` in Pytest for repeatable local runs during development. Add tests to `agent/tests/test_agent_eval.py`:
 
 ```python
-# agent/tests/test_agent_eval.py
+import os
+import subprocess
+from pathlib import Path
+
 import pytest
-from ag_ui.core import Message
-from datarobot_moderations import ModerationPipeline
 
-from tests.eval_helpers import invoke_agent_text, make_run_input
+AGENT_DIR = Path(__file__).resolve().parent.parent
+EVAL_DIR = AGENT_DIR / "eval"
 
 
-@pytest.fixture(scope="session")
-def pipeline():
-    return ModerationPipeline.from_yaml("moderation.yaml")
+def _run_nat_eval(config_file: Path, output_dir: Path):
+    return subprocess.run(
+        [
+            "uv", "run", "nat", "eval",
+            "--config_file", str(config_file),
+            "--override", "eval.general.output.dir", str(output_dir),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=300,
+        cwd=str(AGENT_DIR),
+        env={**os.environ},
+        check=False,
+    )
 
 
 @pytest.mark.eval
-async def test_agent_goal_accuracy(pipeline):
-    user_prompt = '{"topic": "What is the return policy?"}'
-    run_input = make_run_input(Message(role="user", content=user_prompt))
-    response_text = await invoke_agent_text(run_input)
-
-    result, _ = pipeline.evaluate_response(
-        response_text,
-        prompt=user_prompt,
+@pytest.mark.timeout(120)
+def test_agent_goal_accuracy(tmp_path: Path) -> None:
+    result = _run_nat_eval(
+        EVAL_DIR / "eval-config-agent-goal-accuracy.yaml",
+        tmp_path / "agent_goal_accuracy",
     )
-
-    assert not result.blocked, (
-        f"Eval failed: {result.blocked_message} | Metrics: {result.metrics}"
-    )
-```
-
-### Faithfulness (hallucination detection)
-
-Set `copy_citations: true` in the guard's YAML config and pass `retrieved_contexts` to `evaluate_response` to enable faithfulness scoring:
-
-```python
-@pytest.mark.eval
-async def test_agent_faithfulness(pipeline):
-    user_prompt = '{"topic": "What is the return policy?"}'
-    retrieved_context = ["Returns are accepted within 30 days of purchase."]
-
-    run_input = make_run_input(Message(role="user", content=user_prompt))
-    response_text = await invoke_agent_text(run_input)
-
-    result, _ = pipeline.evaluate_response(
-        response_text,
-        prompt=user_prompt,
-        retrieved_contexts=retrieved_context,
-    )
-
-    assert not result.blocked, f"Hallucination detected: {result.blocked_message}"
-```
-
-### Parametrized test cases
-
-Run the same evaluation logic across a dataset of prompt/response pairs:
-
-```python
-TEST_CASES = [
-    {
-        "prompt": '{"topic": "What is the return policy?"}',
-        "context": ["Returns are accepted within 30 days of purchase."],
-    },
-    {
-        "prompt": '{"topic": "How do I reset my password?"}',
-        "context": ["Click 'Forgot password' on the login page."],
-    },
-]
-
-
-@pytest.mark.eval
-@pytest.mark.parametrize("case", TEST_CASES)
-async def test_faithfulness_parametrized(pipeline, case):
-    run_input = make_run_input(Message(role="user", content=case["prompt"]))
-    response_text = await invoke_agent_text(run_input)
-
-    result, _ = pipeline.evaluate_response(
-        response_text,
-        prompt=case["prompt"],
-        retrieved_contexts=case["context"],
-    )
-    assert not result.blocked, (
-        f"Failed on prompt '{case['prompt']}': {result.blocked_message}"
-    )
-```
-
-### Verifying that a hallucination is caught
-
-A negative test requires no agent invocation — pass a known-wrong response directly to `evaluate_response` to verify the pipeline catches it:
-
-```python
-@pytest.mark.eval
-def test_pipeline_catches_hallucination(pipeline):
-    result, _ = pipeline.evaluate_response(
-        "Returns are not accepted under any circumstances.",
-        prompt="What is the return policy?",
-        retrieved_contexts=["Returns are accepted within 30 days of purchase."],
-    )
-    assert result.blocked, "The evaluation pipeline should have caught the hallucination."
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "EVALUATION SUMMARY" in output
 ```
 
 ### Registering the `eval` marker
 
-To avoid Pytest warnings, register the custom marker in `agent/pyproject.toml`:
+To avoid Pytest warnings, register the custom marker in `pyproject.toml`:
 
 ```toml
 [tool.pytest.ini_options]
@@ -283,80 +218,45 @@ markers = [
 ]
 ```
 
-<a name="cicd-integration"></a>
-
-## CI/CD integration
-
-Run only evaluation tests (requires DataRobot credentials):
-
-```sh
-cd agent && uv run pytest tests/ -m eval
-```
-
-Run all tests except evaluation (no credentials needed):
-
-```sh
-cd agent && uv run pytest tests/ -m "not eval"
-```
-
-The Taskfile exposes a `test` task for the full suite:
-
-```sh
-dr task run agent:test
-```
-
-Example GitHub Actions step:
-
-```yaml
-- name: Run agent evaluation tests
-  run: cd agent && uv run pytest tests/ -m eval --junitxml=eval-results.xml
-  env:
-    DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
-    DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
-```
-
-> [!NOTE]
-> Evaluation tests call the DataRobot API to invoke the judge LLM. Standard unit tests marked with `not eval` continue to pass without credentials.
-
 <a name="troubleshooting"></a>
 
 ## Troubleshooting
 
+### `nat eval` command not found or unknown evaluator `_type`
+
+**Cause:** `datarobot-genai` is older than 0.26.10, which first shipped the DataRobot moderation eval plugins.
+
+**Fix:** Upgrade `datarobot-genai` in `pyproject.toml` and refresh the lockfile (`dr task run agent:install`).
+
 ### Missing evaluation dependencies
 
-**Symptom**: `ModuleNotFoundError` for `ragas`, `rouge_score`, or another evaluation library.
+**Symptom:** `ModuleNotFoundError` for `ragas`, `deepeval`, or another evaluation library.
 
-**Cause**: Dependencies are out of sync with `pyproject.toml`.
+**Cause:** Dependencies are out of sync with `pyproject.toml`.
 
-**Fix**:
+**Fix:**
 
 ```sh
 dr task run agent:install
 ```
 
-### Timeout errors from the evaluator LLM
+### Timeout errors
 
-**Cause**: The judge model deployment is in a cold-start state and takes longer than `timeout_sec` to respond.
+**Cause:** The judge or agent LLM deployment is cold-starting and takes longer than the pytest subprocess timeout.
 
-**Fix**: Increase `timeout_sec` in `moderation.yaml` (e.g., `120`). Alternatively, set `timeout_action: score` to treat timeouts as passing during development.
+**Fix:** Increase `@pytest.mark.timeout(180)` on eval tests. Keep `max_concurrency: 1` in `eval-config-base.yaml` to avoid overloading cold deployments.
 
-### `result.blocked` is unexpectedly `True` in all tests
+### Faithfulness scores are always low
 
-**Cause**: The `deployment_id` in `moderation.yaml` is still the placeholder value.
+**Cause:** Dataset rows are missing `context`, or the context does not match what the agent actually retrieves.
 
-**Fix**: Replace `<YOUR_JUDGE_LLM_DEPLOYMENT_ID>` with the 24-character hex ID of your evaluator LLM deployment from the DataRobot UI.
-
-### Evaluation scores are always `0.0`
-
-**Cause**: The evaluator LLM deployment does not support the selected metric, or you passed a deployment JSON dict without setting `TARGET_NAME`.
-
-**Fix**: Pass plain assistant text to `evaluate_response` (recommended), or set `TARGET_NAME` (e.g., `resultText`) when passing a structured deployment response. Verify the judge deployment supports the `ootb_type` you selected.
+**Fix:** Ensure each faithfulness row includes a `context` list with the passages the agent should ground on.
 
 ### `PytestUnknownMarkWarning: Unknown pytest.mark.eval`
 
-**Cause**: The `eval` marker is not registered in `pyproject.toml`.
+**Cause:** The `eval` marker is not registered in `pyproject.toml`.
 
-**Fix**: Add the marker to `[tool.pytest.ini_options]` as shown in the [Registering the `eval` marker](#registering-the-eval-marker) section.
+**Fix:** Add the marker to `[tool.pytest.ini_options]` as shown in the [Registering the `eval` marker](#registering-the-eval-marker) section.
 
 <a name="best-practices"></a>
 
@@ -364,24 +264,26 @@ dr task run agent:install
 
 ### Use a dedicated judge model
 
-Use a high-capability model as your evaluator `deployment_id`, separate from the model your agent uses to generate responses. Evaluating with the same model that produced the response introduces bias.
+Define `judge_llm` separately from the agent's `datarobot_llm` in `eval-config-base.yaml`. Set `temperature: 0` on the judge for consistent scoring.
 
-### Set `timeout_action: block` in CI
+### Keep datasets in version control
 
-In CI/CD pipelines, set `timeout_action: block` so that timeouts are treated as failures. This prevents silently passing tests when the judge model is unreachable.
-
-### Keep thresholds in version control
-
-Store `moderation.yaml` alongside your agent code so threshold changes are reviewed in pull requests alongside the agent changes that motivated them.
+Store `eval/dataset/*.json` alongside your agent code so evaluation cases are reviewed in pull requests alongside agent changes.
 
 ### Separate eval tests from unit tests with markers
 
-Use `@pytest.mark.eval` on all tests that call the DataRobot API. This allows unit tests and eval tests to be run independently:
+Use `@pytest.mark.eval` on tests that call the DataRobot API so you can run them separately from unit tests during local development:
 
 ```sh
 cd agent && uv run pytest tests/ -m eval        # Only evaluation tests (requires credentials)
 cd agent && uv run pytest tests/ -m "not eval"  # Only unit tests (no credentials needed)
 ```
+
+Do not run `nat eval` or eval-marked tests in CI&mdash;they require live DataRobot credentials and LLM deployments.
+
+### Align runtime and offline guardrails
+
+Runtime guardrails use `moderation_config.yaml` with `datarobot_moderation` middleware. Offline `nat eval` uses the same OOTB scorers in-process. Tune thresholds separately&mdash;runtime guards block live traffic; eval datasets assert quality on representative prompts.
 
 <a name="further-reading"></a>
 
@@ -390,8 +292,8 @@ cd agent && uv run pytest tests/ -m "not eval"  # Only unit tests (no credential
 | Topic | Description |
 |---|---|
 | [Moderation and guardrails](./moderation.md) | Runtime guardrails with DRAgent middleware. |
-| [Multi-turn chat history](./chat-history.md) | Prior messages in `RunAgentInput` for multi-turn eval tests. |
 | [Debugging agents](./debugging.md) | Step through agent code locally in VS Code and PyCharm. |
 | [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html) | Add OpenTelemetry spans for observability in deployed agents. |
-| [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-evaluate/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |
+| [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-eval/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |
 | [AG-UI protocol](./ag-ui.md) | Event types emitted during agent execution. |
+| [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install the `datarobot-app-framework-agent-local-evaluation` skill from `.agents/skills/` for coding-agent setup help. |

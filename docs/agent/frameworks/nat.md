@@ -236,6 +236,12 @@ workflow:
 
 This prompt should clearly describe the execution order and what each tool/function does. The orchestrator uses this to decide the sequence of calls.
 
+### Chat history
+
+NAT agents receive multi-turn context from the request `messages` list. Prior user and assistant turns are passed to the `per_user_tool_calling_agent` orchestrator automatically&mdash;no `{chat_history}` placeholder in `workflow.yaml` is required. The client (UI, API, or chat-completions adapter) must include earlier turns in `messages` when you want the agent to reference them.
+
+For details on request shape, limits, and testing, see [Chat history](../chat-history.md). For durable facts across sessions, see [Agent memory](../agent-memory.md).
+
 ### How to modify
 
 - Update function prompts&mdash;edit the `system_prompt` field in any `functions` entry.

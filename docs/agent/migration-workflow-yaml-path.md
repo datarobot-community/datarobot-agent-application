@@ -25,10 +25,9 @@ git mv agent/agent/workflow.yaml agent/workflow.yaml
 
 Remove any leftover copy under `agent/agent/` so only one `workflow.yaml` exists.
 
-### 2. Update legacy `workflow_path` in NAT `myagent.py` (DRAgent detail)
+### 2. Update `workflow_path` in NAT `myagent.py` (if present)
 
-> [!NOTE]
-> This is only relevant for older NAT layouts that still set `workflow_path` in `myagent.py`. DRAgent now loads `workflow.yaml` directly via `--config_file`, but updating this legacy path avoids stale references during migration.
+If your NAT project sets `workflow_path` in `myagent.py`, point it at the new location. DRAgent loads `workflow.yaml` via `--config_file` at the agent root (see step 3); the generated Taskfile does not rely on `workflow_path`.
 
 Before (file co-located with `myagent.py`):
 

@@ -125,7 +125,6 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
         return JSON.stringify(JSON.parse(toolInvocation.result), null, '  ');
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.debug('Tool result is not a JSON', toolInvocation.result, e);
     }
     return toolInvocation.result || '';
@@ -146,7 +145,6 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
       status: 'complete',
       args: toolInvocation.args,
       callback: event => {
-        // eslint-disable-next-line no-console
         console.debug('Tool render event', event);
       },
     });

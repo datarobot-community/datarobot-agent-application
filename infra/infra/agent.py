@@ -82,6 +82,7 @@ EXCLUDE_PATTERNS = [
         r".*\.pytest_cache/.*",
         r".*\.uv/.*",
         r".*docker_context/.*",
+        r".*\.env(?:\.[A-Za-z0-9_-]+)*$",
     ]
 ]
 

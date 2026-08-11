@@ -1,0 +1,10 @@
+[
+  {
+    "id": "faithfulness-1",
+    "question": "What is the return policy?",
+    "answer": "Returns are accepted within 30 days of purchase.",
+    "context": [
+      "Returns are accepted within 30 days of purchase."
+    ]
+  }
+]

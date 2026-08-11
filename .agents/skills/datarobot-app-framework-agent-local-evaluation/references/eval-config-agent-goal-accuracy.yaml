@@ -1,0 +1,12 @@
+---
+base: eval-config-base.yaml
+
+eval:
+  general:
+    dataset:
+      _type: json
+      file_path: ./eval/dataset/dataset-agent-goal-accuracy.json
+  evaluators:
+    agent_goal_accuracy:
+      _type: agent_goal_accuracy
+      llm_name: judge_llm

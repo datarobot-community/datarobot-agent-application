@@ -20,7 +20,6 @@ export function ChatProgress({
       const allDone = p.every(({ done }) => !!done);
       if (allDone && !progressTimeoutsRef.current[id]) {
         progressTimeoutsRef.current[id] = window.setTimeout(() => {
-          // eslint-disable-next-line no-console
           console.debug('Remove progress data', id);
           deleteProgress(id);
         }, removeAfter);

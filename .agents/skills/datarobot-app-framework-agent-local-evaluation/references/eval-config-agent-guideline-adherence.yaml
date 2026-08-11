@@ -1,0 +1,13 @@
+---
+base: eval-config-base.yaml
+
+eval:
+  general:
+    dataset:
+      _type: json
+      file_path: ./eval/dataset/dataset-agent-guideline-adherence.json
+  evaluators:
+    agent_guideline_adherence:
+      _type: agent_guideline_adherence
+      llm_name: judge_llm
+      agent_guideline: "Respond in one sentence or less."

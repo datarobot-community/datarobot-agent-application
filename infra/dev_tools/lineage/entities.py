@@ -14,17 +14,19 @@
 from dataclasses import dataclass
 from typing import TypedDict
 
-from pulumi_datarobot import UserMcpToolMetadata as UserMcpToolMetadataPulumiResource
 from pulumi_datarobot import (
     UserMcpPromptMetadata as UserMcpPromptMetadataPulumiResource,
 )
 from pulumi_datarobot import (
     UserMcpResourceMetadata as UserMcpResourceMetadataPulumiResource,
 )
+from pulumi_datarobot import UserMcpToolMetadata as UserMcpToolMetadataPulumiResource
 
-from dev_tools.lineage.enums import DataRobotMCPToolCategory
-from dev_tools.lineage.enums import DataRobotMCPPromptCategory
-from dev_tools.lineage.enums import DataRobotMCPResourceCategory
+from dev_tools.lineage.enums import (
+    DataRobotMCPPromptCategory,
+    DataRobotMCPResourceCategory,
+    DataRobotMCPToolCategory,
+)
 
 
 class MCPToolMetadataDictType(TypedDict):

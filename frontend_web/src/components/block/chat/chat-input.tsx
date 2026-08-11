@@ -61,7 +61,6 @@ export function ChatTextInput({
 
   // setUserInput identity changes when chatId changes — resync local state to the new chat's draft
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateValue(userInput);
   }, [setUserInput]);
 

@@ -340,7 +340,6 @@ export function useAgUiChat({
         if (tool && toolHandler?.handler && params.toolCallArgs) {
           const canRun = !isBackground || (isBackground && tool.background);
           if (isBackground) {
-            // eslint-disable-next-line no-console
             console.debug('Background tool invocation', params, tool);
           }
           if (canRun) {
@@ -454,7 +453,7 @@ export function useAgUiChat({
         if (event?.name !== 'Heartbeat') {
           setIsThinking(false);
         }
-        // eslint-disable-next-line no-console
+
         console.debug('onCustomEvent', params);
 
         if (isProgressStart(event)) {
@@ -519,7 +518,7 @@ export function useAgUiChat({
           .map(({ background, ...tool }) => tool),
         forwardedProps,
       });
-      // eslint-disable-next-line no-console
+
       console.debug('runAgent result', result);
       return result;
     } catch (error) {

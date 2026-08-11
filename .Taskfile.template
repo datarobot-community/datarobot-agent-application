@@ -69,13 +69,15 @@ tasks:
     desc: "🛠️ Install all dependencies"
     cmds:
       - |
-        if [ -n "$VIRTUAL_ENV" ]; then
-          echo "Installing datarobot_early_access[core] into active virtualenv: $VIRTUAL_ENV"
-          uv pip install "datarobot_early_access[core]>=3.17.0"
+        if command -v drdev >/dev/null 2>&1; then
+          echo "drdev already installed, skipping datarobot[core] install"
+        elif [ -n "$VIRTUAL_ENV" ]; then
+          echo "Installing datarobot[core] into active virtualenv: $VIRTUAL_ENV"
+          uv pip install "datarobot[core]>=3.18.0"
         else
           uv tool update-shell
-          echo "Installing datarobot_early_access[core] as a uv tool"
-          uv tool install --force "datarobot_early_access[core]>=3.17.0"
+          echo "Installing datarobot[core] as a uv tool"
+          uv tool install --force "datarobot[core]>=3.18.0"
         fi
       - dr task run install
   {{- end }}

@@ -37,6 +37,8 @@ function_groups:
 
 This approach is the simplest, but it assumes the card is accessible before authentication is fully resolved. It is not suitable when the card endpoint requires a different auth flow than the RPC calls — for example, with Okta XAA, where the card itself describes how to authenticate (a chicken-and-egg problem). In that case, use the central registry instead.
 
+When testing locally and the URL points at your dev server (for example, `http://localhost:8842/a2a/`), the card endpoint returns a redacted document unless the request includes gateway identity headers. See [Debugging agents → Local agent card](./debugging.md#local-agent-card).
+
 ### Central registry (`registry`)
 
 Use this when calling a DataRobot-hosted agent protected by Okta XAA or any other flow where the card endpoint requires auth that is not yet available before the card is read. The central agent card registry exposes all agent cards in the tenant at a single endpoint that requires only a standard `DATAROBOT_API_TOKEN`, bypassing the per-agent auth requirement for card discovery.

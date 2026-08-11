@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export const  baseURL = (process.env.WEB_URL || 'http://localhost:5173');
+export const baseURL = (process.env.WEB_URL || 'http://localhost:5173');
 
 export default defineConfig({
   testDir: './e2e',
@@ -25,7 +25,11 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: [
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['junit', { outputFile: 'test-results/playwright-junit.xml' }],
+    ['json', { outputFile: 'test-results/playwright-report.json' }],
+  ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */

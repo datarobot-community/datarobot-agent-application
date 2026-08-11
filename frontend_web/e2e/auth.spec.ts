@@ -1,6 +1,7 @@
 import type { BrowserContext, Page } from 'playwright-core';
 import { test } from '@playwright/test';
 import { baseURL } from '../playwright.config';
+import { shouldCaptureVideo, attachTestMedia } from './media-capture';
 
 const USER_EMAIL = process.env.DATAROBOT_USER || 'buzok-ci-agents@datarobot.com';
 const USER_PASSWORD = process.env.DATAROBOT_PASSWORD!;
@@ -15,10 +16,17 @@ test.describe('auth flow', () => {
   test.beforeAll(async ({ browser }) => {
     context = await browser.newContext({
       serviceWorkers: 'block',
+      ...(shouldCaptureVideo ? { recordVideo: { dir: 'test-results/videos' } } : {}),
     });
+  });
+
+  test.beforeEach(async () => {
     page = await context.newPage();
   });
 
+  test.afterAll(async () => {
+    await context?.close();
+  });
   test('login if env is not localhost', async () => {
     const origin = new URL(baseURL).origin;
     if (origin.includes('localhost')) {
@@ -50,5 +58,12 @@ test.describe('auth flow', () => {
     await page.context().storageState({
       path: './e2e/storageState.json',
     });
+  });
+
+  // Playwright requires the fixtures param even when unused, to access
+  // testInfo as the second argument.
+  // eslint-disable-next-line no-empty-pattern
+  test.afterEach(async ({}, testInfo) => {
+    await attachTestMedia(page, testInfo);
   });
 });

@@ -59,20 +59,22 @@ class TestMyAgentLangGraph:
         assert isinstance(prompt_template, ChatPromptTemplate)
 
     def test_prompt_template_has_expected_variables(self):
-        """Test that prompt_template declares chat_history and topic variables."""
+        """Test that prompt_template declares only the topic variable.
+
+        Prior turns are replayed as structured native messages (structured_history),
+        so the template intentionally omits a {chat_history} placeholder.
+        """
         input_vars = prompt_template.input_variables
-        assert "chat_history" in input_vars
+        assert "chat_history" not in input_vars
         assert "topic" in input_vars
 
     def test_prompt_template_formats_with_variables(self):
-        """Test that prompt_template can be formatted with chat_history and topic."""
+        """Test that prompt_template can be formatted with the topic variable."""
         format_kwargs = {
-            "chat_history": "User asked about AI trends.",
             "topic": "artificial intelligence",
         }
         messages = prompt_template.format_messages(**format_kwargs)
         assert len(messages) == 2
-        assert "{chat_history}" not in messages[0].content
         assert "{topic}" not in messages[1].content
         assert "artificial intelligence" in messages[1].content
 

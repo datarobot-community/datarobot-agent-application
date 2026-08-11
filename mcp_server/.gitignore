@@ -183,3 +183,6 @@ temp.txt
 # This is the folder of MCP item metadata which is extracted before deployment (pulumi/Terraform). It will be saved to
 # DB through the pulumi/Terraform-based MCP deployment automation.
 /dev_tools/lineage/mcp_item_metadata/*.yaml
+
+# Config of MCP protected resource metadata
+mcp_oauth_protected_resource_metadata_config.yaml

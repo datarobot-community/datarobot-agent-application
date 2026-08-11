@@ -18,7 +18,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Moderation and guardrails](./moderation.md) | Configure runtime guardrails with `datarobot_moderation` middleware in `workflow.yaml`. |
 | [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
 | [Multi-turn chat history](./chat-history.md) | How prior messages are injected into agents across frameworks, CLI testing, and configuration. |
-| [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
+| [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with `nat eval` during development. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
@@ -38,6 +38,10 @@ See the [AG-UI integration guide](./ag-ui.md) for details on each event type and
 ### Agent-to-Agent (A2A)
 
 Agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol. See [Agent2Agent](./agent2agent.md) for configuration and usage, and [A2A Authentication](./agent2agent-auth.md) for DataRobot API key and Okta XAA auth setup.
+
+### Chat history
+
+All framework agents support **multi-turn chat history**. When prior user and assistant messages are included in a chat-completions or AG-UI request, `datarobot-genai` injects them into the agent prompt automatically so the model can reference earlier turns in the same conversation. See [Chat history](./chat-history.md) for request format, per-framework behavior, and local testing.
 
 ## Agent file structure
 
@@ -165,7 +169,7 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
-For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md). To enable persistent per-user memory across conversations, see [Agent memory](./agent-memory.md).
+For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md). For multi-turn conversation context within a request, see [Chat history](./chat-history.md). To enable persistent per-user memory across conversations, see [Agent memory](./agent-memory.md).
 
 ## Front server
 
@@ -177,6 +181,9 @@ The agent component runs on the DRAgent front server&mdash;a NAT (NeMo Agent Too
 - Local dev&mdash;the Taskfile runs `nat dragent serve --config_file workflow.yaml` on port `AGENT_PORT` (default `8842`). CLI commands (`task agent:cli -- execute …`) are forwarded to `nat dragent run`/`query` and run the workflow in-process without a server.
 
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
+
+> [!NOTE]
+> All agents run on DRAgent. `ENABLE_DRAGENT_SERVER` is a legacy setting; if it is present, it must be set to `true` (or remove it entirely).
 
 ## Agent types
 
@@ -227,6 +234,7 @@ The following topics are covered in the official DataRobot documentation:
 | [Deploy agentic tools](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tools.html) | Deploy global tools from the DataRobot Registry (search datasets, make predictions, render charts). |
 | [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install modular skill packages for coding agents (Cursor, Claude Code, Codex, and others). |
 | [A2A authentication](./agent2agent-auth.md) | DataRobot API key and Okta cross-application access (XAA) for agent-to-agent authentication. |
+| [Chat history](./chat-history.md) | Multi-turn conversation context across LangGraph, CrewAI, LlamaIndex, and NAT. |
 | [Agent authentication](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-authentication.html) | API tokens, OAuth 2.0, authorization context, and MCP server authentication. |
 | [Add Python packages](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-python-packages.html) | Add dependencies via `uv`, runtime dependencies for fast iteration, and custom Docker images. |
 | [Access request headers](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-request-headers.html) | Extract `X-Untrusted-*` headers in deployed agents for auth forwarding and request tracking. |

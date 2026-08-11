@@ -1,0 +1,12 @@
+---
+base: eval-config-base.yaml
+
+eval:
+  general:
+    dataset:
+      _type: json
+      file_path: ./eval/dataset/dataset-task-adherence.json
+  evaluators:
+    task_adherence:
+      _type: task_adherence
+      llm_name: judge_llm

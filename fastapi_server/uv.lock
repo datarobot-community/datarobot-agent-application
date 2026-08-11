@@ -496,7 +496,7 @@ dev = [
     { name = "pytest", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
     { name = "pytest-cov", specifier = ">=6.1.1" },
-    { name = "ruff", specifier = ">=0.11.11" },
+    { name = "ruff", specifier = ">=0.16.0" },
 ]
 
 [[package]]

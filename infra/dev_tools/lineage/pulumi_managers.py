@@ -13,26 +13,25 @@
 # limitations under the License.
 import os
 from pathlib import Path
-from typing import List
-from typing import Set
 
 import pulumi
 import yaml  # type: ignore[import-untyped]
-
-from pulumi_datarobot import UserMcpToolMetadata as UserMcpToolMetadataPulumiResource
 from pulumi_datarobot import (
     UserMcpPromptMetadata as UserMcpPromptMetadataPulumiResource,
 )
 from pulumi_datarobot import (
     UserMcpResourceMetadata as UserMcpResourceMetadataPulumiResource,
 )
+from pulumi_datarobot import UserMcpToolMetadata as UserMcpToolMetadataPulumiResource
 
-from dev_tools.lineage.entities import MCPToolMetadata
-from dev_tools.lineage.entities import MCPPromptMetadata
-from dev_tools.lineage.entities import MCPResourceMetadata
-from dev_tools.lineage.entities import MCPToolMetadataPulumiResourceCreateOutput
-from dev_tools.lineage.entities import MCPPromptMetadataPulumiResourceCreateOutput
-from dev_tools.lineage.entities import MCPResourceMetadataPulumiResourceCreateOutput
+from dev_tools.lineage.entities import (
+    MCPPromptMetadata,
+    MCPPromptMetadataPulumiResourceCreateOutput,
+    MCPResourceMetadata,
+    MCPResourceMetadataPulumiResourceCreateOutput,
+    MCPToolMetadata,
+    MCPToolMetadataPulumiResourceCreateOutput,
+)
 
 
 def get_mcp_item_metadata_dir_path() -> Path:
@@ -58,7 +57,7 @@ def get_mcp_resource_metadata_file_path() -> Path:
     return get_mcp_item_metadata_dir_path() / "mcp_resources.yaml"
 
 
-def load_from_yaml(yaml_path: Path) -> List[dict[str, str]]:
+def load_from_yaml(yaml_path: Path) -> list[dict[str, str]]:
     with open(yaml_path, "r") as file:
         return yaml.safe_load(file) or []
 
@@ -67,7 +66,7 @@ class MCPToolMetadataPulumiManager:
     def __init__(self):
         self.metadata_file_path = get_mcp_tool_metadata_file_path()
 
-    def load_metadata(self) -> Set[MCPToolMetadata]:
+    def load_metadata(self) -> set[MCPToolMetadata]:
         metadata_list = load_from_yaml(self.metadata_file_path)
         return {MCPToolMetadata.from_dict(metadata) for metadata in metadata_list}  # type: ignore[arg-type]
 
@@ -81,10 +80,10 @@ class MCPToolMetadataPulumiManager:
     @classmethod
     def create_pulumi_resources(
         cls,
-        metadata_entities: Set[MCPToolMetadata],
+        metadata_entities: set[MCPToolMetadata],
         resource_name_prefix: str,
         mcp_server_version_id: pulumi.Output[str],
-    ) -> Set[MCPToolMetadataPulumiResourceCreateOutput]:
+    ) -> set[MCPToolMetadataPulumiResourceCreateOutput]:
         outputs = set()
         for metadata in metadata_entities:
             resource_name = cls.get_pulumi_resource_name(
@@ -105,7 +104,7 @@ class MCPToolMetadataPulumiManager:
     @classmethod
     def export_to_pulumi_stack(
         cls,
-        pulumi_resource_creation_outputs: Set[
+        pulumi_resource_creation_outputs: set[
             MCPToolMetadataPulumiResourceCreateOutput
         ],
     ) -> None:
@@ -119,7 +118,7 @@ class MCPToolMetadataPulumiManager:
     def export_summary_to_pulumi_stack(
         cls,
         resource_name_prefix: str,
-        pulumi_resource_creation_outputs: Set[
+        pulumi_resource_creation_outputs: set[
             MCPToolMetadataPulumiResourceCreateOutput
         ],
     ) -> None:
@@ -133,7 +132,7 @@ class MCPPromptMetadataPulumiManager:
     def __init__(self):
         self.metadata_file_path = get_mcp_prompt_metadata_file_path()
 
-    def load_metadata(self) -> Set[MCPPromptMetadata]:
+    def load_metadata(self) -> set[MCPPromptMetadata]:
         metadata_list = load_from_yaml(self.metadata_file_path)
         return {MCPPromptMetadata.from_dict(metadata) for metadata in metadata_list}  # type: ignore[arg-type]
 
@@ -147,10 +146,10 @@ class MCPPromptMetadataPulumiManager:
     @classmethod
     def create_pulumi_resources(
         cls,
-        metadata_entities: Set[MCPPromptMetadata],
+        metadata_entities: set[MCPPromptMetadata],
         resource_name_prefix: str,
         mcp_server_version_id: pulumi.Output[str],
-    ) -> Set[MCPPromptMetadataPulumiResourceCreateOutput]:
+    ) -> set[MCPPromptMetadataPulumiResourceCreateOutput]:
         outputs = set()
         for metadata in metadata_entities:
             resource_name = cls.get_pulumi_resource_name(
@@ -171,7 +170,7 @@ class MCPPromptMetadataPulumiManager:
     @classmethod
     def export_to_pulumi_stack(
         cls,
-        pulumi_resource_creation_outputs: Set[
+        pulumi_resource_creation_outputs: set[
             MCPPromptMetadataPulumiResourceCreateOutput
         ],
     ) -> None:
@@ -185,7 +184,7 @@ class MCPPromptMetadataPulumiManager:
     def export_summary_to_pulumi_stack(
         cls,
         resource_name_prefix: str,
-        pulumi_resource_creation_outputs: Set[
+        pulumi_resource_creation_outputs: set[
             MCPPromptMetadataPulumiResourceCreateOutput
         ],
     ) -> None:
@@ -199,7 +198,7 @@ class MCPResourceMetadataPulumiManager:
     def __init__(self):
         self.metadata_file_path = get_mcp_resource_metadata_file_path()
 
-    def load_metadata(self) -> Set[MCPResourceMetadata]:
+    def load_metadata(self) -> set[MCPResourceMetadata]:
         metadata_list = load_from_yaml(self.metadata_file_path)
         return {MCPResourceMetadata.from_dict(metadata) for metadata in metadata_list}  # type: ignore[arg-type]
 
@@ -213,10 +212,10 @@ class MCPResourceMetadataPulumiManager:
     @classmethod
     def create_pulumi_resources(
         cls,
-        metadata_entities: Set[MCPResourceMetadata],
+        metadata_entities: set[MCPResourceMetadata],
         resource_name_prefix: str,
         mcp_server_version_id: pulumi.Output[str],
-    ) -> Set[MCPResourceMetadataPulumiResourceCreateOutput]:
+    ) -> set[MCPResourceMetadataPulumiResourceCreateOutput]:
         outputs = set()
         for metadata in metadata_entities:
             resource_name = cls.get_pulumi_resource_name(
@@ -238,7 +237,7 @@ class MCPResourceMetadataPulumiManager:
     @classmethod
     def export_to_pulumi_stack(
         cls,
-        pulumi_resource_creation_outputs: Set[
+        pulumi_resource_creation_outputs: set[
             MCPResourceMetadataPulumiResourceCreateOutput
         ],
     ) -> None:
@@ -252,7 +251,7 @@ class MCPResourceMetadataPulumiManager:
     def export_summary_to_pulumi_stack(
         cls,
         resource_name_prefix: str,
-        pulumi_resource_creation_outputs: Set[
+        pulumi_resource_creation_outputs: set[
             MCPResourceMetadataPulumiResourceCreateOutput
         ],
     ) -> None:

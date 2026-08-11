@@ -59,6 +59,7 @@ tasks:
     cmds:
       - dr self update
       - "echo '✨ Choose your agentic framework.'"
+      - task: rewrite-answers-urls
       - |
         PYTHONWARNINGS=ignore uvx copier recopy -a .datarobot/answers/agent-agent.yml \
         -r {{.AGENT_VERSION}} \
@@ -76,6 +77,22 @@ tasks:
       - task install
       - dr task run start
       - echo '✅ You are all set. Run `task dev` to start developing, or run `task deploy` to deploy to DataRobot.'
+
+  # https://github.com/datarobot-oss/cli/pull/722 replace with dr component rewrite-config if merged
+  rewrite-answers-urls:
+    internal: true
+    cmds:
+      - |
+        uv run --no-project python -c "
+        import os, pathlib
+        base_url = os.environ.get('APPLICATION_TEMPLATE_GIT_BASE_URL')
+        if base_url:
+            base_url = base_url.rstrip('/')
+            for p in pathlib.Path('.datarobot/answers').glob('*.yml'):
+                text = p.read_text()
+                p.write_text(text.replace('https://github.com/datarobot-community', base_url))
+        "
+
   build-agents-md:
     cmds:
       - cmd: |
@@ -101,13 +118,15 @@ tasks:
     desc: "🛠️ Install all dependencies"
     cmds:
       - |
-        if [ -n "$VIRTUAL_ENV" ]; then
-          echo "Installing datarobot_early_access[core] into active virtualenv: $VIRTUAL_ENV"
-          uv pip install "datarobot_early_access[core]>=3.17.0"
+        if command -v drdev >/dev/null 2>&1; then
+          echo "drdev already installed, skipping datarobot[core] install"
+        elif [ -n "$VIRTUAL_ENV" ]; then
+          echo "Installing datarobot[core] into active virtualenv: $VIRTUAL_ENV"
+          uv pip install "datarobot[core]>=3.18.0"
         else
           uv tool update-shell
-          echo "Installing datarobot_early_access[core] as a uv tool"
-          uv tool install --force "datarobot_early_access[core]>=3.17.0"
+          echo "Installing datarobot[core] as a uv tool"
+          uv tool install --force "datarobot[core]>=3.18.0"
         fi
       - dr task run install
   test:

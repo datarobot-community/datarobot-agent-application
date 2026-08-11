@@ -84,7 +84,7 @@ For example commands to install the tools, see the [Detailed installation comman
 |--------------|------------|---------------------------------|-------------------------------|
 | dr (DataRobot CLI) | >= 0.2.55  | The DataRobot CLI for templates, auth, and task execution. | [DataRobot CLI installation](https://github.com/datarobot-oss/cli#installation) |
 | git      | >= 2.30.0  | A version control system.       | [git installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)      |
-| uv       | >= 0.9.0  | A Python package manager.        | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)       |
+| uv       | >= 0.10.0 | A Python package manager.        | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)       |
 | Pulumi   | >= 3.163.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/)                   |
 | Taskfile | >= 3.43.3  | A task runner.                  | [Taskfile installation guide](https://taskfile.dev/docs/installation)                        |
 | NodeJS   | >= 24      | JavaScript runtime for frontend development. | [NodeJS installation guide](https://nodejs.org/en/download/)                        |

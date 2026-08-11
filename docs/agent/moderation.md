@@ -13,7 +13,7 @@ The `datarobot-moderations[all]` package is already included in `pyproject.toml`
 | [Test moderations locally](#test-moderations-locally) | Run prompts through your configured guards. |
 | [Environment variables](#environment-variables) | Credentials and runtime toggles. |
 | [Disabling moderations](#disabling-moderations) | Turn guards off without removing configuration. |
-| [Local evaluation](#local-evaluation) | Quality gates in Pytest (separate from runtime guards). |
+| [Local evaluation](#local-evaluation) | Offline `nat eval` quality checks during development (separate from runtime guards). |
 | [Further reading](#further-reading) | Full guard type reference and official docs. |
 
 ## Overview
@@ -26,7 +26,7 @@ Moderations run in two stages:
 Both stages are implemented by the `datarobot_moderation` middleware on DRAgent, which loads guard definitions from either `moderation_config.yaml` or an inline `moderation` block in `workflow.yaml`.
 
 > [!NOTE]
-> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see [Local evaluation](./evaluation.md).
+> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline evaluation** during local development&mdash;batch-scoring agent outputs with `nat eval` without deploying&mdash;see [Local evaluation](./evaluation.md).
 
 ## Guard configuration file
 
@@ -223,14 +223,12 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 Runtime moderations (this guide) enforce guardrails on live agent traffic through the DRAgent middleware.
 
-For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
+For **offline evaluation** during local development&mdash;batch-scoring agent responses against the same OOTB metrics without deploying&mdash;use **`nat eval`** with DataRobot moderation evaluators from `datarobot-genai`. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
 
-| File | Purpose | Used by |
+| Mechanism | Purpose | Used by |
 |---|---|---|
 | `moderation_config.yaml` | Runtime guardrails on live traffic | `datarobot_moderation` middleware in `workflow.yaml` |
-| `moderation.yaml` | Offline quality gates in tests | Pytest + `ModerationPipeline` |
-
-Both files use the same guard schema. You can maintain one file and symlink or copy it to the other name if you want identical thresholds for runtime and CI.
+| `eval/*.yaml` + JSON datasets | Offline quality gates | `nat eval` CLI / Pytest |
 
 ## Further reading
 

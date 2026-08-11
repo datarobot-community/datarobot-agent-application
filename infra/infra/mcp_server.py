@@ -16,23 +16,30 @@ import os
 import re
 from typing import Final
 
+import datarobot as dr
 import pulumi
 import pulumi_datarobot
-import datarobot as dr
 from datarobot_pulumi_utils.pulumi import resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
-from dev_tools.lineage.pulumi_managers import MCPToolMetadataPulumiManager
-from dev_tools.lineage.pulumi_managers import MCPPromptMetadataPulumiManager
-from dev_tools.lineage.pulumi_managers import MCPResourceMetadataPulumiManager
+
+from dev_tools.lineage.pulumi_managers import (
+    MCPPromptMetadataPulumiManager,
+    MCPResourceMetadataPulumiManager,
+    MCPToolMetadataPulumiManager,
+)
 
 from . import project_dir, use_case
-
-from .mcp_server_user_params import MCP_USER_RUNTIME_PARAMETERS
 from .mcp_server_api_keys import (
     auth_resolution_strategy,
+)
+from .mcp_server_api_keys import (
     custom_model_runtime_parameters as api_keys_runtime_parameters,
 )
+from .mcp_server_oauth_protected_resource_metadata import (
+    MCPOAuthProtectedResourceMetadataConfigManager,
+)
+from .mcp_server_user_params import MCP_USER_RUNTIME_PARAMETERS
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
@@ -91,11 +98,11 @@ EXCLUDE_PATTERNS = [
 
 
 __all__ = [
-    "execution_environment",
     "deployment",
-    "mcp_server_mcp_endpoint",
-    "mcp_server_base_endpoint",
+    "execution_environment",
     "mcp_custom_model_runtime_parameters",
+    "mcp_server_base_endpoint",
+    "mcp_server_mcp_endpoint",
 ]
 
 mcp_server_asset_name: str = f"[{PROJECT_NAME}] [mcp_server]"
@@ -387,6 +394,11 @@ if otel_entity_id := os.getenv("OTEL_ENTITY_ID"):
 
 deployments_model_runtime_parameters.extend(MCP_USER_RUNTIME_PARAMETERS)
 deployments_model_runtime_parameters.extend(api_keys_runtime_parameters)
+mcp_oauth_protected_resource_metadata_param = MCPOAuthProtectedResourceMetadataConfigManager().get_pulumi_custom_model_runtime_parameter_value_args_of_mcp_metadata()
+if mcp_oauth_protected_resource_metadata_param:
+    deployments_model_runtime_parameters.append(
+        mcp_oauth_protected_resource_metadata_param
+    )
 custom_model_files = get_deployments_app_files()
 
 
