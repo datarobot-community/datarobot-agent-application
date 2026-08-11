@@ -249,10 +249,18 @@ if env_flag_enabled("USE_APPLICATION_MEMORY_SPACE"):
 fastapi_server_app_env_name: str = "DATAROBOT_APPLICATION_ID"
 fastapi_server_application_path = project_dir.parent / "fastapi_server"
 
+
+app_exec_env = os.environ.get(
+    "DATAROBOT_DEFAULT_APPLICATION_EXECUTION_ENVIRONMENT", ""
+).strip()
+app_base_environment_id = (
+    app_exec_env or RuntimeEnvironments.PYTHON_312_APPLICATION_BASE.value.id
+)
+
 fastapi_server_app_resource_name: str = f"Agentic Application Starter [{PROJECT_NAME}]"
 fastapi_server_app_source_args = ApplicationSourceArgs(
     resource_name=fastapi_server_app_resource_name,
-    base_environment_id=RuntimeEnvironments.PYTHON_312_APPLICATION_BASE.value.id,
+    base_environment_id=app_base_environment_id,
 ).model_dump(mode="json", exclude_none=True)
 
 fastapi_server_app_runtime_parameters: list[
