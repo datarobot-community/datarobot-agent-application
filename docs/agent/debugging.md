@@ -24,9 +24,14 @@ Then send requests from a second terminal using the CLI.
 
 ### Local agent card
 
-During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns a redacted card (for example, `"skills": []`) unless you pass gateway identity headers—the same behavior as a deployed agent without authentication.
+During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns `401 Unauthorized` by default when the request has no gateway identity headers—the same behavior as a deployed agent (`datarobot-genai` 0.27.0+).
 
-To inspect the full card locally, include either header on the request. Any value is sufficient for local testing:
+To fetch the card locally:
+
+- Full card — include either gateway identity header on the request. Any value is sufficient for local testing.
+- Redacted card — set `enable_unauthenticated_well_known_route: true` under `general.front_end.a2a` in `workflow.yaml`. Anonymous callers then receive a redacted card (for example, `"skills": []`). Deployed agents also require platform-level opt-in per cluster. See [Agent-to-Agent (A2A) → Unauthenticated agent card access](./agent2agent.md#unauthenticated-agent-card-access).
+
+To inspect the full card locally, include either header on the request:
 
 ```sh
 curl -s http://localhost:8842/a2a/.well-known/agent-card.json \
@@ -53,16 +58,6 @@ With a structured JSON prompt:
 task agent:cli -- execute --user_prompt '{"topic": "Generative AI"}'
 ```
 
-### Multi-turn chat history
-
-To debug conversation context, pass prior turns in a completion JSON file via `--file`:
-
-```sh
-task agent:cli -- execute --file /path/to/chat-history-completion.json
-```
-
-The file should include a `messages` array with earlier user/assistant turns before the latest user message. See [Multi-turn chat history](./chat-history.md#testing-locally) for a full example payload and framework-specific notes.
-
 ### Deployed agent execution
 
 Query a deployed agent:
@@ -75,11 +70,11 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 
 | Flag | Description |
 |---|---|
-| `--user_prompt` | Text or JSON prompt to send. |
-| `--file` | Path to a completion JSON file (for example, multi-turn `messages`) or a text prompt file. |
+| `--user_prompt` | Text or JSON prompt to send (single turn). |
+| `--file` | Path to a text file whose contents are used as the prompt. |
 | `--deployment_id` | Target a deployed agent instead of running locally. |
 
-For **multi-turn** requests, POST a full AG-UI payload (including prior `messages`) to the dev server's `/generate/stream` endpoint. See [Chat history](../chat-history.md#testing-locally).
+For **multi-turn** requests, POST a full AG-UI payload (including prior `messages`) to the dev server's `/generate/stream` endpoint. See [Chat history](./chat-history.md#testing-locally).
 
 ## Debugging in VS Code
 
@@ -171,9 +166,9 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 **Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
 
-### Agent card shows empty skills
+### Agent card returns 401 or empty skills
 
-During local development, `GET /.well-known/agent-card.json` may return `"skills": []`. See [Local agent card](#local-agent-card) above.
+During local development, `GET /.well-known/agent-card.json` returns `401` when unauthenticated access is disabled (the default), or `"skills": []` when `enable_unauthenticated_well_known_route: true` is set and the request has no identity headers. See [Local agent card](#local-agent-card) above.
 
 ### Breakpoints not hit
 

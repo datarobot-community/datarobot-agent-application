@@ -35,6 +35,7 @@ import {
 } from '@/components/block/chat/mappers';
 import type { MessageResponse } from '@/api/chat/types';
 import { useFetchHistory } from '@/api/chat/hooks';
+import { getApiErrorMessage } from '@/api/utils';
 import type {
   Tool,
   ToolSerialized,
@@ -168,6 +169,31 @@ export function useAgUiChat({
     setIsThinking(true);
 
     getCurrenChatState(chatId)?.agentRunUnsubscribe?.();
+
+    let runErrorRecorded = false;
+
+    function recordChatRunError(errorMessage: string) {
+      if (runErrorRecorded) {
+        return;
+      }
+      runErrorRecorded = true;
+      const chat = getCurrenChatState(chatId);
+      if (!chat) {
+        return;
+      }
+      chat.agentRunUnsubscribe?.();
+      setIsAgentRunning(false);
+      setIsThinking(false);
+      addEvent({
+        type: 'error',
+        value: {
+          id: uuid(),
+          threadId: chatId,
+          createdAt: new Date(),
+          error: errorMessage,
+        },
+      });
+    }
 
     const { unsubscribe } = agent.subscribe({
       async onTextMessageStartEvent(
@@ -487,21 +513,32 @@ export function useAgUiChat({
           const ctx = buildEventContext(chat);
           await subscriberRef.current.onRunErrorEvent(params, ctx);
         }
-        chat.agentRunUnsubscribe?.();
-        setIsAgentRunning(false);
-        setIsThinking(false);
         if (params.event.rawEvent?.name === 'AbortError') {
+          chat.agentRunUnsubscribe?.();
+          setIsAgentRunning(false);
+          setIsThinking(false);
           return;
         }
-        addEvent({
-          type: 'error',
-          value: {
-            id: uuid(),
-            threadId: chatId,
-            createdAt: new Date(),
-            error: params.event.message,
-          },
-        });
+        recordChatRunError(params.event.message);
+      },
+      async onRunFailed(params: { error: Error } & AgentSubscriberParams) {
+        const chat = getCurrenChatState(chatId);
+        if (!chat) {
+          agent.abortController.abort();
+          unsubscribe();
+          return;
+        }
+        if (subscriberRef.current?.onRunFailed) {
+          const ctx = buildEventContext(chat);
+          await subscriberRef.current.onRunFailed(params, ctx);
+        }
+        if (params.error.name === 'AbortError') {
+          chat.agentRunUnsubscribe?.();
+          setIsAgentRunning(false);
+          setIsThinking(false);
+          return;
+        }
+        recordChatRunError(getApiErrorMessage(params.error));
       },
     });
 
@@ -522,12 +559,13 @@ export function useAgUiChat({
       console.debug('runAgent result', result);
       return result;
     } catch (error) {
-      setIsAgentRunning(false);
-      setIsThinking(false);
       if (isCancel(error) || (error as Error).name === 'AbortError') {
+        setIsAgentRunning(false);
+        setIsThinking(false);
         return;
       }
       console.error(error);
+      recordChatRunError(getApiErrorMessage(error));
     }
   }
 

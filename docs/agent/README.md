@@ -17,17 +17,11 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
 | [Moderation and guardrails](./moderation.md) | Configure runtime guardrails with `datarobot_moderation` middleware in `workflow.yaml`. |
 | [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
-| [Multi-turn chat history](./chat-history.md) | How prior messages are injected into agents across frameworks, CLI testing, and configuration. |
+| [Chat history](./chat-history.md) | Multi-turn conversation context: how prior `messages` are injected across LangGraph, CrewAI, LlamaIndex, and NAT. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with `nat eval` during development. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
-
-### Multi-turn chat history
-
-When prior messages are included in a `RunAgentInput` (or chat-completions `messages` list), `datarobot-genai` injects conversation context into the agent automatically&mdash;as a `{chat_history}` text block and/or structured native messages, depending on the framework and template. The starter backend rebuilds the full stored thread into each request so agents see earlier turns without custom persistence code.
-
-See [Multi-turn chat history](./chat-history.md) for injection modes, per-framework behavior, CLI examples, and how this differs from [agent memory](./agent-memory.md).
 
 ### AG-UI (Agent-User Interaction Protocol)
 

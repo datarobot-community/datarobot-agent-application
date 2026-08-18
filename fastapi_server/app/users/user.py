@@ -81,7 +81,7 @@ class User(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
-    first_name: str | None = Field(None, min_length=2)
+    first_name: str | None = Field(None, min_length=1)
     last_name: str | None = Field(None)
     email: str = Field(..., unique=True, min_length=2, max_length=255)
     profile_image_url: str | None = None
@@ -123,7 +123,7 @@ class UserCreate(SQLModel):
     Schema for creating a new user.
     """
 
-    first_name: str | None = Field(None, min_length=2, max_length=50)
+    first_name: str | None = Field(None, min_length=1, max_length=50)
     last_name: str | None = Field(None, max_length=50)
     email: str = Field(..., unique=True, min_length=2, max_length=255)
     profile_image_url: str | None = None

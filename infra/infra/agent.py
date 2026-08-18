@@ -14,15 +14,15 @@
 import importlib
 import logging
 import os
-from pathlib import Path
 import re
 import shutil
-from typing import cast, Final, Optional, Any, Sequence
-import yaml  # type: ignore[import-untyped]
+from pathlib import Path
+from typing import Any, Final, Optional, Sequence, cast
 
 import datarobot as dr
 import pulumi
 import pulumi_datarobot
+import yaml  # type: ignore[import-untyped]
 from datarobot_pulumi_utils.common import get_datarobot_url
 from datarobot_pulumi_utils.pulumi import export, resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.custom_model_deployment import CustomModelDeployment
@@ -33,9 +33,7 @@ from datarobot_pulumi_utils.schema.custom_models import (
 )
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
-
 from . import project_dir, use_case
-
 from .llm import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
 
 logger = logging.getLogger(__name__)

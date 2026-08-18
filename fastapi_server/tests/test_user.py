@@ -33,6 +33,10 @@ class TestUserCreate:
         user = UserCreate(email="test@example.com", last_name="Smith")
         assert user.last_name == "Smith"
 
+    def test_single_character_first_name_allowed(self) -> None:
+        user = UserCreate(email="test@example.com", first_name="A")
+        assert user.first_name == "A"
+
     def test_last_name_max_length_enforced(self) -> None:
         with pytest.raises(ValidationError):
             UserCreate(email="test@example.com", last_name="A" * 51)
@@ -46,6 +50,10 @@ class TestUser:
     def test_none_last_name_allowed(self) -> None:
         user = User(email="test@example.com", last_name=None)
         assert user.last_name is None
+
+    def test_single_character_first_name_allowed(self) -> None:
+        user = User(email="test@example.com", first_name="A")
+        assert user.first_name == "A"
 
 
 class TestLanguageEnum:

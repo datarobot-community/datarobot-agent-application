@@ -188,7 +188,8 @@ type HandledEvents =
   | 'onStepFinishedEvent'
   | 'onRunFinishedEvent'
   | 'onCustomEvent'
-  | 'onRunErrorEvent';
+  | 'onRunErrorEvent'
+  | 'onRunFailed';
 
 export type AgentSubscriber = {
   [K in HandledEvents]?: (

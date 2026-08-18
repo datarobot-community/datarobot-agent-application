@@ -125,7 +125,7 @@ function_groups:
 ### Custom local tools
 
 The template ships with a `word_counter` tool that counts words in a given text. It is defined in `register.py`, registered via `nat_tool`, and declared in `workflow.yaml`. You can remove it or replace it with your own tools.
-To add a custom tool to a NAT agent, define a plain Python function and register it with `nat_tool(fn, tool_name, ...)` from `datarobot_genai.nat.tool` in `register.py` (a call at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
+To add a custom tool to a NAT agent, define a plain Python function and register it with `nat_tool(fn, tool_name, ...)` from `datarobot_genai.dragent.tool` in `register.py` (a call at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
 
 Do not use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
 
@@ -149,7 +149,7 @@ Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses thes
 Step 2&mdash;Register the tool in `register.py`:
 
 ```python
-from datarobot_genai.nat.tool import nat_tool
+from datarobot_genai.dragent.tool import nat_tool
 from agent.tools import word_counter
 
 nat_tool(word_counter, "word_counter", description="Count words in a given text.")
@@ -259,25 +259,6 @@ For details on request shape, limits, and testing, see [Chat history](../chat-hi
 - Test prompt changes by editing `workflow.yaml` and running `task agent:cli -- execute --user_prompt "..."`. No code changes needed.
 
 For more on NAT prompt configuration, see the [NVIDIA NeMo Agent Toolkit documentation](https://docs.nvidia.com/nemo/agent-toolkit/index.html).
-
-## Chat history
-
-NAT agents receive prior turns through DRAgent as `RunAgentInput.messages`. To surface them as text inside YAML-defined prompts, add `{chat_history}` as a final section of a `system_prompt` (function or workflow level):
-
-```yaml
-functions:
-  planner:
-    _type: chat_completion
-    llm_name: datarobot_llm
-    system_prompt: |
-      You are a content planner for the topic.
-
-      {chat_history}
-```
-
-When no `{chat_history}` placeholder is present, underlying framework agents (for example, `langgraph_agent` referenced from NAT `functions`) follow that framework's structured-history defaults.
-
-See [Multi-turn chat history](../chat-history.md) for injection modes, CLI testing, and how this differs from [agent memory](../agent-memory.md).
 
 ## When to use
 

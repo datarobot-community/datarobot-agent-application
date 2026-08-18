@@ -1,5 +1,35 @@
 import { isAxiosError } from 'axios';
 
+type ResponsePayload = { detail?: unknown; message?: string };
+
+function getMessageFromResponsePayload(payload: unknown): string | undefined {
+  if (typeof payload === 'string' && payload.trim().length > 0) {
+    return payload;
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  const data = payload as ResponsePayload;
+  if (typeof data.message === 'string' && data.message.trim().length > 0) {
+    return data.message;
+  }
+
+  const detail = data.detail;
+  if (typeof detail === 'string' && detail.trim().length > 0) {
+    return detail;
+  }
+  if (detail && typeof detail === 'object') {
+    const detailMessage = (detail as { message?: string }).message;
+    if (typeof detailMessage === 'string' && detailMessage.trim().length > 0) {
+      return detailMessage;
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Extract a user-friendly error message from Axios / API errors.
  */
@@ -8,32 +38,24 @@ export function getApiErrorMessage(error: unknown, fallbackMessage = 'Request fa
     return fallbackMessage;
   }
 
+  if (error instanceof Error && 'payload' in error) {
+    const payloadMessage = getMessageFromResponsePayload(
+      (error as Error & { payload?: unknown }).payload
+    );
+    if (payloadMessage) {
+      return payloadMessage;
+    }
+  }
+
   if (isAxiosError(error)) {
     const responseData = error.response?.data as
       | { detail?: unknown; message?: string }
       | string
       | undefined;
 
-    if (typeof responseData === 'string' && responseData.trim().length > 0) {
-      return responseData;
-    }
-
-    if (responseData && typeof responseData === 'object') {
-      const message = typeof responseData.message === 'string' ? responseData.message : undefined;
-      if (message) {
-        return message;
-      }
-
-      const detail = (responseData as { detail?: unknown }).detail;
-      if (typeof detail === 'string' && detail.trim().length > 0) {
-        return detail;
-      }
-      if (detail && typeof detail === 'object') {
-        const detailMessage = (detail as { message?: string }).message;
-        if (detailMessage) {
-          return detailMessage;
-        }
-      }
+    const responseMessage = getMessageFromResponsePayload(responseData);
+    if (responseMessage) {
+      return responseMessage;
     }
   }
 

@@ -39,9 +39,9 @@
   </a>
 </p>
 
-This repository provides a ready-to-use application template for building and deploying agentic workflows with multi-agent frameworks, a FastAPI backend server, a React frontend, and an MCP server.
-The template streamlines the process of setting up new agentic applications with minimal configuration requirements.
-It supports local development and testing, as well as one-command deployments to production environments within DataRobot.
+This template gives you a ready-to-use application for building and deploying agentic workflows with multi-agent frameworks, a FastAPI backend server, a React frontend, and an MCP server.
+The template streamlines setup for new agentic applications with minimal configuration.
+It supports local development and testing on macOS, Linux, and Windows, as well as one-command deployments to production environments within DataRobot.
 
 > [!CAUTION]
 > This repository updates frequently.
@@ -51,6 +51,7 @@ It supports local development and testing, as well as one-command deployments to
 
 - [Quick start](#quick-start)
   - [Install prerequisite tools](#install-prerequisite-tools)
+    - [Windows prerequisites](#windows-prerequisites)
   - [Prepare your local development environment](#prepare-your-local-development-environment)
   - [Run your agent](#run-your-agent)
   - [Local tracing with `dr xp`](#local-tracing-with-dr-xp)
@@ -66,46 +67,73 @@ It supports local development and testing, as well as one-command deployments to
 
 For information on the latest changes to the template, see the [CHANGELOG](CHANGELOG.md).
 
+> [!IMPORTANT]
+> This template requires a minimum of 4GB of RAM to run.
+
 # Quick start
 
 Follow the instructions in the sections below to install the prerequisite tools and develop the Agentic Starter application template locally.
 
-> [!CAUTION]
-> This repository is only compatible with macOS and Linux operating systems.
-> If you are using Windows, consider using a [DataRobot codespace](https://docs.datarobot.com/en/docs/workbench/wb-notebook/codespaces/index.html), [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install), or a virtual machine running a supported OS.
+> [!NOTE]
+> On Windows, complete the [Windows prerequisites](#windows-prerequisites) before you run `dr start`. The rest of the quickstart matches the macOS and Linux flow.
 
 ## Install prerequisite tools
 
-Before you begin, you'll need the following tools installed.
+Before you begin, install the following tools.
 If you already have these tools installed, ensure that they are at the required version (or newer) indicated in the table below.
 For example commands to install the tools, see the [Detailed installation commands](#detailed-installation-commands) section.
 
 | Tool         | Version    | Description                     | Installation guide            |
 |--------------|------------|---------------------------------|-------------------------------|
-| dr (DataRobot CLI) | >= 0.2.55  | The DataRobot CLI for templates, auth, and task execution. | [DataRobot CLI installation](https://github.com/datarobot-oss/cli#installation) |
+| dr (DataRobot CLI) | >= 0.2.79  | The DataRobot CLI for templates, auth, and task execution. | [DataRobot CLI installation](https://github.com/datarobot-oss/cli#installation) |
 | git      | >= 2.30.0  | A version control system.       | [git installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)      |
-| uv       | >= 0.10.0 | A Python package manager.        | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)       |
-| Pulumi   | >= 3.163.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/)                   |
+| uv       | >= 0.10.3  | A Python package manager.        | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)       |
+| Pulumi   | >= 3.206.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/)                   |
 | Taskfile | >= 3.43.3  | A task runner.                  | [Taskfile installation guide](https://taskfile.dev/docs/installation)                        |
 | NodeJS   | >= 24      | JavaScript runtime for frontend development. | [NodeJS installation guide](https://nodejs.org/en/download/)                        |
 
 > [!TIP]
 > Make sure to install the tools system-wide rather than in a virtual environment so they are available in your terminal sessions.
 
-DataRobot CLI (dr): Install the latest version with `curl https://cli.datarobot.com/install | sh` (macOS/Linux) or via Homebrew: `brew install datarobot-oss/taps/dr-cli`. To update: `dr self update`. Verify with `dr --version` or `dr self version`.
+**DataRobot CLI (dr)**&mdash;install the latest version with `curl https://cli.datarobot.com/install | sh` (macOS/Linux), `irm https://cli.datarobot.com/winstall | iex` (Windows PowerShell), or via Homebrew: `brew install datarobot-oss/taps/dr-cli`. To update, run `dr self update`. Verify with `dr --version` or `dr self version`.
+
+### Windows prerequisites
+
+Complete these steps on Windows **before** you clone the repository. Skipping them checks symlinks out as plain text files and leaves the working tree broken.
+
+1. Enable symlink support in Git:
+
+   ```powershell
+   git config --global core.symlinks true
+   ```
+
+2. Grant permission to create symlinks using one of the following options:
+
+   - **Developer Mode (recommended)**&mdash;on Windows 11, open **Settings → System → Advanced → Developer Mode** and turn Developer Mode on. See [Enable your device for development](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development) for details.
+   - **Administrator terminal**&mdash;launch PowerShell or Windows Terminal with **Run as administrator** and run every repo operation from that elevated session. At minimum, use an elevated session for `git clone`, `dr start`, `dr run deploy`, and any `git checkout` or `git pull` that touches symlinked paths. This template uses Git symlinks at `.claude/skills`, `fastapi_server/core`, `infra/infra/llm.py`, and `infra/infra/oauth.py`.
+
+3. After Git is installed, ensure that the following directory is present in your system PATH: `[path_of_git_installation]\usr\bin`. For example, if Git is installed in `C:\Program Files\Git`, add `C:\Program Files\Git\usr\bin` to your PATH using the following commands:
+
+   ```powershell
+   $dir = 'C:\Program Files\Git\usr\bin'  # Change if Git is installed elsewhere.
+   $p = [Environment]::GetEnvironmentVariable('PATH', 'User')
+   [Environment]::SetEnvironmentVariable('PATH', "$p;$dir", 'User')
+   ```
+
+   This location provides Linux helper commands that are needed for the Agentic Starter to work correctly. Once the command is executed, close and reopen the terminal (or IDE) so new processes pick up the change.
 
 ### Detailed installation commands
 
-The following sections provide example installation commands for macOS and Linux (Debian/Ubuntu/DataRobot codespace).
+The following sections provide example installation commands for macOS, Linux (Debian/Ubuntu/DataRobot codespace), and Windows (PowerShell).
 Click the dropdown below that corresponds to your operating system:
 
 - <details><summary><b>macOS</b></summary>
   <br>
 
-  macOS users can install the prerequisite tools using Homebrew. First, install Homebrew if you don't already have it.
+  macOS users can install the prerequisite tools using Homebrew. First, install Homebrew if you do not already have it.
 
   ```sh
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" # If homebrew is not already installed
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" # Install Homebrew if it is not already installed.
   ```
 
   Then, install the prerequisite tools with it:
@@ -134,11 +162,35 @@ Click the dropdown below that corresponds to your operating system:
 
 </details>
 
+- <details><summary><b>Windows (PowerShell)</b></summary>
+  <br>
+
+  Complete [Windows prerequisites](#windows-prerequisites) before you run `dr start`.
+
+  Windows users can install the prerequisite tools with PowerShell:
+
+  ```powershell
+  irm https://cli.datarobot.com/winstall | iex
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  winget install Git.Git
+  winget install Pulumi.Pulumi
+  winget install Task.Task
+  winget install OpenJS.NodeJS
+  ```
+
+  You also need C++ build tools to compile some Python packages. Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the **Desktop development with C++** workload, or run:
+
+  ```powershell
+  winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621"
+  ```
+
+</details>
+
 > [!NOTE]
 > After installing `uv`, run `uv tool update-shell` once so your shell picks up the updated `PATH` before using `uv tool run` or invoking tools installed via `uv tool install`.
 
 > [!IMPORTANT]
-> You will also need a compatible C++ compiler and build tools installed on your system to compile some Python packages.
+> You also need a compatible C++ compiler and build tools installed on your system to compile some Python packages.
 
 <details><summary><i>Click here for details on using a development container</i></summary>
 
@@ -146,20 +198,20 @@ Click the dropdown below that corresponds to your operating system:
 
 [Dev containers](https://containers.dev/) allow you to use a container environment for local development. They are integrated with [modern IDEs](https://containers.dev/supporting) such as VSCode and PyCharm, and the [Dev Container CLI](https://containers.dev/supporting#devcontainer-cli) allows you to integrate them with terminal-centric development workflows.
 
-> [!NOTE]
-> This can also be used as a solution for Windows development. [Docker Desktop](https://docs.docker.com/desktop/) is the recommended backend for running devcontainers, but any Docker-compatible backend is supported.
+**NOTE:**
+Dev containers are an alternative to native Windows development. [Docker Desktop](https://docs.docker.com/desktop/) is the recommended backend for running dev containers, but any Docker-compatible backend is supported. You can also use a [DataRobot codespace](https://docs.datarobot.com/en/docs/workbench/wb-notebook/codespaces/index.html), [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install), or a virtual machine if you prefer a Linux environment.
 
 This template offers a `devcontainer` with all prerequisites installed. To start working in it:
 
-1. Open the template in PyCharm (version >= 2023.2, Pro) or VSCode, and the IDE will prompt you to reopen it in a container.
+1. Open the template in PyCharm (version >= 2023.2, Pro) or VSCode, and the IDE prompts you to reopen it in a container.
 
-*PyCharm*:
+    *PyCharm*:
 
-<img src="docs/img/pycharm-devcontainer.png" alt="Open in Dev Container PyCharm" width="350px" />
+    <img src="docs/img/pycharm-devcontainer.png" alt="Open in Dev Container PyCharm" width="350px" />
 
-*VSCode*:
+    *VSCode*:
 
-<img src="docs/img/vscode-devcontainer.png" alt="Open in Dev Container VSCode" width="350px" />
+    <img src="docs/img/vscode-devcontainer.png" alt="Open in Dev Container VSCode" width="350px" />
 
 2. Click Reopen in Container to proceed.
 3. If you work directly in the terminal, run:
@@ -184,60 +236,63 @@ Run the following command to start the local development environment:
 dr start
 ```
 
-If you run `dr start` from a directory that is not yet a template clone, you will first go through template selection and clone; once in the template directory, the wizard guides you through configuring your application and creates a `.env` file.
-You will see progress lines in the terminal (e.g., ✓ Starting application quickstart process…, ✓ Checking DataRobot CLI version…, and so on) as each step runs.
-For more details for the individual wizard steps, click the dropdown below.
+If you run `dr start` from a directory that is not yet a template clone, you first go through template selection and clone; once in the template directory, the wizard guides you through configuring your application and creates a `.env` file.
+You see progress lines in the terminal (e.g., ✓ Starting application quickstart process…, ✓ Checking DataRobot CLI version…, and so on) as each step runs.
+For more details on the individual wizard steps, click the dropdown below.
 
 <details><summary><b>Click here for a detailed walkthrough of the wizard steps</b></summary>
 <br>
 
 1. Initially, the wizard opens a web browser window to automatically configure your API endpoint and key.
-   - If the browser doesn't open automatically, look for a URL in the terminal output and open it manually.
+   - If the browser does not open automatically, look for a URL in the terminal output and open it manually.
    - Click Proceed in the browser to continue.
    - If you encounter authentication issues, ensure you're logged into DataRobot in your browser.
 2. Select the Agentic Starter and press `Enter`.
 3. Enter the directory name for your application and press `Enter`. The default is `datarobot-agent-application`.
-4. Provide a secret key to sign cookies for your session and press `Enter`. If you do not provide a value, a randomly-generated one will be used.
+4. Provide a secret key to sign cookies for your session and press `Enter`. If you do not provide a value, the wizard uses a randomly generated one.
 5. Choose your OAuth provider and press `Enter`.
    - Choose DataRobot OAuth Provider (default) to use DataRobot’s OAuth, or Authlib OAuth Provider to host OAuth in the app.
    - For additional information on authorization server configuration, see the [OAuth applications documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-authentication.html#oauth-2-0-authentication).
-6. Enter a passphrase (or leave blank if you don't want to use a passphrase) for your Pulumi stack and press `Enter`.
+6. Enter a passphrase (or leave blank if you do not want to use a passphrase) for your Pulumi stack and press `Enter`.
 7. Specify the ID of a DataRobot Use Case (e.g., `69331fad5e07469e7c4f5c6f`), if one is available, and press `Enter`.
    - You can find your Use Case ID by navigating to the Use Case in the DataRobot UI and copying the ID from the URL.
-   - If left blank, a new Use Case will be created automatically.
+   - If left blank, the wizard creates a new Use Case automatically.
 8. Specify your LLM integration and press `Enter`.
    - For additional information on LLM configuration, see the [LLM configuration documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-llm-providers-metadata.html).
    - If you choose DataRobot Deployed LLM, you enter the deployment ID for your custom model LLM (`LLM_DEPLOYMENT_ID`). The template sets `USE_DATAROBOT_LLM_GATEWAY=0` automatically so traffic goes to that deployment rather than the LLM Gateway.
 9. Review the `.env` configuration summary displayed and press `Enter` to confirm.
 
-   > NOTE: This step will take several minutes to complete.
+   > [!NOTE]
+   > This step takes several minutes to complete.
 
-10. Once the configuration finishes, you can specify if you wish to use the YAML-based NeMo Agent Toolkit template:
+10. After configuration finishes, choose whether to use the YAML-based NeMo Agent Toolkit template:
    - Press `y` to use the YAML-based NeMo Agent Toolkit template.
    - Press `n` to choose from a list of available agent templates (default).
-11. Choose an agent memory provider when prompted (None, Mem0, or DataRobot Memory Service). The selection is stored in `.datarobot/answers/agent-agent.yml` as `use_agent_memory`. See [Agent memory](docs/agent/agent-memory.md) for provider details and follow-up steps (for example, `MEM0_API_KEY` or `task deploy-dev` for the DataRobot Memory Service).
-12. Finally, choose a Pulumi stack to use for your application and press `Enter`. If you wish to create a new stack, press `Enter` and you will be prompted to enter a name for it. The name cannot match any existing stack name.
+11. Choose an agent memory provider when prompted (None, Mem0, or DataRobot Memory Service). The selection is stored in `.datarobot/answers/agent-agent.yml` as `use_agent_memory`. See [Agent memory](docs/agent/agent-memory.md) for provider details and follow-up steps (for example, `MEM0_API_KEY` or running `task deploy-dev` to provision the DataRobot Memory Service).
+12. Finally, choose a Pulumi stack to use for your application and press `Enter`. To create a new stack, press `Enter` and enter a name when prompted. The name cannot match any existing stack name.
 
 </details>
 
 > [!NOTE]
-> The first time you run `dr start` in this template, it runs `task start`, which prepares your development environment (agent choice, `.env` configuration, and dependencies). Completion is tracked so later runs can skip redundant steps. To change environment variables later, use `dr dotenv setup` or `dr dotenv edit`. To update the agent component (e.g., after pulling template changes), run `dr component update`.
+> The first time you run `dr start` in this template, it runs `task start`, which composes the root `Taskfile.yml`, configures `.env`, installs dependencies, and deploys backing infrastructure (`deploy-dev`). Completion is tracked so later runs can skip redundant steps. To change environment variables later, use `dr dotenv setup` or `dr dotenv edit`. To update the agent component (for example, after pulling template changes), run `dr component update`.
 
 After `dr start` completes successfully, you have:
 
 - A `.env` file in your project root.
-- Your application directory created (named `datarobot-agent-application` by default).
+- An application directory (named `datarobot-agent-application` by default).
 
 If you encounter any errors during setup, see the [Troubleshooting](#troubleshooting) section for help.
 Now that your application is configured, proceed to the next section.
 
 ## Run your agent
 
-Navigate to the application directory created during `dr start`:
+If `dr start` created a new application directory, navigate to it before starting services:
 
 ```sh
-cd datarobot-agent-application # or the custom directory name you specified during the wizard, if different
+cd datarobot-agent-application # Use the custom directory name you specified during the wizard, if different.
 ```
+
+If you cloned this repository directly and ran `dr start` from the project root, you are already in the application directory and can skip the `cd` step.
 
 Run the following command to start all components of the application:
 
@@ -245,12 +300,13 @@ Run the following command to start all components of the application:
 dr run dev
 ```
 
-This starts four processes, running in parallel:
+This starts five processes in parallel:
 
-- Application frontend
-- Application backend
+- Application frontend (Vite)
+- Application backend (FastAPI)
 - Agent
 - MCP server
+- Local tracing dashboard (`dr xp` on port 8090)
 
 Once all services are running:
 
@@ -260,7 +316,7 @@ Once all services are running:
 From here, start customizing the agent by adding your own logic and functionality. See the section on [developing your agent](#develop-your-agent) for more details.
 
 > [!NOTE]
-> You can also start individual services in separate terminal windows; for example, `dr run agent:dev` (or `task agent:dev`) will start just the agent.
+> You can also start individual services in separate terminal windows; for example, `dr run agent:dev` (or `task agent:dev`) starts just the agent.
 
 ## Local tracing with `dr xp`
 
@@ -283,8 +339,6 @@ If you want to start the Experimentation plugin separately, run:
 dr xp [--type TYPE] [--entity-id ID]
 ```
 
-
-
 # Develop your agent
 
 Now that your agent has been built and tested, you are ready to customize it by adding your own logic and functionality.
@@ -300,6 +354,7 @@ The `docs/` directory contains detailed documentation for each component of this
 | Document | Description |
 |---|---|
 | [Agent](docs/agent/README.md) | Agent architecture, file structure, framework-specific guides, tool integration, front servers, debugging, and [multi-turn chat history](docs/agent/chat-history.md). |
+| [FastAPI backend](docs/fastapi_server/README.md) | Chat API, persistence (SQLite or Memory Space), OAuth, and AG-UI integration. |
 | [LLM component](docs/llm.md) | Configuring LLM providers, DataRobot gateway, deployments, and external APIs. |
 | [MCP server](docs/mcp-server.md) | MCP server architecture, optional co-deployment, custom tools, and deployment. |
 | [OAuth applications](docs/oauth-applications.md) | OAuth provider setup for external service authentication. |
@@ -314,7 +369,11 @@ The agent documentation includes per-framework guides with tool integration and 
 | NAT (NeMo Agent Toolkit) | [docs/agent/frameworks/nat.md](docs/agent/frameworks/nat.md) |
 | Base (generic) | [docs/agent/frameworks/base.md](docs/agent/frameworks/base.md) |
 
-See also: [AG-UI integration](docs/agent/ag-ui.md), [Agent-to-Agent (A2A)](docs/agent/agent2agent.md), [Debugging](docs/agent/debugging.md).
+See also:
+
+- [AG-UI integration](docs/agent/ag-ui.md)&mdash;event-based agent UI protocol.
+- [Agent-to-Agent (A2A)](docs/agent/agent2agent.md)&mdash;connect agents to other agents.
+- [Debugging](docs/agent/debugging.md)&mdash;local debugging tips.
 
 ## DataRobot documentation
 
@@ -340,10 +399,12 @@ Run the following command to deploy:
 dr run deploy
 ```
 
-> [!NOTE]
-> The deployment process will take several minutes to complete.
+You can also run `task deploy` from the project root after `dr start` composes `Taskfile.yml`.
 
-Once deployment is complete, the script displays the deployment details, as shown in the example below. Note that the deployment details will vary based on your configuration.
+> [!NOTE]
+> The deployment process takes several minutes to complete.
+
+Once deployment is complete, the script displays the deployment details, as shown in the example below. The deployment details vary based on your configuration.
 
 ```sh
 Outputs:
@@ -375,6 +436,10 @@ For detailed information about the MCP server, see [MCP server documentation](do
 
 For detailed information about configuring OAuth applications, see [OAuth applications documentation](docs/oauth-applications.md).
 
+# Agent-to-agent
+
+The template supports [Agent-to-Agent (A2A)](docs/agent/agent2agent.md) communication so agents can expose A2A endpoints and call remote agents. For authentication setup, see [A2A authentication](docs/agent/agent2agent-auth.md).
+
 # Troubleshooting
 
 This section covers common issues you may encounter and how to resolve them.
@@ -387,18 +452,19 @@ The following ports are used by the application components during local developm
 |-------|------------------------------|------------------------------------------------|--------------|
 | 8080  | Web application              | Main web interface (proxied frontend)          | No           |
 | 5173  | Vite dev server              | Frontend development server                    | No           |
+| 8090  | Tracing dashboard            | Local `dr xp` experimentation UI               | No           |
 | 8842  | Agent endpoint               | Local agent service endpoint                   | Yes (in wizard) |
 | 9000  | MCP server                   | Model Context Protocol server                  | Yes (via `MCP_SERVER_PORT`) |
 
 > [!NOTE]
-> Ports 8080 and 5173 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard, and the MCP server port (9000) can be changed by setting the `MCP_SERVER_PORT` environment variable in your `.env` file.
+> Ports 8080, 5173, and 8090 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard, and the MCP server port (9000) can be changed by setting the `MCP_SERVER_PORT` environment variable in your `.env` file.
 
 ### DataRobot codespace port configuration
 
 If you are developing within a DataRobot codespace, the development ports need to be exposed.
 This is configured in the Exposed Ports section of your Session Environment tab (pictured below).
 The ports in the table above must be exposed for local testing.
-If you cloned this application template using the `dr start` command and selected it from the gallery, this configuration is performed automatically; otherwise (e.g., if cloned manually) you must configure these ports manually.
+If you cloned this application template using the `dr start` command and selected it from the gallery, the wizard configures these ports automatically; otherwise (for example, if you cloned manually) you must configure these ports manually.
 
 There is a link next to the port to a URL where the service can be accessed when running locally in the codespace.
 
@@ -417,7 +483,7 @@ There is a link next to the port to a URL where the service can be accessed when
 
    ```sh
    which dr
-   # If not found, you may need to add the install directory to PATH (e.g. /usr/local/bin)
+   # If not found, add the install directory to PATH (for example, /usr/local/bin).
    export PATH="/usr/local/bin:$PATH"
    ```
 
@@ -429,7 +495,7 @@ There is a link next to the port to a URL where the service can be accessed when
 
 ```sh
 dr self update
-dr self version   # verify
+dr self version   # Verify the update.
 ```
 
 ## Port conflicts
@@ -443,14 +509,17 @@ dr self version   # verify
 1. Identify the process using the port:
 
    ```sh
-   # For port 8080 (web application)
+   # Check port 8080 (web application).
    lsof -i :8080
 
-   # For port 9000 (MCP server)
+   # Check port 9000 (MCP server).
    lsof -i :9000
 
-   # For port 5173 (Vite dev server)
+   # Check port 5173 (Vite dev server).
    lsof -i :5173
+
+   # Check port 8090 (tracing dashboard).
+   lsof -i :8090
    ```
 
 2. Kill the process (replace `PORT` with the actual port number):
@@ -460,8 +529,8 @@ dr self version   # verify
    ```
 
 3. Or change the port:
-   - For MCP server: Set `MCP_SERVER_PORT` in your `.env` file
-   - For agent endpoint: Configure during `dr start` wizard (default is 8842)
+   - **MCP server**&mdash;set `MCP_SERVER_PORT` in your `.env` file.
+   - **Agent endpoint**&mdash;configure during the `dr start` wizard (default is 8842).
 
 ## Service startup issues
 
@@ -487,20 +556,36 @@ dr self version   # verify
    ```
 
 3. Verify environment variables:
-   - Ensure `.env` file exists in the project root
-   - Check that required variables are set (see [Prepare your local development environment](#prepare-your-local-development-environment) section)
+   - Ensure the `.env` file exists in the project root.
+   - Check that required variables are set (see [Prepare your local development environment](#prepare-your-local-development-environment)).
 
 4. Check logs:
-   - Review terminal output for specific error messages
-   - Check for missing API tokens or invalid endpoints
+   - Review terminal output for specific error messages.
+   - Check for missing API tokens or invalid endpoints.
 
 ## Quickstart and wizard issues
+
+### Issue: Symlinks appear as plain text files on Windows
+
+**Symptoms**: Files such as `infra/infra/llm.py` or `fastapi_server/core` contain a path string instead of linking to another file, or commands fail with missing-module errors after clone.
+
+**Solutions**:
+
+1. Complete [Windows prerequisites](#windows-prerequisites) before you clone.
+2. If you already cloned without symlink support, delete the local repository and clone again after you configure Git and Developer Mode (or use an administrator terminal).
+3. Verify Git symlink settings:
+
+   ```powershell
+   git config --global --get core.symlinks
+   ```
+
+   The command should print `true`.
 
 ### Issue: "No start command or quickstart script found"
 
 **Symptoms**: You run `dr start` inside a DataRobot template directory and see a message that no start command or quickstart script was found.
 
-**Explanation**: The CLI looks for either a `task start` task in the Taskfile or an executable script in `.datarobot/cli/bin/` whose name starts with `quickstart`. This template provides `task start` in the root `Taskfile.yml`. If you see this message, the Taskfile may be missing or not generated yet (run `dr task compose` if applicable).
+**Explanation**: The CLI looks for either a `task start` task in the Taskfile or an executable script in `.datarobot/cli/bin/` whose name starts with `quickstart`. This template defines `task start` in `.Taskfile.template`, which is composed into the root `Taskfile.yml` (gitignored) when you run `dr start` or `dr task compose`. If you see this message, run `dr task compose` or `dr start` to generate the Taskfile.
 
 ### Issue: `dr start` wizard fails or is interrupted
 
@@ -516,20 +601,20 @@ dr self version   # verify
    - If `.env` file exists, you may need to remove it and start fresh:
 
      ```sh
-     # Backup first if needed
+     # Back up the existing file first, if needed.
      cp .env .env.backup
      rm .env
      dr start
      ```
 
 3. Verify DataRobot credentials:
-   - Ensure you have a valid DataRobot API token
-   - Check that your DataRobot endpoint URL is correct
-   - Verify your account has necessary permissions
+   - Ensure you have a valid DataRobot API token.
+   - Check that your DataRobot endpoint URL is correct.
+   - Verify your account has the necessary permissions.
 
 4. Check network connectivity:
-   - Ensure you can access your DataRobot instance
-   - Verify firewall settings allow connections
+   - Ensure you can access your DataRobot instance.
+   - Verify firewall settings allow connections.
 
 ## MCP server connection issues
 
@@ -542,21 +627,21 @@ dr self version   # verify
 1. Verify MCP server is running:
 
    ```sh
-   # Check if MCP server process is running
+   # Check whether the MCP server process is running.
    curl http://localhost:9000/
    ```
 
 2. Check MCP server logs:
-   - Review the terminal where `dr run mcp_server:dev` is running
-   - Look for connection or authentication errors
+   - Review the terminal where `dr run mcp_server:dev` is running.
+   - Look for connection or authentication errors.
 
 3. Verify port configuration:
-   - Check that `MCP_SERVER_PORT` in `.env` matches the port the server is using
-   - See [Ports reference](#ports-reference) for default ports
+   - Check that `MCP_SERVER_PORT` in `.env` matches the port the server is using.
+   - See [Ports reference](#ports-reference) for default ports.
 
 4. Check environment variables:
-   - Ensure `DATAROBOT_API_TOKEN` is set correctly
-   - Verify `DATAROBOT_ENDPOINT` is correct
+   - Ensure `DATAROBOT_API_TOKEN` is set correctly.
+   - Verify `DATAROBOT_ENDPOINT` is correct.
 
 ## OAuth configuration issues
 
@@ -565,21 +650,21 @@ dr self version   # verify
 **Solutions**:
 
 1. Verify redirect URLs:
-   - Ensure all callback URLs are added to your OAuth application
-   - Check that URLs match exactly (including trailing slashes)
-   - See [OAuth applications documentation](docs/oauth-applications.md) for required URLs
+   - Ensure all callback URLs are added to your OAuth application.
+   - Check that URLs match exactly (including trailing slashes).
+   - See [OAuth applications documentation](docs/oauth-applications.md) for required URLs.
 
 2. Check OAuth credentials:
-   - Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (or Box equivalents) are set in `.env`
-   - Ensure credentials are correct and not expired
+   - Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (or Box equivalents) are set in `.env`.
+   - Ensure credentials are correct and not expired.
 
 3. Verify OAuth scopes:
-   - Check that all required scopes are enabled in your OAuth application
-   - See provider-specific sections for required scopes
+   - Check that all required scopes are enabled in your OAuth application.
+   - See provider-specific sections for required scopes.
 
 4. Check OAuth providers in DataRobot:
-   - Navigate to `<your_datarobot_url>/account/oauth-providers`
-   - Verify providers are created and configured correctly
+   - Navigate to `YOUR_DATAROBOT_URL/account/oauth-providers`.
+   - Verify providers are created and configured correctly.
 
 ## Deployment issues
 
@@ -596,8 +681,8 @@ dr self version   # verify
    - If not logged in, use `pulumi login --local` or create an account at [app.pulumi.com](https://app.pulumi.com/signup)
 
 2. Check prerequisites:
-   - Ensure all services tested locally before deploying
-   - Verify `.env` file has all required variables
+   - Test all services locally before deploying.
+   - Verify the `.env` file has all required variables.
 
 3. Review Pulumi stack:
 
@@ -605,12 +690,12 @@ dr self version   # verify
    pulumi stack ls
    ```
 
-   - Ensure you're using the correct stack
-   - Check for stack configuration issues
+   - Ensure you use the correct stack.
+   - Check for stack configuration issues.
 
 4. Check deployment logs:
-   - Review Pulumi output for specific error messages
-   - Verify DataRobot API token has deployment permissions
+   - Review Pulumi output for specific error messages.
+   - Verify the DataRobot API token has deployment permissions.
 
 ## Frontend build issues
 
@@ -632,7 +717,7 @@ dr self version   # verify
    node --version
    ```
 
-   - Ensure Node.js >= 24 is installed (see [Prerequisite tools](#prerequisite-tools))
+   - Ensure Node.js >= 24 is installed (see [Install prerequisite tools](#install-prerequisite-tools)).
 
 3. Verify dependencies:
 
@@ -644,19 +729,19 @@ dr self version   # verify
 ## General debugging tips
 
 1. Check service status:
-   - Verify all required services are running in separate terminals
-   - Check that services are listening on expected ports (see [Ports reference](#ports-reference))
+   - Verify all required services are running in separate terminals.
+   - Check that services are listening on expected ports (see [Ports reference](#ports-reference)).
 
 2. Review logs:
-   - Check terminal output for each running service
-   - Look for error messages or stack traces
+   - Check terminal output for each running service.
+   - Look for error messages or stack traces.
 
 3. Verify configuration:
-   - Review `.env` file for missing or incorrect values
-   - Check that file paths and URLs are correct
+   - Review the `.env` file for missing or incorrect values.
+   - Check that file paths and URLs are correct.
 
 4. Test components individually:
-   - Try running services one at a time to isolate issues
+   - Run services one at a time to isolate issues.
 
 5. Update dependencies:
 
@@ -669,7 +754,7 @@ dr self version   # verify
 
 If you encounter issues or have questions, try the following:
 
-- Check the [DataRobot documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/index.html) for detailed guides.
-- For DataRobot CLI (`dr`) commands and options: run `dr --help` or see the [DataRobot CLI documentation](https://github.com/datarobot-oss/cli). The [`dr start` command](https://github.com/datarobot-oss/cli/blob/main/docs/commands/start.md) describes the full quickstart flow, options (`--yes`), and behavior when not in a repository.
-- [Contact DataRobot](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html) for support.
-- Open an issue on the [GitHub repository](https://github.com/datarobot-community/datarobot-agent-application).
+- [DataRobot documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/index.html)&mdash;detailed guides for agentic development.
+- [DataRobot CLI documentation](https://github.com/datarobot-oss/cli)&mdash;run `dr --help` for commands and options; see the [`dr start` command](https://github.com/datarobot-oss/cli/blob/main/docs/commands/start.md) for the full quickstart flow, options (`--yes`), and behavior outside a repository.
+- [Contact DataRobot](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html)&mdash;support and escalation paths.
+- [GitHub repository issues](https://github.com/datarobot-community/datarobot-agent-application)&mdash;report bugs or request features.

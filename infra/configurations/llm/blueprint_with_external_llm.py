@@ -18,8 +18,9 @@ benefits of the DataRobot platform such as governance, guard models, controlled 
 and monitoring.
 """
 
-import datarobot as dr
 import os
+
+import datarobot as dr
 import pulumi
 import pulumi_datarobot as datarobot
 from datarobot_pulumi_utils.pulumi import export

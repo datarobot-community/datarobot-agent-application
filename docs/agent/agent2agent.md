@@ -19,6 +19,28 @@ When the `ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT` feature flag is enabled and you d
 - List deployments with agent cards&mdash;`GET deployments/?isA2AAgent=true`.
 - Retrieve an agent card&mdash;`GET deployments/DEPLOYMENT_ID/agentCard`.
 
+## Unauthenticated agent card access
+
+Anonymous `GET /.well-known/agent-card.json` requests are opt-in. By default, unauthenticated requests receive `401 Unauthorized`.
+
+| Caller | Result |
+|--------|--------|
+| Authenticated (gateway identity headers present) | Full agent card |
+| Unauthenticated, `enable_unauthenticated_well_known_route: false` (default) | `401 Unauthorized` |
+| Unauthenticated, `enable_unauthenticated_well_known_route: true` | Redacted agent card (skills and identity extensions stripped) |
+
+Platform administrators must also enable unauthenticated routing per cluster before the well-known route is reachable for anonymous callers on deployed agents.
+
+```yaml
+general:
+  front_end:
+    a2a:
+      enable_unauthenticated_well_known_route: true
+      server:
+        name: "My Agent"
+        description: "An example agent."
+```
+
 ## Agent card resolution
 
 Before the first RPC call, the client fetches the remote agent's agent card — a JSON document describing the agent's capabilities and authentication requirements. There are two mutually exclusive ways to obtain it.
@@ -37,7 +59,7 @@ function_groups:
 
 This approach is the simplest, but it assumes the card is accessible before authentication is fully resolved. It is not suitable when the card endpoint requires a different auth flow than the RPC calls — for example, with Okta XAA, where the card itself describes how to authenticate (a chicken-and-egg problem). In that case, use the central registry instead.
 
-When testing locally and the URL points at your dev server (for example, `http://localhost:8842/a2a/`), the card endpoint returns a redacted document unless the request includes gateway identity headers. See [Debugging agents → Local agent card](./debugging.md#local-agent-card).
+When testing locally and the URL points at your dev server (for example, `http://localhost:8842/a2a/`), unauthenticated requests to the card endpoint return `401` by default. Send gateway identity headers for the full card, or enable `enable_unauthenticated_well_known_route` for a redacted card. See [Debugging agents → Local agent card](./debugging.md#local-agent-card) and [Unauthenticated agent card access](#unauthenticated-agent-card-access).
 
 ### Central registry (`registry`)
 

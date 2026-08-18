@@ -16,8 +16,9 @@ Choose this option for direct DataRobot LLM Gateway integration.
 """
 
 import os
-from datarobot_pulumi_utils.pulumi import export
+
 import pulumi_datarobot as datarobot
+from datarobot_pulumi_utils.pulumi import export
 
 from .libllm import (
     ensure_datarobot_prefix,

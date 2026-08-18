@@ -29,7 +29,7 @@ dr task run agent:install
 
 ## Agent Structure
 
-Agent application code must be implemented in the `agent/agent` directory. The NAT orchestration file `workflow.yaml` lives at the agent component root (`agent/workflow.yaml`), not inside `agent/agent/`. NAT framework agents require that file.
+Agent application code must be implemented in the `agent/agent` directory. The orchestration file `workflow.yaml` for DRAgent lives at the agent component root (`agent/workflow.yaml`), not inside `agent/agent/`.
 
 For detailed documentation, see [docs/agent/README.md](../docs/agent/README.md). When upgrading layouts that still have `agent/agent/workflow.yaml`, see [workflow.yaml path migration](../docs/agent/migration-workflow-yaml-path.md).
 
@@ -55,13 +55,12 @@ Define a `ChatPromptTemplate` that structures user input:
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are a helpful assistant.",
-    ),
+    ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
     ("user", "The topic is {topic}."),
 ])
 ```
+
+Prior turns from multi-turn requests are replayed as structured native messages automatically&mdash;see [Chat history](../docs/agent/chat-history.md).
 
 ### 3. Graph Factory
 

@@ -7,24 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.11.5
+- Updated `mcp_server` `datarobot-genai[drmcp]` from 0.26.x to 0.27.13
+- Added the `accessibility` skill under `.agents/skills/` for WCAG 2.2 AA review and authoring of React UI
+- Updated `agent` component from 11.11.37 to 11.11.43:
+  - Pinned the latest execution environment image
+  - Improved configuration flow for the LLM used with the DataRobot memory service
+  - Bumped `datarobot-genai` from 0.26.24 to 0.27.10:
+    - Unified LiteLLM logs with dragent logs
+    - Added an optional `target` field on `DataRobotModerationConfig`
+    - Agent card always includes `securitySchemes`
+    - Unauthenticated agent card access is opt in
+    - Fixed multi-node LangGraph agents concatenating every node's output into one response instead of returning only the final message
+- Error handling & validation improvements for username
+- Implemented support for using the application starter template in Windows
+- Bumped `uv` version to 0.10.3
+
 ## 11.11.4
 - Updated `agent` component from 11.11.22 to 11.11.37:
-  - Drop {chat_history} parameter from langgraph prompt for structured history
-  - Update datarobot-genai version with new moderations and ragas removal
-  - Document chat history
-  - Remove DRUM references
-  - Fix for .env files
-  - Add back the `datarobot-app-framework-agent-local-evaluation` skill and its evaluation docs
+  - Dropped {chat_history} parameter from langgraph prompt for structured history
+  - Updated datarobot-genai version with new moderations and ragas removal
+  - Documented chat history
+  - Removed DRUM references
+  - Fixed .env files
+  - Added back the `datarobot-app-framework-agent-local-evaluation` skill and its evaluation docs
   - Fixed `task lint` on Windows
   - Introduced `cve-sync` integration to keep packages up to date with CVE fixes
-  - Require `uv >= 0.10.0`
-  - Bump `datarobot-genai` from 0.26.12 to 0.26.24
-    - Make unhandled streaming errors terminal AG-UI `RUN_ERROR` events
-    - Fix CrewAI agents when calling Azure provided LLMs
-    - Fix chat span nesting for deployed agent tracing
-    - Fix intermittent AG-UI event ordering bug when using `datarobot-moderation-middleware`
-    - Redact agent card when accessed without authentication
-    - Integrate `cve-sync` to keep packages up to date with CVE fixes
+  - Required `uv >= 0.10.0`
+  - Bumped `datarobot-genai` from 0.26.12 to 0.26.24
+    - Made unhandled streaming errors terminal AG-UI `RUN_ERROR` events
+    - Fixed CrewAI agents when calling Azure provided LLMs
+    - Fixed chat span nesting for deployed agent tracing
+    - Fixed intermittent AG-UI event ordering bug when using `datarobot-moderation-middleware`
+    - Redacted agent card when accessed without authentication
+    - Integrated `cve-sync` to keep packages up to date with CVE fixes
 - Do not install `drdev` if its present
 - If `APPLICATION_TEMPLATE_GIT_BASE_URL` is set, rewrite repositories urls in `.datarobot/answers` during `task start` to use GitHub mirrors in restricted environments
 - Added `agent:eval` task to run NAT batch evaluation via `nat eval`
