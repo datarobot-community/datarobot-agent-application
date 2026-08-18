@@ -115,6 +115,7 @@ def get_deployments_app_files() -> list[tuple[str, str]]:
     essential_files = [
         "app/",
         "pyproject.toml",
+        "start_server.sh",
         "uv.lock",
     ]
     source_files = []
