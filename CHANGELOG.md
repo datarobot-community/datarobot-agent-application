@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+- Fixed `fastapi_server` startup on custom execution environments (e.g. air-gapped images): run from the script's own directory and drop a dependency-less kernel venv from `PATH` so `python3` resolves to the interpreter holding the app dependencies; no-op on the stock application base
 
 ## 11.11.5
 - Updated `mcp_server` `datarobot-genai[drmcp]` from 0.26.x to 0.27.13
