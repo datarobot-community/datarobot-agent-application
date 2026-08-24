@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.11.6
+- Fixed the `fastapi_server` AG-UI stream emitting a `RunFinishedEvent` after a `RunErrorEvent` forwarded from the DRAgent server, which violated the AG-UI single-terminal-event invariant and made the frontend AG-UI client reject the trailing event and mask the underlying agent error
+
 ## 11.11.5
 - Updated `mcp_server` `datarobot-genai[drmcp]` from 0.26.x to 0.27.13
 - Added the `accessibility` skill under `.agents/skills/` for WCAG 2.2 AA review and authoring of React UI

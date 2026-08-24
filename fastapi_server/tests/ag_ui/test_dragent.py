@@ -301,6 +301,36 @@ async def test_run_filters_dragent_run_started_and_finished_events(
     assert RunFinishedEvent(thread_id="", run_id="") not in result
 
 
+async def test_run_stops_after_forwarded_run_error_event(
+    set_sse_responses: Callable[[List[MockSSE]], None],
+    dragent_agui_agent: DRAgentAGUIAgent,
+) -> None:
+    """A RunErrorEvent forwarded from the DRAgent server must terminate the run.
+
+    AG-UI allows exactly one terminal event per run, so no RunFinishedEvent (nor
+    any later event) may follow it.
+    """
+    msg_id = "msg-1"
+    set_sse_responses(
+        [
+            make_sse(
+                [
+                    TextMessageStartEvent(message_id=msg_id),
+                    TextMessageContentEvent(message_id=msg_id, delta="Hi"),
+                    TextMessageEndEvent(message_id=msg_id),
+                    RunErrorEvent(message="Model name is required"),
+                ]
+            ),
+            make_sse([CustomEvent(name="after-error", value={})]),
+        ]
+    )
+    result = await run(dragent_agui_agent)
+    assert result[-1] == RunErrorEvent(message="Model name is required")
+    assert not [e for e in result if isinstance(e, RunFinishedEvent)]
+    assert len([e for e in result if isinstance(e, RunErrorEvent)]) == 1
+    assert not [e for e in result if isinstance(e, CustomEvent)]
+
+
 async def test_run_skips_empty_sse_data(
     set_sse_responses: Callable[[List[MockSSE]], None],
     dragent_agui_agent: DRAgentAGUIAgent,

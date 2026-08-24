@@ -74,10 +74,10 @@ llms:
     # datarobot_llm:
     #   _type: datarobot-llm-router
     #   primary:
-    #     use_datarobot_llm_gateway: true
+    #     llm_use_datarobot_llm_gateway: true
     #     llm_default_model: azure/gpt-5-mini-2025-08-07
     #   fallbacks:
-    #     - use_datarobot_llm_gateway: true
+    #     - llm_use_datarobot_llm_gateway: true
     #       llm_default_model: anthropic/claude-opus-4-20250514
     #   num_retries: 1
 memory:

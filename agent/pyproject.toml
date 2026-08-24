@@ -5,9 +5,13 @@ description = "Implementation of agent"
 readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[langgraph, dragent, auth]==0.27.10",
+    "datarobot-genai[langgraph, dragent, auth]==0.28.3",
     "datarobot-mlops==11.1.28",
-    "datarobot[core]>=3.17.0,<4.0.0",  # We use getenv to load runtime parameter values, and there are important bugfixes in 3.17
+    # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
+    # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
+    # datarobot-genai both build on. 3.18 is the first release carrying those LLM config
+    # pieces. datarobot-genai brings the auth and fs extras along with its own.
+    "datarobot[core]>=3.18.0,<4.0.0",
     "gunicorn>=25.0.0",  # We require this to run dragent workers in deployments
 
     # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the
@@ -251,7 +255,7 @@ constraint-dependencies = [
     "python-multipart>=0.0.31",
     "joserfc>=1.6.8",
     "soupsieve>=2.8.4",
-    "pypdf>=6.14.2",
+    "pypdf>=6.15.0",
     "pyarrow>=23.0.1",
     "pillow>=12.3.0",
     "banks>=2.4.2",
@@ -272,6 +276,8 @@ constraint-dependencies = [
     "tornado>=6.5.7",
     "transformers>=5.5.0",
     "urllib3>=2.7.0",
+    "h2>=4.4.1",
+    "pymdown-extensions>=11.0.1",
 ]
 override-dependencies = [
     "crewai>=1.11.0",

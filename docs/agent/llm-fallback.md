@@ -20,10 +20,10 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-router
     primary:
-      use_datarobot_llm_gateway: true
+      llm_use_datarobot_llm_gateway: true
       llm_default_model: {LLM_DEFAULT_MODEL}
     fallbacks:
-      - use_datarobot_llm_gateway: true
+      - llm_use_datarobot_llm_gateway: true
         llm_default_model: anthropic/claude-opus-4-20250514
     num_retries: 1
 
@@ -40,10 +40,10 @@ Each entry under `primary` and `fallbacks` is an `LLMConfig` with these fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `use_datarobot_llm_gateway` | `bool` | `true` = route through DataRobot LLM Gateway (default). `false` = use a deployment or external provider. |
+| `llm_use_datarobot_llm_gateway` | `bool` | `true` = route through DataRobot LLM Gateway (default). `false` = use a deployment or external provider. |
 | `llm_default_model` | `str` | Model string (e.g. `azure/gpt-5-mini-2025-08-07`, `anthropic/claude-opus-4-20250514`). |
 | `llm_deployment_id` | `str \| None` | DataRobot deployment ID when routing to a deployed LLM (overrides env). |
-| `nim_deployment_id` | `str \| None` | DataRobot deployment ID for NIM-based routing. |
+| `llm_nim_deployment_id` | `str \| None` | DataRobot deployment ID for NIM-based routing. |
 | `datarobot_endpoint` | `str \| None` | Per-entry DataRobot endpoint URL override. |
 | `datarobot_api_token` | `str \| None` | Per-entry API token override. |
 

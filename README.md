@@ -86,6 +86,7 @@ For example commands to install the tools, see the [Detailed installation comman
 | Tool         | Version    | Description                     | Installation guide            |
 |--------------|------------|---------------------------------|-------------------------------|
 | dr (DataRobot CLI) | >= 0.2.79  | The DataRobot CLI for templates, auth, and task execution. | [DataRobot CLI installation](https://github.com/datarobot-oss/cli#installation) |
+| xp (DataRobot XP plugin) | >= 1.3.2 | A `dr` plugin for local experimentation tracing. | `dr plugin install xp` |
 | git      | >= 2.30.0  | A version control system.       | [git installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)      |
 | uv       | >= 0.10.3  | A Python package manager.        | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)       |
 | Pulumi   | >= 3.206.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/)                   |
@@ -585,7 +586,7 @@ dr self version   # Verify the update.
 
 **Symptoms**: You run `dr start` inside a DataRobot template directory and see a message that no start command or quickstart script was found.
 
-**Explanation**: The CLI looks for either a `task start` task in the Taskfile or an executable script in `.datarobot/cli/bin/` whose name starts with `quickstart`. This template defines `task start` in `.Taskfile.template`, which is composed into the root `Taskfile.yml` (gitignored) when you run `dr start` or `dr task compose`. If you see this message, run `dr task compose` or `dr start` to generate the Taskfile.
+**Explanation**: The CLI looks for either a `task start` task in the Taskfile or an executable script in `.datarobot/cli/bin/` whose name starts with `quickstart`. This template defines `task start` in `.Taskfile.template`, which is composed into the root `Taskfile.yml` when you run `dr start` or `dr task compose`. If you see this message, run `dr task compose` or `dr start` to generate the Taskfile.
 
 ### Issue: `dr start` wizard fails or is interrupted
 

@@ -128,6 +128,11 @@ class DRAgentAGUIAgent(AGUIAgent):
                             logger.debug("Yielding event: %s", event.type)
                             events_yielded = True
                             yield event
+                            if isinstance(event, RunErrorEvent):
+                                # The run already ended in error; no further event
+                                # (including our own RunFinishedEvent below) may
+                                # follow for this run.
+                                return
 
             logger.info("Stream has finished")
 

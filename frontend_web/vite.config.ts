@@ -58,6 +58,14 @@ export default defineConfig({
     },
     server: {
         host: true,
+        // DataRobot codespaces cap fs.inotify.max_user_watches very low (~12k), which
+        // the default native file watcher exhausts almost immediately, crashing the dev
+        // server with "ENOSPC: System limit for number of file watchers reached". Poll
+        // instead when running inside a codespace (NOTEBOOK_ID is set there); keep native
+        // watching everywhere else so local dev retains fast HMR.
+        watch: process.env.NOTEBOOK_ID
+            ? { usePolling: true, interval: 300 }
+            : undefined,
         allowedHosts: ['localhost', '127.0.0.1', '.datarobot.com', '.drdev.io'],
         proxy: {
             [`${proxyBase}api/`]: {

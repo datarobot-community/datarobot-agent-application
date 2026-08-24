@@ -13,9 +13,14 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 """
-All configuration for the agent application. The config class handles
+All configuration for the agent component. The config class handles
 loading variables from environment, .env files, Pulumi outputs, and
 DataRobot credentials automatically.
+
+This is the authoritative configuration for the agent component. `datarobot-genai`
+resolves the DataRobot connection and every LLM setting through this class instead
+of its own defaults, so whatever is set here is what the agent runs with. Adding a
+field here is all it takes to make it available; nothing needs to be registered.
 """
 
 import os
@@ -32,14 +37,31 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     Pulumi output variables.
     """
 
+    # DataRobot connection, shared by every LLM instance and DataRobot client.
+    datarobot_endpoint: str = "https://app.datarobot.com/api/v2"
+    datarobot_api_token: str | None = None
+
+    # Settings for the "llm" LLM component instance, read from LLM_DEPLOYMENT_ID,
+    # LLM_DEFAULT_MODEL and so on. A second LLM component brings its own set of
+    # these fields under its own name.
     llm_deployment_id: str | None = None
     llm_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07"
-    use_datarobot_llm_gateway: bool = False
+    llm_nim_deployment_id: str | None = None
+    llm_use_datarobot_llm_gateway: bool = True
+
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
     local_dev_port: int = Field(
         default=8842, validation_alias="AGENT_PORT", ge=1, le=65535
     )
+
+    # Prior conversation messages replayed to the agent. 0 disables history.
+    max_history_messages: int = Field(
+        default=20, ge=0, alias="datarobot_genai_max_history_messages"
+    )
+    # CrewAI only: report native tool-calling support for NIM models that LiteLLM has no
+    # catalog entry for, so CrewAI uses API tool calls instead of the ReAct path.
+    assume_native_tool_calling_when_unmapped: bool = False
 
     otel_entity_id: str = ""
     otel_exporter_otlp_endpoint: str = ""
