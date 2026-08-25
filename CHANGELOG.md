@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bumped DR CLI version to 0.2.77
 - Added `xp` plugin for DR CLI
 - Updated README with instructions for `dr xp` local tracing
+- Switch dependabot to use `uv` ecosystem for python dependencies
 
 ## 11.11.2
 - Updated `agent` component from 11.11.17 to 11.11.22:
