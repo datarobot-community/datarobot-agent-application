@@ -4,7 +4,7 @@ name = "fastapi_server"
 version = "0.1.0"
 description = "FastAPI Server"
 readme = "README.md"
-requires-python = ">=3.10, <3.14"
+requires-python = ">=3.11, <3.14"
 dependencies = [
     # Keep this in sync with the ag-ui-protocol version of the agent
     "ag-ui-protocol==0.1.15",
@@ -19,19 +19,17 @@ dependencies = [
     "greenlet>=3.2.1",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
-    "openai>=1.109.1",
-    "litellm>=1.72.1,<2.0.0,!=1.82.7,!=1.82.8",
-    "pydantic-settings>=2.9.1",
     "pydantic>=2.11.4",
-    "opentelemetry-api>=1.22.0,<1.30.0",
-    "opentelemetry-sdk>=1.22.0,<1.30.0",
-    "opentelemetry-exporter-otlp-proto-http>=1.22.0,<1.30.0",
-    "opentelemetry-instrumentation>=0.43b0,<0.59b0",
-    "opentelemetry-instrumentation-fastapi>=0.43b0,<0.59b0",
-    "opentelemetry-instrumentation-httpx>=0.43b0,<0.59b0",
-    "opentelemetry-instrumentation-logging>=0.43b0,<0.59b0",
-    "opentelemetry-instrumentation-requests>=0.43b0,<0.59b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.43b0,<0.59b0",
+    "pydantic-settings>=2.9.1",
+    "opentelemetry-api>=1.22.0,<2.0.0",
+    "opentelemetry-sdk>=1.22.0,<2.0.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.22.0,<2.0.0",
+    "opentelemetry-instrumentation>=0.43b0,<2.0.0",
+    "opentelemetry-instrumentation-fastapi>=0.43b0,<2.0.0",
+    "opentelemetry-instrumentation-httpx>=0.43b0,<2.0.0",
+    "opentelemetry-instrumentation-logging>=0.43b0,<2.0.0",
+    "opentelemetry-instrumentation-requests>=0.43b0,<2.0.0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.43b0,<2.0.0",
     "python-dotenv>=1.0.1",
     "ruff>=0.3.0",
     "sqlmodel>=0.0.24",

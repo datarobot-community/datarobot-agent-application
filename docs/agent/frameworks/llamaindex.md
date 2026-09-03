@@ -4,7 +4,7 @@ The LlamaIndex agent uses [LlamaIndex](https://docs.llamaindex.ai/) for data-awa
 
 ## `myagent.py`
 
-You define the agent using LlamaIndex's `FunctionAgent` and `AgentWorkflow` abstractions:
+Define the agent using the LlamaIndex `FunctionAgent` and `AgentWorkflow` abstractions:
 
 Agents&mdash;created with `system_prompt`, tools, and handoff targets:
 
@@ -97,6 +97,8 @@ For DRAgent, MCP tools are loaded explicitly in `_response_fn` via `mcp_tools_co
 
 ## `workflow.yaml`
 
+The following `workflow.yaml` example configures the front end, LLM, workflow type, and authentication for a LlamaIndex agent:
+
 ```yaml
 general:
   front_end:
@@ -138,7 +140,7 @@ MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)
 
 ### Workflow tools
 
-Additional tools (e.g. A2A remote agents) resolve by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.LLAMA_INDEX` and merge with MCP tools.
+Additional tools (for example, A2A remote agents) resolve by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.LLAMA_INDEX` and merge with MCP tools.
 
 ### Custom local tools
 
@@ -166,7 +168,7 @@ planner = FunctionAgent(
 )
 ```
 
-Each `FunctionAgent` has its own `tools` list, so you can give different tools to different agents. Tools that use the shared workflow `Context` (e.g. for passing state between agents) are defined as async functions with a `ctx: Context` parameter:
+Each `FunctionAgent` has its own `tools` list, so different agents can receive different tools. Tools that use the shared workflow `Context` (for example, passing state between agents) are defined as async functions with a `ctx: Context` parameter:
 
 ```python
 from llama_index.core.agent.workflow import Context
@@ -182,11 +184,11 @@ For more tool patterns, see the [DataRobot tools documentation](https://docs.dat
 
 ## Prompt modification
 
-LlamaIndex agents define prompts through the `system_prompt` and `description` parameters on each `FunctionAgent`. Handoff behavior between agents is controlled by `can_handoff_to` and the system prompt instructions.
+LlamaIndex agents define prompts through the `system_prompt` and `description` parameters on each `FunctionAgent`. The `can_handoff_to` parameter and the system prompt instructions control handoff behavior between agents.
 
 ### Agent system prompts
 
-Each `FunctionAgent` has a `system_prompt` that defines its behavior and a `description` that tells other agents when to hand off to it:
+Each `FunctionAgent` has a `system_prompt` that defines its behavior and a `description` that indicates to other agents when to hand off to it:
 
 ```python
 planner = FunctionAgent(
@@ -205,7 +207,7 @@ planner = FunctionAgent(
 ```
 
 - `system_prompt`&mdash;the full system prompt that controls agent behavior. Use `make_system_prompt()` for consistent formatting.
-- `description`&mdash;a short description of what this agent does. Other agents see this when deciding whether to hand off control.
+- `description`&mdash;a short description of what this agent does. Other agents use this when deciding whether to hand off control.
 - `can_handoff_to`&mdash;list of agent names this agent can transfer control to. Include handoff instructions in the system prompt.
 
 ### Workflow-level configuration
@@ -220,12 +222,12 @@ workflow = AgentWorkflow(
 )
 ```
 
-- `root_agent`&mdash;the agent that processes the user's input first.
+- `root_agent`&mdash;the agent that processes user input first.
 - `initial_state`&mdash;shared state accessible to all agents via `Context`. Use it to pass structured data between agents.
 
 ### Chat history
 
-This template's `FunctionAgent` user message declares no `{chat_history}` placeholder, so prior turns replay to the model by default as **structured history**: native `ChatMessage` objects (including tool calls and results), bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into assistant content. See [Chat history](../chat-history.md).
+The `FunctionAgent` user message in this template declares no `{chat_history}` placeholder, so prior turns replay to the model by default as **structured history**: native `ChatMessage` objects (including tool calls and results), bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into assistant content. See [Chat history](../chat-history.md).
 
 To restore single-turn behavior or change the bound, pass `structured_history=False` or `max_history_messages` to `MyAgent(...)` in `register.py`:
 
@@ -235,18 +237,22 @@ agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
 
 ### How to modify
 
+The following patterns cover common prompt and workflow changes:
+
 - Update agent behavior&mdash;modify the `system_prompt` string in a `FunctionAgent` definition.
 - Change agent descriptions&mdash;update `description` to change how the agent is presented to other agents during handoff decisions.
-- Control handoff flow&mdash;modify `can_handoff_to` and include clear handoff instructions in the system prompt (e.g. "hand off to writer_agent once notes are complete").
-- Add tool-specific instructions&mdash;tell the agent in its system prompt when to use specific tools (e.g. "Use the record_notes tool to save your findings").
+- Control handoff flow&mdash;modify `can_handoff_to` and include clear handoff instructions in the system prompt (for example, "hand off to writer_agent once notes are complete").
+- Add tool-specific instructions&mdash;tell the agent in its system prompt when to use specific tools (for example, "Use the record_notes tool to save your findings").
 - Add new agents&mdash;create a new `FunctionAgent` with its own system prompt, tools, and handoff targets, and add it to the `agents` list.
 - Modify shared state&mdash;change `initial_state` and update `Context`-based tools to read/write new state keys.
 
 ### Tips
 
-- The `description` is critical for multi-agent handoff&mdash;make it specific about when this agent should be used.
+Consider the following recommendations when authoring prompts:
+
+- The `description` is critical for multi-agent handoff&mdash;make it specific about when to use this agent.
 - Include explicit handoff instructions in `system_prompt` to avoid the agent looping without transferring control.
-- Use `initial_state` to define a clear contract between agents (e.g. planner writes notes, writer reads them).
+- Use `initial_state` to define a clear contract between agents (for example, planner writes notes, writer reads them).
 - Test prompt changes with `task agent:cli -- execute --user_prompt "..."`.
 
 For more on LlamaIndex agent prompts, see the [LlamaIndex agents documentation](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/).

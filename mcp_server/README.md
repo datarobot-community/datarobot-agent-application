@@ -344,10 +344,15 @@ cp mcp_server/.env .env
 
 ```bash
 
-# Optional: Use existing execution environment
+# Optional: reuse an existing execution environment (skips Docker EE build).
+# DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT selects an existing EE to reuse.
 # export DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT="[DataRobot] Python 3.11 GenAI Agents"
 # If empty, the latest version of the execution environment will be used
 # DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID="698360476c9b9255ca8abeef"
+#
+# Optional: only when DEFAULT is empty — names a new EE built from the Dockerfile
+# (default name is [{stack}] [{app}]). CI uses a stable name for ephemeral stacks.
+# DATAROBOT_MCP_EXECUTION_ENVIRONMENT_NAME=
 
 task deploy
 ```

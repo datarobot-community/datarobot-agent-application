@@ -569,6 +569,9 @@ class OTel:
         """
         Gracefully shutdown all telemetry providers.
         """
+        if not (self._logger_provider or self._meter_provider or self._tracer_provider):
+            return
+
         if self._logger_provider:
             self._logger_provider.shutdown()  # type: ignore[no-untyped-call]
         if self._meter_provider:

@@ -1,6 +1,6 @@
 # Moderation and guardrails
 
-This guide explains how to configure moderations (guardrails) for agents in this template. Moderations evaluate prompts before the LLM runs and responses after, and can block, report, or replace content based on thresholds you define.
+This guide explains how to configure moderations (guardrails) for agents in this template. Moderations evaluate prompts before the LLM runs and responses after, and can block, report, or replace content based on configured thresholds.
 
 The `datarobot-moderations[all]` package is already included in `pyproject.toml`. Guards are wired into the agent through the `datarobot_moderation` middleware declared in `workflow.yaml` and applied by the [DRAgent front server](./README.md#front-server).
 
@@ -8,11 +8,11 @@ The `datarobot-moderations[all]` package is already included in `pyproject.toml`
 |---|---|
 | [Overview](#overview) | How moderations fit into the agent request path. |
 | [Guard configuration file](#guard-configuration-file) | Shared YAML schema and file placement. |
-| [Wire the middleware](#wire-the-middleware) | Hook `datarobot_moderation` into your workflow. |
+| [Wire the middleware](#wire-the-middleware) | Hook `datarobot_moderation` into the workflow. |
 | [Configure guards](#configure-guards) | Two ways to specify guards (external file or inline). |
-| [Test moderations locally](#test-moderations-locally) | Run prompts through your configured guards. |
+| [Test moderations locally](#test-moderations-locally) | Run prompts through the configured guards. |
 | [Environment variables](#environment-variables) | Credentials and runtime toggles. |
-| [Disabling moderations](#disabling-moderations) | Turn guards off without removing configuration. |
+| [Disable moderations](#disable-moderations) | Turn guards off without removing configuration. |
 | [Local evaluation](#local-evaluation) | Offline `nat eval` quality checks during development (separate from runtime guards). |
 | [Further reading](#further-reading) | Full guard type reference and official docs. |
 
@@ -20,21 +20,22 @@ The `datarobot-moderations[all]` package is already included in `pyproject.toml`
 
 Moderations run in two stages:
 
-1. Pre-score (prompt)&mdash;guards evaluate the user's input before the agent calls the LLM. Blocked prompts never reach the model.
-2. Post-score (response)&mdash;guards evaluate the agent's output after generation. Blocked responses are not returned to the caller.
+1. Pre-score (prompt)&mdash;guards evaluate user input before the agent calls the LLM. Blocked prompts never reach the model.
+2. Post-score (response)&mdash;guards evaluate agent output after generation. Blocked responses are not returned to the caller.
 
 Both stages are implemented by the `datarobot_moderation` middleware on DRAgent, which loads guard definitions from either `moderation_config.yaml` or an inline `moderation` block in `workflow.yaml`.
 
-> [!NOTE]
-> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline evaluation** during local development&mdash;batch-scoring agent outputs with `nat eval` without deploying&mdash;see [Local evaluation](./evaluation.md).
+> **Note:** Runtime moderations (this guide) enforce guardrails on live traffic. For **offline evaluation** during local development&mdash;batch-scoring agent outputs with `nat eval` without deploying&mdash;see [Local evaluation](./evaluation.md).
 
 ## Guard configuration file
+
+The guard configuration file defines guard behavior using a shared YAML schema. The following sections cover file placement, an example configuration, LLM judge backends, common guard types, and streaming performance considerations.
 
 ### File location
 
 Place `moderation_config.yaml` at the root of the `agent/` directory, alongside `workflow.yaml`:
 
-```
+```text
 agent/
 ├── moderation_config.yaml   # Runtime guard configuration
 ├── workflow.yaml
@@ -46,15 +47,15 @@ agent/
 
 ### Example configuration
 
-LLM-as-a-judge guards route through the DataRobot LLM Gateway via `llm_type: llmGateway` and `llm_gateway_model_id`&mdash;no separate judge deployment is required. Use a judge model that is different from the model your agent uses for more objective scoring.
+LLM-as-a-judge guards route through the DataRobot LLM Gateway via `llm_type: llmGateway` and `llm_gateway_model_id`&mdash;no separate judge deployment is required. Use a judge model that differs from the model the agent uses for more objective scoring.
 
 ```yaml
 # moderation_config.yaml
 timeout_sec: 60
-timeout_action: block   # use "score" to treat timeouts as pass during development
+timeout_action: block   # Use "score" to treat timeouts as pass during development.
 
 guards:
-  # Pre-score: block toxic prompts before they reach the LLM
+  # Pre-score: block toxic prompts before they reach the LLM.
   - name: Prompt Token Limit
     type: ootb
     ootb_type: token_count
@@ -84,7 +85,7 @@ guards:
 
 ### LLM judge backends
 
-Guards that call an LLM to score text (`faithfulness`, `task_adherence`, `agent_goal_accuracy`, and others) require an `llm_type`. This template's examples use `llmGateway`, which routes through the DataRobot LLM Gateway using `llm_gateway_model_id`&mdash;no judge deployment required. Alternatively, set `llm_type: datarobot` with a 24-character `deployment_id` to use a dedicated DataRobot LLM deployment as the judge.
+Guards that call an LLM to score text (`faithfulness`, `task_adherence`, `agent_goal_accuracy`, and others) require an `llm_type`. Examples in this template use `llmGateway`, which routes through the DataRobot LLM Gateway using `llm_gateway_model_id`&mdash;no judge deployment required. Alternatively, set `llm_type: datarobot` with a 24-character `deployment_id` to use a dedicated DataRobot LLM deployment as the judge.
 
 ### Common guard types
 
@@ -101,8 +102,7 @@ For the complete list of guard types, LLM backends, intervention actions, and co
 
 ### Streaming performance
 
-> [!WARNING]
-> Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be slow in streaming mode. Post-score guards may run on each streamed chunk rather than only on the final response, so every chunk can trigger a separate judge or model invocation.
+> **Warning:** Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be slow in streaming mode. Post-score guards may run on each streamed chunk rather than only on the final response, so every chunk can trigger a separate judge or model invocation.
 >
 > For streaming workloads, prefer lightweight local guards (for example `token_count`) or reserve LLM-as-a-judge and model guards for non-streaming requests. If guards time out during streaming, increase `timeout_sec` or set `timeout_action: score` while tuning thresholds.
 
@@ -123,7 +123,7 @@ middleware:
     _type: datarobot_moderation
 ```
 
-If no guards are configured, the middleware is a no-op. Add guards using one of the two methods below.
+If no guards are configured, the middleware is a no-op. Add guards using one of the two methods in [Configure guards](#configure-guards).
 
 ### NAT framework
 
@@ -139,11 +139,11 @@ workflow:
 
 ### Agent memory workflows
 
-When agent memory (`mem0` or `datarobot_memory_service`) is enabled, the workflow type is `streaming_memory_agent` and the template does not add `datarobot_moderation` to the workflow's middleware list. Add it manually if you want runtime guardrails with memory-enabled agents.
+When agent memory (`mem0` or `datarobot_memory_service`) is enabled, the workflow type is `streaming_memory_agent` and the template does not add `datarobot_moderation` to the workflow middleware list. Add it manually to enable runtime guardrails with memory-enabled agents.
 
 ## Configure guards
 
-You can configure guards in two ways:
+Configure guards using one of two methods:
 
 **Option 1 &mdash; external file (recommended)**
 
@@ -153,7 +153,7 @@ Create `moderation_config.yaml` at the agent directory root. The middleware load
 middleware:
   datarobot_moderation:
     _type: datarobot_moderation
-    # moderation_config.yaml is loaded from the agent directory when present
+    # moderation_config.yaml is loaded from the agent directory when present.
 ```
 
 **Option 2 &mdash; inline in `workflow.yaml`**
@@ -199,17 +199,18 @@ Or start the DRAgent dev server and send requests from another terminal:
 dr run agent:dev
 ```
 
-Blocked responses surface as content-filter events in the streaming path or as the guard's intervention message in non-streaming mode.
+Blocked responses surface as content-filter events in the streaming path or as the guard intervention message in non-streaming mode.
 
 ## Environment variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (e.g., `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
+| `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (for example, `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
 | `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot API token. Set in `.env` by `dr start`. |
 | `DISABLE_MODERATION` | No | Set to `true` to disable all guards at runtime without removing configuration. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | On the Workload API runtime | OTel collector base URL for guard telemetry. Custom Models deployments get one from the platform; workloads do not, so set it in `.env` and the infra forwards it into the container. See [Deployment runtimes](./deployment-runtimes.md#configuration). |
 
-## Disabling moderations
+## Disable moderations
 
 To temporarily disable all guards without deleting configuration:
 
@@ -223,7 +224,7 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 Runtime moderations (this guide) enforce guardrails on live agent traffic through the DRAgent middleware.
 
-For **offline evaluation** during local development&mdash;batch-scoring agent responses against the same OOTB metrics without deploying&mdash;use **`nat eval`** with DataRobot moderation evaluators from `datarobot-genai`. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
+For **offline evaluation** during local development&mdash;batch-scoring agent responses against the same out-of-the-box metrics without deploying&mdash;use **`nat eval`** with DataRobot moderation evaluators from `datarobot-genai`. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
 
 | Mechanism | Purpose | Used by |
 |---|---|---|

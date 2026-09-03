@@ -15,6 +15,7 @@ import os
 import sys
 from collections import namedtuple
 from pathlib import Path
+from typing import Any, cast
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import pytest
@@ -25,14 +26,21 @@ from dev_tools.lineage.pulumi_managers import (
     MCPToolMetadataPulumiManager,
 )
 
-# Ensure the test directory is in sys.path for proper imports
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Ensure the units test directory is in sys.path for proper imports
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
 def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
+    # These tests exercise datarobot-serverless provisioning; override host .env.
+    monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "datarobot-serverless")
+    monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.delenv(
+        "DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID", raising=False
+    )
+    monkeypatch.delenv("DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT", raising=False)
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
     # Mock infra.__init__ exported objects
     mock_use_case = MagicMock()
@@ -42,15 +50,31 @@ def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr("infra.project_dir", mock_project_dir)
 
     # Create the mcp app directory structure expected by module-level code.
-    # deployments_application_path = project_dir.parent / "mcp_server"
+    # mcp_execution_environment binds project_dir at its own import, so patch the
+    # submodule's global too — otherwise the docker-context check (and the tests'
+    # stub files) would run against the real rendered app directory.
+    monkeypatch.setattr(
+        "infra.mcp_server_infra.mcp_execution_environment.project_dir",
+        mock_project_dir,
+    )
     mcp_app_dir = tmp_path.parent / "mcp_server"
     mcp_app_dir.mkdir(exist_ok=True)
+    docker_build_files = {
+        "Dockerfile": "FROM scratch\n",
+        "pyproject.toml": "",
+        "uv.lock": "",
+        "start_server.sh": "#!/bin/sh\n",
+    }
+    for filename, content in docker_build_files.items():
+        (mcp_app_dir / filename).write_text(content, encoding="utf-8")
 
     # Mock user params module
     mock_user_params_module = MagicMock()
     mock_user_params_module.MCP_USER_RUNTIME_PARAMETERS = []
     monkeypatch.setitem(
-        sys.modules, "infra.mcp_server_user_params", mock_user_params_module
+        sys.modules,
+        "infra.mcp_server_user_params",
+        mock_user_params_module,
     )
 
     # Mock pulumi_datarobot resources
@@ -101,18 +125,24 @@ def pulumi_mocks(monkeypatch, tmp_path):
         MagicMock(return_value=_default_ee_version),
     )
 
-    # Mock Output to behave like a Pulumi Output with .apply()
+    # Mock Output to behave like a Pulumi Output with .apply() / .secret().
+    # Use __init__ (not __new__) so MagicMock finishes setup before setattr;
+    # otherwise SESSION_SECRET_KEY → Output.secret() raises AttributeError: _mock_methods.
     class MockOutput(MagicMock):
-        def __new__(cls, val=None, *args, **kwargs):
-            m = super().__new__(cls)
-            m.apply = MagicMock(side_effect=lambda fn: fn(val))
-            return m
+        def __init__(self, val=None, *args, **kwargs):
+            # Do not pass val to MagicMock — it would be treated as `spec`.
+            super().__init__(*args, **kwargs)
+            self.apply = MagicMock(side_effect=lambda fn, v=val: fn(v))
 
         @classmethod
         def __class_getitem__(cls, item):
             return cls
 
-    MockOutput.from_input = MagicMock()
+        @classmethod
+        def secret(cls, val):
+            return cls(val)
+
+    MockOutput.from_input = MagicMock(side_effect=lambda val: MockOutput(val))
     MockOutput.format = MagicMock()
     monkeypatch.setattr("pulumi.Output", MockOutput)
 
@@ -141,7 +171,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     patcher.stop()
 
 
-def test_execution_environment_not_set_uses_docker(monkeypatch):
+def test_execution_environment_not_set_uses_app_root(monkeypatch):
     """Test execution environment creation when DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT is not set."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
 
@@ -154,17 +184,54 @@ def test_execution_environment_not_set_uses_docker(monkeypatch):
     importlib.reload(mcp_infra)
 
     mcp_infra.pulumi.info.assert_any_call(
-        "Using docker folder to compile the execution environment"
+        "Using app directory as Docker build context for execution environment"
     )
 
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
-    args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.call_args
+    _args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.call_args
 
     assert kwargs["programming_language"] == "python"
     assert "docker_context_path" in kwargs
+    assert kwargs["opts"].retain_on_delete is False
+    assert getattr(kwargs["opts"], "import_", None) is None
 
     # ExecutionEnvironment.get should not be called when env var is not set
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_not_called()
+
+
+def test_execution_environment_name_override_imports_existing(monkeypatch):
+    """Shared CI EE names import an existing DataRobot id instead of creating duplicates."""
+    monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.setenv(
+        "DATAROBOT_MCP_EXECUTION_ENVIRONMENT_NAME",
+        "ci-e2e-mcp-server-docker-ee",
+    )
+
+    existing = MagicMock()
+    existing.id = "ee-existing-id"
+    existing.name = "ci-e2e-mcp-server-docker-ee"
+    existing.created = "2026-08-27T00:00:00Z"
+    monkeypatch.setattr(
+        "datarobot.ExecutionEnvironment.list",
+        MagicMock(return_value=[existing]),
+    )
+
+    import importlib
+
+    import infra.mcp_server as mcp_infra
+
+    mcp_infra.pulumi_datarobot.ExecutionEnvironment.reset_mock()
+    mcp_infra.pulumi.info.reset_mock()
+    importlib.reload(mcp_infra)
+
+    mcp_infra.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
+    _args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.call_args
+    assert kwargs["name"] == "ci-e2e-mcp-server-docker-ee"
+    assert kwargs["opts"].import_ == "ee-existing-id"
+    assert kwargs["opts"].retain_on_delete is True
+    mcp_infra.pulumi.info.assert_any_call(
+        "Importing existing execution environment: ee-existing-id (shared name ci-e2e-mcp-server-docker-ee)"
+    )
 
 
 def test_execution_environment_default_set(monkeypatch):
@@ -186,7 +253,7 @@ def test_execution_environment_default_set(monkeypatch):
 
     # Check that ExecutionEnvironment.get was called with the correct parameters
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_called_once()
-    args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
+    _args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "python-311-genai-agents-id"
     assert kwargs["version_id"] is None
@@ -221,7 +288,7 @@ def test_execution_environment_pinned_set(monkeypatch):
     )
 
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_called_once()
-    args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
+    _args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "python-311-genai-agents-id"
     assert kwargs["version_id"] == "690cd2f698419673f938f7c4"
@@ -247,7 +314,7 @@ def test_execution_environment_custom_set(monkeypatch):
     )
 
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_called_once()
-    args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
+    _args, kwargs = mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "Custom Execution Environment"
     assert kwargs["version_id"] is None
@@ -372,176 +439,110 @@ def test_reset_environment_between_tests():
     mcp_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_not_called()
 
 
-def test_prediction_environment_created_when_env_var_not_set(monkeypatch):
-    """Test that a new PredictionEnvironment is created when DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT is not set."""
-    monkeypatch.delenv("DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT", raising=False)
+class TestGetDeploymentsAppFiles:
+    def test_get_deployments_app_files_collects_app_python_files(
+        self, tmp_path
+    ) -> None:
+        import infra.mcp_server as mcp_infra
 
-    import importlib
+        app_root = tmp_path.parent / "mcp_server"
+        app_dir = app_root / "app"
+        app_dir.mkdir(parents=True)
+        (app_dir / "main.py").write_text("print('hi')\n", encoding="utf-8")
+        actual = {name for _, name in mcp_infra.get_deployments_app_files()}
+        # The pulumi_mocks fixture stubs the essential root files in app_root,
+        # mirroring a real rendered app where they always exist.
+        expected = {"app/main.py", "pyproject.toml", "uv.lock", "start_server.sh"}
+        assert actual == expected
 
-    import infra.mcp_server as mcp_infra
+    def test_get_deployments_app_files_excludes_test_paths(self, tmp_path) -> None:
+        import infra.mcp_server as mcp_infra
 
-    mcp_infra.pulumi_datarobot.PredictionEnvironment.reset_mock()
-    importlib.reload(mcp_infra)
-
-    mcp_infra.pulumi_datarobot.PredictionEnvironment.assert_called_once()
-    mcp_infra.pulumi_datarobot.PredictionEnvironment.get.assert_not_called()
-
-
-def test_prediction_environment_injected_when_env_var_set(monkeypatch):
-    """Test that an existing PredictionEnvironment is used when DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT is set."""
-    monkeypatch.setenv(
-        "DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT", "existing-pred-env-id"
-    )
-
-    import importlib
-
-    import infra.mcp_server as mcp_infra
-
-    mcp_infra.pulumi_datarobot.PredictionEnvironment.reset_mock()
-    mcp_infra.pulumi.info.reset_mock()
-    importlib.reload(mcp_infra)
-
-    mcp_infra.pulumi.info.assert_any_call(
-        "Using existing prediction environment 'existing-pred-env-id'"
-    )
-
-    mcp_infra.pulumi_datarobot.PredictionEnvironment.get.assert_called_once()
-    args, kwargs = mcp_infra.pulumi_datarobot.PredictionEnvironment.get.call_args
-    assert kwargs["id"] == "existing-pred-env-id"
-
-    mcp_infra.pulumi_datarobot.PredictionEnvironment.assert_not_called()
+        app_root = tmp_path.parent / "mcp_server"
+        tests_dir = app_root / "tests"
+        tests_dir.mkdir(parents=True)
+        (tests_dir / "test_x.py").write_text("pass\n", encoding="utf-8")
+        actual = {name for _, name in mcp_infra.get_deployments_app_files()}
+        expected = "tests/test_x.py"
+        assert expected not in actual
 
 
-def test_custom_model_created(monkeypatch):
-    """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
-    monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
+class TestMcpDeploymentType:
+    def test_mcp_deployment_type_warns_when_unset(self, monkeypatch) -> None:
+        monkeypatch.delenv("MCP_DEPLOYMENT_TYPE", raising=False)
+        import importlib
 
-    import importlib
+        import infra.mcp_server as mcp_infra
 
-    import infra.mcp_server as mcp_infra
+        warn_mock = cast(MagicMock, mcp_infra.pulumi.warn)
+        warn_mock.reset_mock()
+        importlib.reload(mcp_infra)
+        actual = any(
+            "MCP_DEPLOYMENT_TYPE not set" in str(call.args[0])
+            for call in warn_mock.call_args_list
+        )
+        expected = True
+        assert actual == expected
 
-    mcp_infra.pulumi_datarobot.CustomModel.reset_mock()
-    importlib.reload(mcp_infra)
+    def test_mcp_deployment_type_routes_to_workload_image_uri(
+        self, monkeypatch
+    ) -> None:
+        monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "datarobot-workload-preview")
+        monkeypatch.setenv("MCP_WORKLOAD_IMAGE_URI", "img:tag")
+        import importlib
 
-    mcp_infra.pulumi_datarobot.CustomModel.assert_called_once()
-    args, kwargs = mcp_infra.pulumi_datarobot.CustomModel.call_args
-    assert kwargs["resource_name"] == "[unittest] [mcp_server] Custom Model"
-    assert kwargs["name"] == "[unittest] [mcp_server]"
-    assert kwargs["description"] == "MCP server"
-    assert kwargs["language"] == "python"
-    assert kwargs["base_environment_id"] == mcp_infra.execution_environment.id
-    assert (
-        kwargs["base_environment_version_id"]
-        == mcp_infra.execution_environment.version_id
-    )
-    assert kwargs["use_case_ids"] == [mcp_infra.use_case.id]
-    assert isinstance(kwargs["files"], list)
+        import infra.mcp_server as mcp_infra
 
+        return_value: dict[str, Any] = {
+            "execution_environment": None,
+            "deployment": None,
+            "mcp_server_mcp_endpoint": "ep",
+            "mcp_server_base_endpoint": "base",
+            "mcp_custom_model_runtime_parameters": [],
+        }
+        with patch(
+            "infra.mcp_server_infra.workload.provision_workload_mcp_server_from_image_uri",
+            return_value=return_value,
+        ) as mock_from_image:
+            importlib.reload(mcp_infra)
+            actual = mock_from_image.call_args.kwargs["workload_image_uri"]
+            expected = "img:tag"
+            assert actual == expected
 
-def test_mcp_item_lineage_metadata(monkeypatch):
-    import importlib
+    def test_mcp_deployment_type_routes_to_workload_build(self, monkeypatch) -> None:
+        monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "datarobot-workload-preview")
+        monkeypatch.delenv("MCP_WORKLOAD_IMAGE_URI", raising=False)
+        import importlib
 
-    import infra.mcp_server as mcp_infra
+        import infra.mcp_server as mcp_infra
 
-    load_tool_metadata = mcp_infra.MCPToolMetadataPulumiManager.load_metadata
-    create_pulumi_tool_resources = (
-        mcp_infra.MCPToolMetadataPulumiManager.create_pulumi_resources
-    )
-    export_tool_summary_to_pulumi_stack = (
-        mcp_infra.MCPToolMetadataPulumiManager.export_summary_to_pulumi_stack
-    )
-    load_prompt_metadata = mcp_infra.MCPPromptMetadataPulumiManager.load_metadata
-    create_pulumi_prompt_resources = (
-        mcp_infra.MCPPromptMetadataPulumiManager.create_pulumi_resources
-    )
-    export_prompt_summary_to_pulumi_stack = (
-        mcp_infra.MCPPromptMetadataPulumiManager.export_summary_to_pulumi_stack
-    )
-    load_resource_metadata = mcp_infra.MCPResourceMetadataPulumiManager.load_metadata
-    create_pulumi_resource_resources = (
-        mcp_infra.MCPResourceMetadataPulumiManager.create_pulumi_resources
-    )
-    export_resource_summary_to_pulumi_stack = (
-        mcp_infra.MCPResourceMetadataPulumiManager.export_summary_to_pulumi_stack
-    )
-    load_tool_metadata.reset_mock()
-    create_pulumi_tool_resources.reset_mock()
-    export_tool_summary_to_pulumi_stack.reset_mock()
-    load_prompt_metadata.reset_mock()
-    create_pulumi_prompt_resources.reset_mock()
-    export_prompt_summary_to_pulumi_stack.reset_mock()
-    load_resource_metadata.reset_mock()
-    create_pulumi_resource_resources.reset_mock()
-    export_resource_summary_to_pulumi_stack.reset_mock()
-    importlib.reload(mcp_infra)
+        return_value: dict[str, Any] = {
+            "execution_environment": MagicMock(),
+            "deployment": None,
+            "mcp_server_mcp_endpoint": "ep",
+            "mcp_server_base_endpoint": "base",
+            "mcp_custom_model_runtime_parameters": [],
+        }
+        with patch(
+            "infra.mcp_server_infra.workload.provision_workload_mcp_server",
+            return_value=return_value,
+        ) as mock_build:
+            importlib.reload(mcp_infra)
+            actual = mock_build.called
+            expected = True
+            assert actual == expected
 
-    mock_custom_model = mcp_infra.pulumi_datarobot.CustomModel.return_value
-    expected_actual_mcp_server_asset_name = "[unittest] [mcp_server]"
-    # check saving MCP tool metadata through pulumi
-    mcp_infra.MCPToolMetadataPulumiManager.load_metadata.assert_called_once_with()
-    args, _ = mcp_infra.MCPToolMetadataPulumiManager.create_pulumi_resources.call_args
-    (
-        actual_mcp_metadata_entities,
-        actual_mcp_server_asset_name,
-        actual_custom_model_version_id,
-    ) = args
-    assert actual_mcp_metadata_entities == load_tool_metadata.return_value
-    assert actual_mcp_server_asset_name == expected_actual_mcp_server_asset_name
-    assert actual_custom_model_version_id == mock_custom_model.version_id
-    args, _ = (
-        mcp_infra.MCPToolMetadataPulumiManager.export_summary_to_pulumi_stack.call_args
-    )
-    (
-        actual_mcp_server_asset_name,
-        actual_mcp_metadata_pulumi_resources,
-    ) = args
-    assert (
-        actual_mcp_metadata_pulumi_resources
-        == create_pulumi_tool_resources.return_value
-    )
-    # check saving MCP prompt metadata through pulumi
-    mcp_infra.MCPPromptMetadataPulumiManager.load_metadata.assert_called_once_with()
-    args, _ = mcp_infra.MCPPromptMetadataPulumiManager.create_pulumi_resources.call_args
-    (
-        actual_mcp_metadata_entities,
-        actual_mcp_server_asset_name,
-        actual_custom_model_version_id,
-    ) = args
-    assert actual_mcp_metadata_entities == load_prompt_metadata.return_value
-    assert actual_mcp_server_asset_name == expected_actual_mcp_server_asset_name
-    assert actual_custom_model_version_id == mock_custom_model.version_id
-    args, _ = (
-        mcp_infra.MCPPromptMetadataPulumiManager.export_summary_to_pulumi_stack.call_args
-    )
-    (
-        actual_mcp_server_asset_name,
-        actual_mcp_metadata_pulumi_resources,
-    ) = args
-    assert (
-        actual_mcp_metadata_pulumi_resources
-        == create_pulumi_prompt_resources.return_value
-    )
-    # check saving MCP resource metadata through pulumi
-    mcp_infra.MCPResourceMetadataPulumiManager.load_metadata.assert_called_once_with()
-    args, _ = (
-        mcp_infra.MCPResourceMetadataPulumiManager.create_pulumi_resources.call_args
-    )
-    (
-        actual_mcp_metadata_entities,
-        actual_mcp_server_asset_name,
-        actual_custom_model_version_id,
-    ) = args
-    assert actual_mcp_metadata_entities == load_resource_metadata.return_value
-    assert actual_mcp_server_asset_name == expected_actual_mcp_server_asset_name
-    assert actual_custom_model_version_id == mock_custom_model.version_id
-    args, _ = (
-        mcp_infra.MCPResourceMetadataPulumiManager.export_summary_to_pulumi_stack.call_args
-    )
-    (
-        actual_mcp_server_asset_name,
-        actual_mcp_metadata_pulumi_resources,
-    ) = args
-    assert (
-        actual_mcp_metadata_pulumi_resources
-        == create_pulumi_resource_resources.return_value
-    )
+    def test_mcp_deployment_type_exits_when_invalid(self, monkeypatch) -> None:
+        monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "invalid-type")
+        import importlib
+
+        import infra.mcp_server as mcp_infra
+
+        with (
+            patch.object(sys, "exit", side_effect=SystemExit(1)) as mock_exit,
+            pytest.raises(SystemExit),
+        ):
+            importlib.reload(mcp_infra)
+        actual = mock_exit.call_args.args[0]
+        expected = 1
+        assert actual == expected

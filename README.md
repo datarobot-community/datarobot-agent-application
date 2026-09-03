@@ -92,6 +92,7 @@ For example commands to install the tools, see the [Detailed installation comman
 | Pulumi   | >= 3.206.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/)                   |
 | Taskfile | >= 3.43.3  | A task runner.                  | [Taskfile installation guide](https://taskfile.dev/docs/installation)                        |
 | NodeJS   | >= 24      | JavaScript runtime for frontend development. | [NodeJS installation guide](https://nodejs.org/en/download/)                        |
+| C++ build tools | N/A | A C++ compiler and build tools, required to compile some Python packages. | macOS: [Xcode Command Line Tools](https://developer.apple.com/xcode/resources/) (`xcode-select --install`); Linux: [build-essential](https://wiki.debian.org/BuildEssential) (`sudo apt-get install build-essential`); Windows: [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the **Desktop development with C++** workload |
 
 > [!TIP]
 > Make sure to install the tools system-wide rather than in a virtual environment so they are available in your terminal sessions.
@@ -110,8 +111,8 @@ Complete these steps on Windows **before** you clone the repository. Skipping th
 
 2. Grant permission to create symlinks using one of the following options:
 
-   - **Developer Mode (recommended)**&mdash;on Windows 11, open **Settings → System → Advanced → Developer Mode** and turn Developer Mode on. See [Enable your device for development](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development) for details.
-   - **Administrator terminal**&mdash;launch PowerShell or Windows Terminal with **Run as administrator** and run every repo operation from that elevated session. At minimum, use an elevated session for `git clone`, `dr start`, `dr run deploy`, and any `git checkout` or `git pull` that touches symlinked paths. This template uses Git symlinks at `.claude/skills`, `fastapi_server/core`, `infra/infra/llm.py`, and `infra/infra/oauth.py`.
+   - Developer Mode (recommended): On Windows 11, open **Settings → System → Advanced → Developer Mode** and turn Developer Mode on. See [Enable your device for development](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development) for details.
+   - Administrator terminal: Launch PowerShell or Windows Terminal with **Run as administrator** and run every repo operation from that elevated session. At minimum, use an elevated session for `git clone`, `dr start`, `dr run deploy`, and any `git checkout` or `git pull` that touches symlinked paths. This template uses Git symlinks at `.claude/skills`, `fastapi_server/core`, `infra/infra/llm.py`, and `infra/infra/oauth.py`.
 
 3. After Git is installed, ensure that the following directory is present in your system PATH: `[path_of_git_installation]\usr\bin`. For example, if Git is installed in `C:\Program Files\Git`, add `C:\Program Files\Git\usr\bin` to your PATH using the following commands:
 
@@ -143,6 +144,12 @@ Click the dropdown below that corresponds to your operating system:
   brew install datarobot-oss/taps/dr-cli uv pulumi/tap/pulumi go-task node git
   ```
 
+  You also need the Xcode Command Line Tools to compile some Python packages:
+
+  ```sh
+  xcode-select --install
+  ```
+
 </details>
 
 - <details><summary><b>Linux</b></summary>
@@ -154,6 +161,7 @@ Click the dropdown below that corresponds to your operating system:
   curl https://cli.datarobot.com/install | sh
   sudo apt-get update
   sudo apt-get install -y python3 python3-pip python3-venv
+  sudo apt-get install -y build-essential
   sudo apt-get install -y git
   curl -LsSf https://astral.sh/uv/install.sh | sh
   curl -fsSL https://get.pulumi.com | sh
@@ -177,11 +185,6 @@ Click the dropdown below that corresponds to your operating system:
   winget install Pulumi.Pulumi
   winget install Task.Task
   winget install OpenJS.NodeJS
-  ```
-
-  You also need C++ build tools to compile some Python packages. Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the **Desktop development with C++** workload, or run:
-
-  ```powershell
   winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621"
   ```
 
@@ -190,10 +193,7 @@ Click the dropdown below that corresponds to your operating system:
 > [!NOTE]
 > After installing `uv`, run `uv tool update-shell` once so your shell picks up the updated `PATH` before using `uv tool run` or invoking tools installed via `uv tool install`.
 
-> [!IMPORTANT]
-> You also need a compatible C++ compiler and build tools installed on your system to compile some Python packages.
-
-<details><summary><i>Click here for details on using a development container</i></summary>
+<details><summary><i>Development container details</i></summary>
 
 ### Use a development container (experimental)
 
@@ -241,7 +241,7 @@ If you run `dr start` from a directory that is not yet a template clone, you fir
 You see progress lines in the terminal (e.g., ✓ Starting application quickstart process…, ✓ Checking DataRobot CLI version…, and so on) as each step runs.
 For more details on the individual wizard steps, click the dropdown below.
 
-<details><summary><b>Click here for a detailed walkthrough of the wizard steps</b></summary>
+<details><summary><b>Full wizard step reference</b></summary>
 <br>
 
 1. Initially, the wizard opens a web browser window to automatically configure your API endpoint and key.
@@ -255,8 +255,8 @@ For more details on the individual wizard steps, click the dropdown below.
    - Choose DataRobot OAuth Provider (default) to use DataRobot’s OAuth, or Authlib OAuth Provider to host OAuth in the app.
    - For additional information on authorization server configuration, see the [OAuth applications documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-authentication.html#oauth-2-0-authentication).
 6. Enter a passphrase (or leave blank if you do not want to use a passphrase) for your Pulumi stack and press `Enter`.
-7. Specify the ID of a DataRobot Use Case (e.g., `69331fad5e07469e7c4f5c6f`), if one is available, and press `Enter`.
-   - You can find your Use Case ID by navigating to the Use Case in the DataRobot UI and copying the ID from the URL.
+7. Specify the ID of a DataRobot Use Case (for example, `69331fad5e07469e7c4f5c6f`), if one is available, and press `Enter`.
+   - Find your Use Case ID by navigating to the Use Case in the DataRobot UI and copying the ID from the URL.
    - If left blank, the wizard creates a new Use Case automatically.
 8. Specify your LLM integration and press `Enter`.
    - For additional information on LLM configuration, see the [LLM configuration documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-llm-providers-metadata.html).
@@ -317,7 +317,7 @@ Once all services are running:
 From here, start customizing the agent by adding your own logic and functionality. See the section on [developing your agent](#develop-your-agent) for more details.
 
 > [!NOTE]
-> You can also start individual services in separate terminal windows; for example, `dr run agent:dev` (or `task agent:dev`) starts just the agent.
+> Start individual services in separate terminal windows; for example, `dr run agent:dev` (or `task agent:dev`) starts only the agent.
 
 ## Local tracing with `dr xp`
 

@@ -4,7 +4,7 @@ The CrewAI agent uses [CrewAI](https://docs.crewai.com/) for role-based multi-ag
 
 ## `myagent.py`
 
-The agent is defined using CrewAI's agent/task/crew abstractions:
+The agent is defined using CrewAI agent/task/crew abstractions:
 
 Agents&mdash;created with `role`, `goal`, and `backstory`:
 
@@ -96,6 +96,8 @@ For DRAgent, MCP tools are loaded explicitly in `_response_fn` via `mcp_tools_co
 
 ## `workflow.yaml`
 
+The `workflow.yaml` file registers the CrewAI agent with DRAgent and configures its LLM, description, and A2A skill metadata:
+
 ```yaml
 general:
   front_end:
@@ -137,11 +139,11 @@ MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)
 
 ### Workflow tools
 
-When you use the DRAgent front server, additional tools (for example, A2A remote agents) are resolved by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.CREWAI` and merged with MCP tools.
+With the DRAgent front server, additional tools (for example, A2A remote agents) are resolved by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.CREWAI` and merged with MCP tools.
 
 ### Custom local tools
 
-To add a custom tool, define a plain Python function and wrap it with CrewAI's `@tool` decorator. Then pass it to individual `Agent` instances via the `tools` parameter:
+To add a custom tool, define a plain Python function and wrap it with the CrewAI `@tool` decorator. Then pass it to individual `Agent` instances via the `tools` parameter:
 
 ```python
 from crewai.tools import tool
@@ -165,7 +167,7 @@ agent_planner = Agent(
 )
 ```
 
-For tools with structured input schemas, use CrewAI's `BaseTool` class:
+For tools with structured input schemas, use the CrewAI `BaseTool` class:
 
 ```python
 from typing import Type
@@ -185,7 +187,7 @@ class DateTimeTool(BaseTool):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 ```
 
-CrewAI is also compatible with LangChain tools&mdash;you can import and use them directly.
+CrewAI is also compatible with LangChain tools&mdash;import and use them directly.
 
 For more tool patterns, see the [DataRobot tools documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tools-integrate.html) and [CrewAI tools documentation](https://docs.crewai.com/concepts/tools).
 
@@ -195,7 +197,7 @@ CrewAI prompts are spread across three places: agent definitions (personality an
 
 ### Agent prompts
 
-Each `Agent` has `role`, `goal`, and `backstory` fields that together define the agent's personality and behavior:
+Each `Agent` has `role`, `goal`, and `backstory` fields that together define the personality and behavior of the agent:
 
 ```python
 agent_planner = Agent(
@@ -218,7 +220,7 @@ agent_planner = Agent(
 
 ### Task prompts
 
-Each `Task` has `description` and `expected_output` fields that tell the agent what to do and what the output should look like:
+Each `Task` has `description` and `expected_output` fields that specify what the agent does and the expected format of the output:
 
 ```python
 task_plan = Task(
@@ -261,14 +263,18 @@ CrewAI accepts only string kickoff variables, so history is **flat text**, not n
 
 ### How to modify
 
+Modify the following elements to change agent behavior:
+
 - Change agent behavior&mdash;modify `role`, `goal`, and `backstory` in the `Agent()` definition.
 - Change task instructions&mdash;update `description` and `expected_output` in the `Task()` definition.
 - Add context between tasks&mdash;use the `context` parameter on a `Task` to pass output from earlier tasks as input.
-- Add new agents/tasks&mdash;create new `Agent` and `Task` instances and add them to the `agents` and `tasks` lists. The `Crew` executes tasks in list order (with `Process.sequential`).
+- Add agents or tasks&mdash;create `Agent` and `Task` instances and add them to the `agents` and `tasks` lists. The `Crew` executes tasks in list order (with `Process.sequential`).
 - Enable delegation&mdash;set `allow_delegation=True` on an agent to let it assign subtasks to other agents.
-- Add new variables&mdash;add keys to `kickoff_inputs` and reference them with `{variable_name}` in prompts.
+- Add variables&mdash;add keys to `kickoff_inputs` and reference them with `{variable_name}` in prompts.
 
 ### Tips
+
+The following tips help keep prompts effective and maintainable:
 
 - Keep agent `goal` concise&mdash;it is the primary driver of LLM behavior.
 - Use `backstory` for detailed context and constraints; use `description` on tasks for step-by-step instructions.

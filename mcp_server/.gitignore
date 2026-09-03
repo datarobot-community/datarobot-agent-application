@@ -173,8 +173,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-/docker/requirements.txt
-
 # temp files
 temp.txt
 
@@ -184,5 +182,8 @@ temp.txt
 # DB through the pulumi/Terraform-based MCP deployment automation.
 /dev_tools/lineage/mcp_item_metadata/*.yaml
 
-# Config of MCP protected resource metadata
-mcp_oauth_protected_resource_metadata_config.yaml
+# Retired: MCP protected resource metadata is configured from MCP_OAUTH_* /
+# MCP_XAA_* environment variables and this file is no longer read. Still ignored
+# so an existing local copy does not turn up as untracked — delete it once its
+# values have moved to .env.
+oauth-config.yaml

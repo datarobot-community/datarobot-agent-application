@@ -121,6 +121,18 @@ dr task run agent:install
 
 For detailed LangGraph documentation, see [docs/agent/frameworks/langgraph.md](../docs/agent/frameworks/langgraph.md).
 
+## Configuration
+
+All configuration lives in `agent/agent/config.py`. The `Config` class there is the authority for this agent component: `datarobot-genai` resolves the DataRobot connection and every LLM setting through it instead of reading the environment on its own. `agent/__init__.py` hands the class to the library on import, which is the only registration involved.
+
+- Add a setting by adding a field to `Config`. A field named `foo_bar` is read from `FOO_BAR` (environment variable, runtime parameter, `.env`, file secret, or Pulumi output).
+- Get one LLM's connection details with `Config().resolve_llm_config(name="llm")`. Nothing is registered per LLM.
+- LLM settings are namespaced by the LLM component's name, so `llm_deployment_id`, `llm_default_model`, `llm_nim_deployment_id`, and `llm_use_datarobot_llm_gateway` belong to the component named `llm`. A second LLM component brings its own set of fields under its own name.
+
+**CRITICAL**: Do NOT read LLM settings out of `os.environ`, and do NOT add a helper function that hands back an `LLMConfig`. Both route around `Config` and stop `config.py` from being authoritative. Resolve at the call site off `Config()` instead.
+
+For the full list of settings, see [Configuration](../docs/agent/README.md#configuration).
+
 ## Agent Testing
 
 Review and update the tests in the `agent/tests` directory after code changes were made to the agent.
@@ -148,6 +160,10 @@ Refer to [Custom metrics](../docs/agent/custom-metrics.md) page for how to set u
 
 ## Migrations
 
+### Agent config authority
+
+`agent/config.py` is now the authoritative configuration for the agent component, `datarobot-genai` included, and the per-LLM settings are namespaced by the LLM component's name. See [agent config authority migration](../docs/agent/migration-config-authority.md).
+
 ### 11.9.3 — `workflow.yaml` location
 
 Agent component 11.9.3 moved `workflow.yaml` from `agent/agent/workflow.yaml` to `agent/workflow.yaml`. NAT framework agents load this file. See [workflow.yaml path migration](../docs/agent/migration-workflow-yaml-path.md).
@@ -164,6 +180,7 @@ If you are upgrading an existing agent from a version prior to 11.8.8, follow th
 - [Base agent migration](../docs/agent/frameworks/migration-to-11.8.8-base.md)
 - [NAT agent migration](../docs/agent/frameworks/migration-to-11.8.8-nat.md)
 - [workflow.yaml path migration (11.9.3)](../docs/agent/migration-workflow-yaml-path.md)
+- [agent config authority migration](../docs/agent/migration-config-authority.md)
 # MCP Server Development Instructions
 
 The MCP server MUST be implemented in the `mcp_server/` directory.

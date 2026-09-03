@@ -2,8 +2,7 @@
 
 This guide covers how to evaluate agentic workflows locally using **`nat eval`** and DataRobot moderation metrics from `datarobot-genai`. It explains how to configure batch evaluation and optionally wrap runs in Pytest during development.
 
-> [!NOTE]
-> This guide covers **local, offline evaluation** during development. It is not intended for CI/CD pipelines. To enforce guardrails on live agent traffic through DRAgent, see [Moderation and guardrails](./moderation.md).
+> **Note:** This guide covers **local, offline evaluation** during development. It is not intended for CI/CD pipelines. To enforce guardrails on live agent traffic through DRAgent, see [Moderation and guardrails](./moderation.md).
 
 | Section | Description |
 |---|---|
@@ -19,9 +18,9 @@ This guide covers how to evaluate agentic workflows locally using **`nat eval`**
 
 ## Why local evaluation
 
-The DataRobot Agentic Playground provides a UI-based environment for evaluating deployed agents with built-in quality metrics and traces. Local evaluation with `nat eval` is the preferred approach when you need:
+The DataRobot Agentic Playground provides a UI-based environment for evaluating deployed agents with built-in quality metrics and traces. Local evaluation with `nat eval` is the preferred approach for these needs:
 
-- **Fast feedback loops**&mdash;no deployment required; evaluation runs against your local `workflow.yaml` during development.
+- **Fast feedback loops**&mdash;no deployment required; evaluation runs against the local `workflow.yaml` during development.
 - **Reproducible datasets**&mdash;define evaluation cases and metrics as code in version control.
 - **End-to-end coverage**&mdash;`nat eval` runs the same workflow path as `nat dragent serve`, then scores outputs in-process.
 
@@ -31,36 +30,40 @@ The Playground remains the preferred environment for evaluating live deployed ag
 
 ## Prerequisites
 
+Local evaluation requires the following dependencies and environment variables.
+
 ### Dependencies
 
-Local evaluation uses **`nat eval`** plugins shipped in `datarobot-genai` **0.26.10 or newer** (`dr_eval_plugins` entry point). The agent template already depends on `datarobot-genai[dragent, …]`; ensure your lockfile resolves to a version that includes the eval plugins.
+Local evaluation uses **`nat eval`** plugins shipped in `datarobot-genai` **0.26.10 or higher** (`dr_eval_plugins` entry point). The agent template already depends on `datarobot-genai[dragent, …]`; ensure the lockfile resolves to a version that includes the eval plugins.
 
-Pytest evaluation tests use `@pytest.mark.timeout`; `pytest-timeout` is included in the template's `dev` optional dependencies (`dr task run agent:install`).
+Pytest evaluation tests use `@pytest.mark.timeout`; `pytest-timeout` is included in the template `dev` optional dependencies (`dr task run agent:install`).
 
-No separate `datarobot-moderations` install is required&mdash;evaluators call the same OOTB scorers in-process.
+No separate `datarobot-moderations` install is required&mdash;evaluators call the same out-of-the-box scorers in-process.
 
 ### Required environment variables
 
-`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` must be available before running evaluation. They are written to your `.env` file by `dr start`. The Taskfile loads `.env` automatically; if you run `nat eval` or `pytest` directly, export them first.
+`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` must be available before running evaluation. They are written to the `.env` file by `dr start`. The Taskfile loads `.env` automatically; when running `nat eval` or `pytest` directly, export them first.
 
 | Variable | Description |
 |---|---|
-| `DATAROBOT_ENDPOINT` | Your DataRobot instance URL (e.g., `https://app.datarobot.com/api/v2`). |
+| `DATAROBOT_ENDPOINT` | The DataRobot instance URL (for example, `https://app.datarobot.com/api/v2`). |
 | `DATAROBOT_API_TOKEN` | A valid DataRobot API token. |
 
 ### Judge LLM
 
-Evaluators reference a judge LLM by `llm_name` (typically `judge_llm`) defined in `eval/eval-config-base.yaml` as a `datarobot-llm-component`. Use a high-capability model that is **different from the model your agent uses**&mdash;a model scores its own outputs leniently, so an independent judge gives a more objective result.
+Evaluators reference a judge LLM by `llm_name` (typically `judge_llm`) defined in `eval/eval-config-base.yaml` as a `datarobot-llm-component`. Use a high-capability model that is **different from the model the agent uses**&mdash;a model scores its own outputs leniently, so an independent judge gives a more objective result.
 
 <a name="configuration"></a>
 
 ## Configuration
 
-Local evaluation is configured through YAML files under `eval/`. Each file extends a shared base that inherits your agent's `workflow.yaml`.
+Local evaluation is configured through YAML files under `eval/`. Each file extends a shared base that inherits the `workflow.yaml` for the agent.
 
 ### File layout
 
-```
+Evaluation configuration and datasets live under `eval/`, alongside the agent tests:
+
+```text
 agent/
 ├── workflow.yaml
 ├── eval/
@@ -116,16 +119,18 @@ eval:
 
 ### Available evaluators
 
+Local evaluation supports these evaluator types:
+
 | Evaluator (`_type`) | Description | Dataset fields |
 |---|---|---|
-| `agent_goal_accuracy` | Whether the agent achieved the user's stated goal. | `question`, `answer` |
+| `agent_goal_accuracy` | Whether the agent achieved the goal stated by the user. | `question`, `answer` |
 | `faithfulness` | Detects hallucinations by comparing the response to retrieved context. | `question`, `answer`, `context` (list of strings) |
 | `task_adherence` | How closely the response follows prompt instructions. | `question`, `answer` |
 | `agent_guideline_adherence` | Whether the response follows a fixed guideline string. | `question`, `answer`; set `agent_guideline` on the evaluator |
 
 ### Dataset format
 
-Datasets are JSON arrays. Each row needs a unique `id`, a `question` (the user prompt `nat eval` sends to your workflow), and an `answer` (the reference response for the row):
+Datasets are JSON arrays. Each row needs a unique `id`, a `question` (the user prompt `nat eval` sends to the workflow), and an `answer` (the reference response for the row):
 
 ```json
 [
@@ -156,7 +161,11 @@ NAT maps `question` to the workflow input and `answer` to the expected output (`
 
 ## Usage examples
 
+Run evaluations directly from the CLI, or wrap them in Pytest for repeatable local runs.
+
 ### Run evaluation from the CLI
+
+Run `nat eval` directly with an evaluation config file:
 
 ```sh
 cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.yaml
@@ -166,7 +175,7 @@ On success, the CLI prints an `EVALUATION SUMMARY` with per-metric scores. Resul
 
 ### Optional Pytest wrapper
 
-You can wrap `nat eval` in Pytest for repeatable local runs during development. Add tests to `agent/tests/test_agent_eval.py`:
+Wrap `nat eval` in Pytest for repeatable local runs during development. Add tests to `agent/tests/test_agent_eval.py`:
 
 ```python
 import os
@@ -207,7 +216,7 @@ def test_agent_goal_accuracy(tmp_path: Path) -> None:
     assert "EVALUATION SUMMARY" in output
 ```
 
-### Registering the `eval` marker
+### Register the `eval` marker
 
 To avoid Pytest warnings, register the custom marker in `pyproject.toml`:
 
@@ -222,9 +231,11 @@ markers = [
 
 ## Troubleshooting
 
+The following issues are common when running local evaluation.
+
 ### `nat eval` command not found or unknown evaluator `_type`
 
-**Cause:** `datarobot-genai` is older than 0.26.10, which first shipped the DataRobot moderation eval plugins.
+**Cause:** `datarobot-genai` is earlier than 0.26.10, which first shipped the DataRobot moderation eval plugins.
 
 **Fix:** Upgrade `datarobot-genai` in `pyproject.toml` and refresh the lockfile (`dr task run agent:install`).
 
@@ -250,29 +261,31 @@ dr task run agent:install
 
 **Cause:** Dataset rows are missing `context`, or the context does not match what the agent actually retrieves.
 
-**Fix:** Ensure each faithfulness row includes a `context` list with the passages the agent should ground on.
+**Fix:** Ensure each faithfulness row includes a `context` list with the passages the agent grounds its response on.
 
 ### `PytestUnknownMarkWarning: Unknown pytest.mark.eval`
 
 **Cause:** The `eval` marker is not registered in `pyproject.toml`.
 
-**Fix:** Add the marker to `[tool.pytest.ini_options]` as shown in the [Registering the `eval` marker](#registering-the-eval-marker) section.
+**Fix:** Add the marker to `[tool.pytest.ini_options]` as shown in the [Register the `eval` marker](#register-the-eval-marker) section.
 
 <a name="best-practices"></a>
 
 ## Best practices
 
+The following practices improve local evaluation reliability and coverage.
+
 ### Use a dedicated judge model
 
-Define `judge_llm` separately from the agent's `datarobot_llm` in `eval-config-base.yaml`. Set `temperature: 0` on the judge for consistent scoring.
+Define `judge_llm` separately from the `datarobot_llm` of the agent in `eval-config-base.yaml`. Set `temperature: 0` on the judge for consistent scoring.
 
 ### Keep datasets in version control
 
-Store `eval/dataset/*.json` alongside your agent code so evaluation cases are reviewed in pull requests alongside agent changes.
+Store `eval/dataset/*.json` alongside the agent code so evaluation cases are reviewed in pull requests alongside agent changes.
 
 ### Separate eval tests from unit tests with markers
 
-Use `@pytest.mark.eval` on tests that call the DataRobot API so you can run them separately from unit tests during local development:
+Use `@pytest.mark.eval` on tests that call the DataRobot API so they run separately from unit tests during local development:
 
 ```sh
 cd agent && uv run pytest tests/ -m eval        # Only evaluation tests (requires credentials)
@@ -283,11 +296,13 @@ Do not run `nat eval` or eval-marked tests in CI&mdash;they require live DataRob
 
 ### Align runtime and offline guardrails
 
-Runtime guardrails use `moderation_config.yaml` with `datarobot_moderation` middleware. Offline `nat eval` uses the same OOTB scorers in-process. Tune thresholds separately&mdash;runtime guards block live traffic; eval datasets assert quality on representative prompts.
+Runtime guardrails use `moderation_config.yaml` with `datarobot_moderation` middleware. Offline `nat eval` uses the same out-of-the-box scorers in-process. Tune thresholds separately&mdash;runtime guards block live traffic; eval datasets assert quality on representative prompts.
 
 <a name="further-reading"></a>
 
 ## Further reading
+
+The following resources cover related components and workflows:
 
 | Topic | Description |
 |---|---|

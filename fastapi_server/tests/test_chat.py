@@ -22,10 +22,9 @@ handle authentication setup with a default test user.
 
 import datetime
 import uuid as uuidpkg
-from typing import Any, AsyncGenerator, Dict, Generator
+from typing import AsyncGenerator, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import litellm.exceptions
 import pytest
 from ag_ui.core import (
     BaseEvent,
@@ -52,52 +51,10 @@ from app.auth.ctx import (
 )
 from app.chats import Chat, ChatRepository
 from app.deps import Deps
-from app.messages import Message, Role
 from app.users.user import User
 
 
 # Fixtures
-@pytest.fixture
-def mock_dr_client() -> Generator[MagicMock, None, None]:
-    with patch("datarobot.Client") as mock_client:
-        client_instance = MagicMock()
-        client_instance.token = "test-token"
-        client_instance.endpoint = "https://test-endpoint.datarobot.com"
-        mock_client.return_value = client_instance
-        yield mock_client
-
-
-@pytest.fixture
-def mock_litellm_completion() -> Generator[MagicMock, None, None]:
-    """Fixture for successful litellm completion."""
-    with patch("litellm.acompletion") as mock_acompletion:
-
-        async def _mock_acompletion(*args: Any, **kwargs: Any) -> dict[str, Any]:
-            return {"choices": [{"message": {"role": "assistant", "content": "test"}}]}
-
-        mock_acompletion.side_effect = _mock_acompletion
-        yield mock_acompletion
-
-
-@pytest.fixture
-def mock_message_repo() -> AsyncMock:
-    """Fixture for mocking message repository with proper return values."""
-    return AsyncMock(
-        return_value=MagicMock(dump_json_compatible=lambda: {"content": "test"})
-    )
-
-
-@pytest.fixture
-def mock_api_connection_error() -> litellm.exceptions.APIConnectionError:
-    """Fixture to create a standard APIConnectionError for testing."""
-    error_message = '{"message": "Request is too large. The request size is 278284656 bytes and the maximum message size allowed by the server is 11264MB"}'
-    return litellm.exceptions.APIConnectionError(
-        f"litellm.APIConnectionError: DatarobotException - {error_message}",
-        llm_provider="datarobot",
-        model="test-model",
-    )
-
-
 @pytest.fixture
 def sample_chat() -> Chat:
     """Fixture to create a test chat object."""
@@ -108,31 +65,6 @@ def sample_chat() -> Chat:
         created_at=datetime.datetime(
             2025, 10, 8, 0, 0, 0, 0, tzinfo=datetime.timezone.utc
         ),
-    )
-
-
-@pytest.fixture
-def sample_user_message(sample_chat: Chat) -> Message:
-    """Fixture to create a test user message object."""
-    return Message(
-        uuid=uuidpkg.uuid4(),
-        chat_id=sample_chat.uuid,
-        name="test-model",
-        role=Role.USER,
-        content="Hello, test!",
-    )
-
-
-@pytest.fixture
-def sample_llm_message(sample_chat: Chat) -> Message:
-    """Fixture to create a test user message object."""
-    return Message(
-        uuid=uuidpkg.uuid4(),
-        chat_id=sample_chat.uuid,
-        name="test-model",
-        role=Role.ASSISTANT,
-        content="Test response",
-        in_progress=True,
     )
 
 

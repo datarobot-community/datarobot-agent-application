@@ -1300,7 +1300,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", marker = "extra == 'dev'", specifier = ">=8.3.0" },
-    { name = "datarobot-genai", extras = ["drmcp"], specifier = "==0.27.13" },
+    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.27.4,<0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.6.1" },

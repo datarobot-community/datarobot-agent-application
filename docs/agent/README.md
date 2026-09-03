@@ -11,7 +11,9 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent class implementation](#agent-class-implementation-myagentpy) | Agent class and its framework-specific implementation. |
 | [Tool integration](#tool-integration) | How agents use tools via MCP, workflow tools, and custom local tools. |
 | [Configuration](#configuration) | Agent configuration management. |
-| [Front server](#front-server) | DRAgent — the only supported front server |
+| [Runtime parameters](./runtime-parameters.md) | Configuring runtime parameters: defaults this component ships, overriding values, and adding custom parameters. |
+| [Front server](#front-server) | DRAgent — the only supported front server. |
+| [Deployment runtimes](./deployment-runtimes.md) | Custom Models vs. Workload API: choosing one, deploying on the Workload API, `WORKLOAD_*` configuration, and switching later. |
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
@@ -19,9 +21,12 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
 | [Chat history](./chat-history.md) | Multi-turn conversation context: how prior `messages` are injected across LangGraph, CrewAI, LlamaIndex, and NAT. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with `nat eval` during development. |
+| [Custom metrics](./custom-metrics.md) | Create custom metrics on a DataRobot deployment and submit values to them. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
+
+The agent component provides the following features.
 
 ### AG-UI (Agent-User Interaction Protocol)
 
@@ -39,16 +44,18 @@ All framework agents support **multi-turn chat history**. When prior user and as
 
 ## Agent file structure
 
-The agent is implemented in the `agent/` directory. The inner `agent/agent/` package contains the Python code you edit; `workflow.yaml` and other outer files provide NAT orchestration and infrastructure for running and deploying the agent.
+The agent is implemented in the `agent/` directory. The inner `agent/agent/` package contains the editable Python code; `workflow.yaml` and other outer files provide NAT orchestration and infrastructure for running and deploying the agent.
 
-```
+```text
 agent/
-├── agent/                  # Agent Python package (your code goes here)
+├── agent/                  # Agent Python package (code goes here)
 │   ├── __init__.py         # Package exports: MyAgent, Config
 │   ├── myagent.py          # Agent definition (framework-specific)
 │   ├── config.py           # Configuration management
 │   └── register.py         # DRAgent/NAT registration (framework-specific)
 ├── workflow.yaml           # DRAgent/NAT orchestration config (framework-specific; see note below)
+├── start_server.sh         # Custom model entrypoint: starts the DRAgent front server
+├── run_agent.py            # Entrypoint used by the DataRobot agentic playground / codespaces
 ├── tests/                  # Agent tests
 │   ├── conftest.py
 │   ├── test_agent.py
@@ -58,8 +65,7 @@ agent/
 └── uv.lock                 # Dependency lockfile
 ```
 
-> [!IMPORTANT]
-> `workflow.yaml` lives at `agent/workflow.yaml`, not under `agent/agent/`. It is the top-level NAT configuration that DRAgent loads to build the front server, tools, LLMs, and workflow graph. Upgrading from layouts that kept the file at `agent/agent/workflow.yaml`? See [`workflow.yaml` path migration](./migration-workflow-yaml-path.md).
+> **Important:** `workflow.yaml` lives at `agent/workflow.yaml`, not under `agent/agent/`. It is the top-level NAT configuration that DRAgent loads to build the front server, tools, LLMs, and workflow graph. Upgrading from layouts that kept the file at `agent/agent/workflow.yaml`? See [`workflow.yaml` path migration](./migration-workflow-yaml-path.md).
 
 | File | Description |
 |---|---|
@@ -67,13 +73,14 @@ agent/
 | `agent/agent/config.py` | Manages configuration loading from environment variables, runtime parameters, and DataRobot credentials. |
 | `agent/agent/register.py` | Framework-specific. NAT registration module used by DRAgent. Wires LLM, MCP tools, workflow tools, and the agent together. |
 | `agent/workflow.yaml` | Framework-specific. Declarative NAT workflow configuration: front-end type, A2A metadata, LLM component, workflow type, middleware, and memory wrappers. Loaded by DRAgent for every framework. |
+| `agent/start_server.sh` | Entrypoint the deployed custom model runs at container start: syncs `uv.lock` into the runtime venv and execs `nat dragent serve` against `workflow.yaml`. Overrides the copy baked into the execution environment image. |
+| `agent/run_agent.py` | Entrypoint the DataRobot agentic playground and codespaces run for a single chat completion: bootstraps the venv, sets up OpenTelemetry tracing, and executes the agent inline. |
 
-> [!NOTE]
-> The files `myagent.py`, `register.py`, and `workflow.yaml` are generated from framework-specific templates during project setup. Their content depends on the chosen agent framework (LangGraph, CrewAI, LlamaIndex, NAT, or Base).
+> **Note:** The files `myagent.py`, `register.py`, and `workflow.yaml` are generated from framework-specific templates during project setup. Their content depends on the chosen agent framework (LangGraph, CrewAI, LlamaIndex, NAT, or Base).
 
 ## Agent class implementation (`myagent.py`)
 
-The `myagent.py` file contains the agent's core logic. The implementation depends on your chosen framework, but all frameworks follow the same pattern: define the agent using native framework primitives, then wrap it into a `MyAgent` class that DataRobot can invoke.
+The `myagent.py` file contains the core agent logic. The implementation depends on the chosen framework, but all frameworks follow the same pattern: define the agent using native framework primitives, then wrap it into a `MyAgent` class that DataRobot can invoke.
 
 Each framework uses a factory helper from `datarobot_genai` to generate `MyAgent`:
 
@@ -87,7 +94,7 @@ Each framework uses a factory helper from `datarobot_genai` to generate `MyAgent
 
 MCP and tool wiring happen in `register.py`&mdash;see the framework-specific docs for that path.
 
-**Important**: The name `MyAgent` must not be changed&mdash;it is referenced by the framework infrastructure.
+> **Important:** The name `MyAgent` must not be changed&mdash;it is referenced by the framework infrastructure.
 
 ### Tools
 
@@ -118,7 +125,7 @@ Agents can combine tools from multiple sources. LangGraph, CrewAI, and LlamaInde
 
 ### MCP tools
 
-MCP tools are loaded in `register.py` by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens outside `MyAgent`, not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration and optional co-deployment behavior.
+MCP tools are loaded in `register.py` by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (for example, `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens outside `MyAgent`, not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration and optional co-deployment behavior.
 
 ```python
 async with mcp_tools_context(mcp_config) as mcp_tools:
@@ -131,9 +138,9 @@ Tools listed in `workflow.yaml` under `tool_names` are resolved by the NeMo (NAT
 
 ### Custom local tools
 
-If you chose the [NAT](./frameworks/nat.md) framework: read [NAT `workflow.yaml` requirements](./frameworks/nat.md#nat-workflowyaml-requirements-read-this-first) first. Do not use `_type: python_function` in `functions` for custom Python tools. Use `nat_tool` in `register.py`, a matching `functions.<name>` block with `_type` equal to that name, and include the name in `workflow.tool_names`. Every `nat_tool` name must appear in YAML or you will see `Function '…' not found in list of functions`. Follow the [checklist](./frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip).
+For the [NAT](./frameworks/nat.md) framework, read [NAT `workflow.yaml` requirements](./frameworks/nat.md#nat-workflowyaml-requirements-read-this-first) first. Do not use `_type: python_function` in `functions` for custom Python tools. Use `nat_tool` in `register.py`, a matching `functions.<name>` block with `_type` equal to that name, and include the name in `workflow.tool_names`. Every `nat_tool` name must appear in YAML, or the build fails with `Function '…' not found in list of functions`. Follow the [checklist](./frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip).
 
-For LangGraph (and similar code-first frameworks), add tool functions under `agent/agent/` and pass them into your graph or agents, for example:
+For LangGraph (and similar code-first frameworks), add tool functions under `agent/agent/` and pass them into the graph or agents, for example:
 
 ```python
 from langchain_core.tools import tool
@@ -146,13 +153,15 @@ def my_custom_tool(query: str) -> str:
 
 ### Authorization context
 
-DRAgent automatically resolves the authorization context for tools that require access tokens, so tools can securely call external services using DataRobot's credential management. No agent-side code is required.
+DRAgent automatically resolves the authorization context for tools that require access tokens, so tools can securely call external services using DataRobot credential management. No agent-side code is required.
 
 ## Configuration
 
 Agent configuration is managed by the `Config` class in `agent/config.py`, which extends `DataRobotAppFrameworkBaseSettings`. It loads values in the following priority order: environment variables (including runtime parameters), `.env` files, file secrets, then Pulumi output variables.
 
 `Config` is the authority for this agent component, `datarobot-genai` included. The library resolves the DataRobot connection and every LLM setting through this class rather than reading the environment itself, so a default changed in `agent/config.py` is the default the agent runs with. `agent/__init__.py` hands the class to the library on import; there is nothing else to register.
+
+Runtime parameters are the deploy-time mechanism behind the "environment variables (including runtime parameters)" entry described earlier in this section: key/value entries declared on the deployed custom model (`model-metadata.yaml`) that `Config` reads like any other environment variable, and that can be edited in DataRobot after deployment without a code change. See [Runtime parameters](./runtime-parameters.md) for the full list this component provisions, how to override a value locally versus at deploy time versus after deployment, and how to add custom parameters.
 
 | Variable | Description | Default |
 |---|---|---|
@@ -168,7 +177,7 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 | `ASSUME_NATIVE_TOOL_CALLING_WHEN_UNMAPPED` | CrewAI only. Report native tool-calling support for NIM models LiteLLM has no catalog entry for. | `false` |
 | `AGENT_PORT` | Local agent server port. | `8842` |
 
-The four `LLM_*` routing variables are named after the LLM component, which is called `llm` by default. A project with a second LLM component gets a second set of fields under that component's own name, and each is resolved independently.
+The four `LLM_*` routing variables are named after the LLM component, which is called `llm` by default. A project with a second LLM component gets a second set of fields under the name of that component, and each is resolved independently.
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
@@ -178,15 +187,29 @@ For LLM configuration details, see [LLM component](../llm.md). To configure prim
 
 The agent component runs on the DRAgent front server&mdash;a NAT (NeMo Agent Toolkit) + FastAPI runtime that loads `workflow.yaml`, builds the workflow graph, and serves the agent over HTTP. DRAgent is wired in for every framework (LangGraph, CrewAI, LlamaIndex, NAT, Base).
 
-- Entry point&mdash;`register.py` + `workflow.yaml`, using NAT's declarative workflow registration.
+- Entry point&mdash;`register.py` + `workflow.yaml`, using declarative workflow registration in NAT.
 - Execution model&mdash;fully asynchronous (native `async`/`await`).
 - Streaming&mdash;native async streaming via `DRAgentEventResponse`.
 - Local dev&mdash;the Taskfile runs `nat dragent serve --config_file workflow.yaml` on port `AGENT_PORT` (default `8842`). CLI commands (`task agent:cli -- execute …`) are forwarded to `nat dragent run`/`query` and run the workflow in-process without a server.
 
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
 
-> [!NOTE]
-> All agents run on DRAgent. `ENABLE_DRAGENT_SERVER` is a legacy setting; if it is present, it must be set to `true` (or remove it entirely).
+> **Note:** All agents run on DRAgent. `ENABLE_DRAGENT_SERVER` is a legacy setting; if it is present, it must be set to `true` (or remove it entirely).
+
+## Deployment runtime
+
+The agent's Pulumi infrastructure (`infra/infra/agent.py`) supports two deployment runtimes, selected by the `ENABLE_AGENT_ON_WORKLOAD_API` environment variable:
+
+| Runtime | When | Provisions |
+|---|---|---|
+| **Custom Models** (default) | `ENABLE_AGENT_ON_WORKLOAD_API` unset or falsy | `CustomModel`, `Playground`, `LlmBlueprint`, and (when `ENABLE_AGENT_HA_MODE=true`) a `CustomModelDeployment`. |
+| **Workload API** | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
+
+Custom Models is the default and needs no configuration. Setting `ENABLE_AGENT_ON_WORKLOAD_API=true` selects the Workload API, whose default scenario builds the image on the platform from your agent source and needs no Docker registry of your own.
+
+Automated deployment of agents onto the Workload API runtime is experimental and requires two DataRobot feature flags on your account, `ENABLE_WORKLOAD_API_CODE` and `ENABLE_WORKLOAD_API_AGENT`.
+
+See [Deployment runtimes](./deployment-runtimes.md) for how to choose between them, a Workload API quick start, the full `WORKLOAD_*` configuration reference, and how to switch runtimes later.
 
 ## Agent types
 
@@ -206,17 +229,21 @@ All agent types use the same `datarobot_genai` package for LLM configuration, re
 
 ## Migrations
 
+### 11.11.48 — Agent infra module split
+
+Agent component 11.11.48 split `infra/infra/<agent_app_name>.py` into an entry router plus `<agent_app_name>_infra/{base,deployment,workload}.py`. Behaviour and the module's public surface are unchanged, so this only affects projects that edited that file. See [agent infra split migration](./migration-infra-split.md).
+
 ### Agent config authority
 
-`agent/config.py` is the authoritative configuration for the agent component, and the per-LLM settings are namespaced by the LLM component's name. Projects created before this change need their config fields, runtime parameters, and `datarobot-llm-router` blocks renamed. See [agent config authority migration](./migration-config-authority.md).
+`agent/config.py` is the authoritative configuration for the agent component, and the per-LLM settings are namespaced by the name of the LLM component. Projects created before this change need their config fields, runtime parameters, and `datarobot-llm-router` blocks renamed. See [agent config authority migration](./migration-config-authority.md).
 
 ### 11.9.3 — `workflow.yaml` location
 
 Agent component 11.9.3 moved `workflow.yaml` from `agent/agent/workflow.yaml` to `agent/workflow.yaml`. DRAgent loads this file at startup. See [`workflow.yaml` path migration](./migration-workflow-yaml-path.md).
 
-### 11.8.8 — New agent format
+### 11.8.8 — Agent format change
 
-Starting with version 11.8.8, agent templates (except `base`) no longer require defining agents within a `MyAgent` class. They are now converted from their native framework primitives to `MyAgent` with a helper function. The LLM is also decoupled from the agent class. See the [changelog](../../CHANGELOG.md) and [af-component-agent#474](https://github.com/datarobot-community/af-component-agent/pull/474) for details.
+Starting with version 11.8.8, agent templates (except `base`) no longer require defining agents within a `MyAgent` class. They are converted from their native framework primitives to `MyAgent` with a helper function. The LLM is also decoupled from the agent class. See the [changelog](../../CHANGELOG.md) and [af-component-agent#474](https://github.com/datarobot-community/af-component-agent/pull/474) for details.
 
 Migration guides per framework:
 
@@ -229,6 +256,7 @@ Migration guides per framework:
 | NAT | [migration-to-11.8.8-nat.md](./frameworks/migration-to-11.8.8-nat.md) |
 | All frameworks | [`workflow.yaml` path (11.9.3)](./migration-workflow-yaml-path.md) |
 | All frameworks | [agent config authority](./migration-config-authority.md) |
+| All frameworks | [agent infra split (11.11.48)](./migration-infra-split.md) |
 
 ## Further reading
 
@@ -249,22 +277,29 @@ The following topics are covered in the official DataRobot documentation:
 
 ## Development
 
+The following commands support local development of the agent component.
+
 ### Install dependencies
+
+Install the agent component dependencies:
 
 ```sh
 dr task run agent:install
 ```
 
-> [!WARNING]
-> When using a custom Docker context (`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset and an `agent/docker_context/` folder is present), modifying `pyproject.toml` or `uv.lock` triggers a full execution environment rebuild on the next deployment. This rebuild can take 10–20 minutes depending on the number of dependencies. When using the default DataRobot execution environment (the default configuration), dependency changes do not trigger a rebuild.
+> **Warning:** When using a custom Docker context (`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset and an `agent/docker_context/` folder is present), modifying `pyproject.toml` or `uv.lock` triggers a full execution environment rebuild on the next deployment. This rebuild can take 10–20 minutes depending on the number of dependencies. When using the default DataRobot execution environment (the default configuration), dependency changes do not trigger a rebuild.
 
 ### Run tests
+
+Run the agent component test suite:
 
 ```sh
 dr task run agent:test
 ```
 
 ### Run linter
+
+Run the linter against the agent component:
 
 ```sh
 dr task run agent:lint
@@ -294,6 +329,10 @@ task agent:cli -- execute --user_prompt '{"topic":"Generative AI"}'
 
 ### Validate a deployment
 
+Validate a deployed agent:
+
 ```sh
 task agent:cli -- execute-deployment --user_prompt "Your test prompt" --deployment_id DEPLOYMENT_ID
 ```
+
+This applies to the **Custom Models** runtime only. The Workload API runtime creates no deployment and therefore no deployment ID — POST to the workload's chat endpoint instead, as described in [Deployment runtimes](./deployment-runtimes.md#deploy-on-workload-api).

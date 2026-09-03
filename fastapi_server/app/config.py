@@ -32,7 +32,7 @@ class Config(DataRobotAppFrameworkBaseSettings):
     session_cookie_name: str = "sess"  # Can be overridden for different apps
 
     log_level: LogLevel = LogLevel.INFO
-    log_format: FormatType = "text"
+    log_format: FormatType = "json"
 
     agent_port: int = Field(default=8842, ge=1, le=65535)
     agent_endpoint: str | None = None

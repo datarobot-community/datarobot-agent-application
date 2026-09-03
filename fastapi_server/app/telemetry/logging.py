@@ -18,9 +18,10 @@ import re
 import sys
 import time
 import traceback
+from collections.abc import Callable, Coroutine
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Any, Callable, Coroutine, Dict, ParamSpec, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar, Union
 
 from app.telemetry.enums import FormatType, LogLevel
 
@@ -42,11 +43,14 @@ class JsonFormatter(logging.Formatter):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.default_fields: Dict[
+        self.default_fields: dict[
             str, Union[Callable[[logging.LogRecord], Any], Any]
         ] = {
             "timestamp": lambda _: datetime.now(timezone.utc).isoformat(),
-            "level": lambda record: record.levelname,
+            # The DataRobot OTel collector's severity_parser only reads "levelname"
+            # (matching platform services' JSON logs) - it never looked for "level",
+            # so every JSON log line from this formatter was silently defaulted to INFO.
+            "levelname": lambda record: record.levelname,
             "logger": lambda record: record.name,
         }
 
@@ -205,7 +209,7 @@ class RedactingFormatter(logging.Formatter):
 
 def init_logging(
     level: LogLevel = LogLevel.INFO,
-    format_type: FormatType = "text",
+    format_type: FormatType = "json",
     stream: Any = sys.stdout,
 ) -> None:
     """
@@ -217,7 +221,11 @@ def init_logging(
 
     Args:
         level: The minimum logging level (e.g., logging.INFO, 'DEBUG').
-        format_type: The format type to use ('json' or 'text').
+        format_type: The format type to use ('json' or 'text'). Defaults to 'json':
+            the OTel collector's recombine heuristic splits multi-line plaintext
+            records apart (any line not starting with whitespace starts a new
+            record), which mislabels continuation lines as INFO and lets them
+            bypass level filtering. A single-line JSON record has no such lines.
         stream: The stream to write logs to (defaults to stdout).
     """
     root_logger = logging.getLogger()
@@ -249,16 +257,19 @@ def get_logger(
     name: str = "",
     level: LogLevel = LogLevel.INFO,
     stream: Any = sys.stdout,
-    format_type: FormatType = "text",
+    format_type: FormatType = "json",
 ) -> logging.Logger:
     """
     Get a configured logger instance.
 
     Args:
-        name: The name of the logger
+        name: The name of the logger. An empty name configures the root logger,
+            replacing the handlers installed by init_logging - prefer init_logging
+            for root configuration.
         level: The logging level (can be int or string like 'INFO', 'DEBUG', etc.)
         stream: The stream to write logs to (defaults to stdout)
-        format_type: The format type to use ('json' or 'text', defaults to 'text')
+        format_type: The format type to use ('json' or 'text', defaults to 'json'
+            to match init_logging - see its docstring for why)
 
     Returns:
         A configured logger instance
@@ -269,16 +280,17 @@ def get_logger(
 
     # Create handler with appropriate formatter
     handler = logging.StreamHandler(stream)
+    formatter: Union[JsonFormatter, TextFormatter]
     if format_type == "json":
-        formatter: logging.Formatter = JsonFormatter()
+        formatter = JsonFormatter()
     else:
         formatter = TextFormatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         formatter.converter = time.gmtime
-
-    formatter = RedactingFormatter(formatter)
-    handler.setFormatter(formatter)
+    # Wrap with RedactingFormatter to match init_logging - loggers configured
+    # here must never emit access_token/refresh_token in cleartext.
+    handler.setFormatter(RedactingFormatter(formatter))
 
     # Configure logger
     logger = logging.getLogger(name)
@@ -286,7 +298,7 @@ def get_logger(
     logger.propagate = False
 
     # Remove existing handlers
-    for existing_handler in logger.handlers:
+    for existing_handler in logger.handlers[:]:
         logger.removeHandler(existing_handler)
 
     logger.addHandler(handler)
@@ -302,7 +314,10 @@ def log_api_call(
 ) -> Callable[P, Coroutine[Any, Any, T]]:
     @wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        logger = get_logger()
+        # Name the logger after the decorated function's module: get_logger("")
+        # would reconfigure the root logger, replacing the handlers installed by
+        # init_logging for the whole app.
+        logger = get_logger(func.__module__)
         request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         separator = f"\n{'=' * 80}\n"
         logger.info(

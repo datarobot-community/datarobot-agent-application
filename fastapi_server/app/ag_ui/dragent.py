@@ -23,8 +23,6 @@ from ag_ui.core import (
     Event,
     RunAgentInput,
     RunErrorEvent,
-    RunFinishedEvent,
-    RunStartedEvent,
 )
 from pydantic import BaseModel
 
@@ -87,7 +85,6 @@ class DRAgentAGUIAgent(AGUIAgent):
     async def _handle_stream_events(
         self, input: RunAgentInput
     ) -> AsyncGenerator[BaseEvent, None]:
-        yield RunStartedEvent(thread_id=input.thread_id, run_id=input.run_id)
         try:
             body = input.model_dump_json(by_alias=True)
 
@@ -121,17 +118,13 @@ class DRAgentAGUIAgent(AGUIAgent):
                         ]
                         response = DRAgentEventResponse.model_validate(raw)
                         for event in response.events:
-                            # Filter out RunStartedEvent/RunFinishedEvent from the DRAgent server
-                            # since they have empty run_id/thread_id, and we emit our own.
-                            if isinstance(event, (RunStartedEvent, RunFinishedEvent)):
-                                continue
                             logger.debug("Yielding event: %s", event.type)
                             events_yielded = True
                             yield event
+
                             if isinstance(event, RunErrorEvent):
                                 # The run already ended in error; no further event
-                                # (including our own RunFinishedEvent below) may
-                                # follow for this run.
+                                # may follow for this run.
                                 return
 
             logger.info("Stream has finished")
@@ -140,8 +133,6 @@ class DRAgentAGUIAgent(AGUIAgent):
                 raise RuntimeError(
                     "No events received from the DRAgent server. Please check if the server is running."
                 )
-
-            yield RunFinishedEvent(thread_id=input.thread_id, run_id=input.run_id)
 
         except Exception as e:
             logger.exception("Error during DRAgent agent run")

@@ -6,17 +6,11 @@ AG-UI defines a set of event types that agents emit during execution, enabling t
 
 All `MyAgent.invoke()` implementations yield `(event, pipeline_interactions, usage_metrics)` tuples, where `event` is an AG-UI event object from the `ag_ui.core` module.
 
-Framework support varies by event category:
-
-| Event category | NAT | CrewAI | LlamaIndex | LangGraph |
-|---|---|---|---|---|
-| Lifecycle events | + | + | + | + |
-| Text message events | + | + | + | + |
-| Tool events | + | - | + | + |
-| State management events | - | - | - | - |
-| Reasoning events | + | - | - | - |
+Framework support varies by event category — see the [framework support matrix](#framework-support-matrix) for details.
 
 ## Event types
+
+AG-UI defines the following event categories, grouped by purpose.
 
 ### Lifecycle events
 
@@ -57,11 +51,11 @@ Report tool invocations and their results during agent execution.
 | Event | Description |
 |---|---|
 | `ToolCallStartEvent` | Emitted when the agent begins calling a tool. Includes tool name and arguments. |
-| `ToolCallEndEvent` | Emitted when the tool call completes. Includes the tool's result. |
+| `ToolCallEndEvent` | Emitted when the tool call completes. Includes the result. |
 
 ### State management events
 
-Communicate changes to shared agent state (e.g. for collaborative multi-agent workflows).
+Communicate changes to shared agent state, for example in collaborative multi-agent workflows.
 
 | Event | Description |
 |---|---|
@@ -70,7 +64,7 @@ Communicate changes to shared agent state (e.g. for collaborative multi-agent wo
 
 ### Reasoning events
 
-Expose the agent's internal reasoning or chain-of-thought steps.
+Expose internal agent reasoning or chain-of-thought steps.
 
 | Event | Description |
 |---|---|
@@ -79,7 +73,7 @@ Expose the agent's internal reasoning or chain-of-thought steps.
 
 ## Framework support matrix
 
-Not all event types are supported by every framework. The following table shows the current state of AG-UI integration:
+Not all event types are supported by every framework. The following table shows AG-UI integration support by framework:
 
 | Event category | NAT | CrewAI | LlamaIndex | LangGraph |
 |---|---|---|---|---|
@@ -89,16 +83,16 @@ Not all event types are supported by every framework. The following table shows 
 | State management events | - | - | - | - |
 | Reasoning events | + | - | - | - |
 
-Legend: `+` supported, `-` not yet implemented.
+Legend: `+` supported, `-` not implemented.
 
-- Lifecycle and text message events are supported across all frameworks&mdash;every agent emits `RunStarted`/`RunFinished` and streams text via `TextMessageContent` events.
-- Tool events are supported in NAT, LlamaIndex, and LangGraph. CrewAI does not yet emit tool call events.
+- Lifecycle and text message events are supported across all frameworks — every agent emits `RunStarted`/`RunFinished` and streams text via `TextMessageContent` events.
+- Tool events are supported in NAT, LlamaIndex, and LangGraph. CrewAI does not emit tool call events.
 - State management events are not implemented in any framework.
 - Reasoning events are only supported in NAT, which exposes internal planning and reasoning steps.
 
-## Using AG-UI in the Base agent
+## Using AG-UI in the base agent
 
-The Base agent gives you full manual control over AG-UI events. You yield each event explicitly in your `invoke()` method, which means you can emit any event type regardless of framework support:
+The base agent provides full manual control over AG-UI events. Each event is yielded explicitly in the `invoke()` method, allowing any event type to be emitted regardless of framework support:
 
 ```python
 class MyAgent(BaseAgent[None]):
@@ -117,4 +111,4 @@ class MyAgent(BaseAgent[None]):
 
 ## Using AG-UI with framework agents
 
-For LangGraph, CrewAI, LlamaIndex, and NAT agents, AG-UI event emission is handled automatically by the `datarobot_genai` framework adapters. The factory helpers (`datarobot_agent_class_from_langgraph`, etc.) wrap the native framework execution into an AG-UI event stream. You do not need to yield AG-UI events manually — the adapter translates framework-native events (e.g. LangGraph node outputs, CrewAI task completions) into the appropriate AG-UI events.
+For LangGraph, CrewAI, LlamaIndex, and NAT agents, AG-UI event emission is handled automatically by the `datarobot_genai` framework adapters. The factory helpers (`datarobot_agent_class_from_langgraph`, etc.) wrap the native framework execution into an AG-UI event stream. AG-UI events do not need to be yielded manually — the adapter translates framework-native events (for example, LangGraph node outputs or CrewAI task completions) into the appropriate AG-UI events.

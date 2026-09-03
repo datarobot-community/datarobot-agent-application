@@ -7,19 +7,80 @@ includes:
     taskfile: ../core/task-common.yaml
     internal: true
 
+vars:
+  MCP_DEPLOYMENT_TYPE_RESOLVED:
+    sh: |
+      # Lower-cased to match the pulumi-side validation, which lowercases the
+      # value before checking it — both ends must accept the same spellings.
+      # 1) OS env (includes the root dotenv when invoked via the repo root's task wrapper)
+      if [ -n "${MCP_DEPLOYMENT_TYPE:-}" ]; then
+        echo "$MCP_DEPLOYMENT_TYPE" | tr '[:upper:]' '[:lower:]' | xargs
+        exit 0
+      fi
+      # 2) Fallback for standalone `task install` runs from this app directory
+      for env_file in ../.env "../.env.${ENV:-testing}" .env; do
+        if [ -f "$env_file" ]; then
+          line="$(grep -E '^[[:space:]]*MCP_DEPLOYMENT_TYPE=' "$env_file" | tail -n 1 || true)"
+          if [ -n "$line" ]; then
+            val="${line#MCP_DEPLOYMENT_TYPE=}"
+            val="${val%\"}"; val="${val#\"}"
+            val="${val%\'}"; val="${val#\'}"
+            echo "$val" | tr '[:upper:]' '[:lower:]' | xargs
+            exit 0
+          fi
+        fi
+      done
+      echo ""
+
 tasks:
   load-and-save-mcp-item-metadata:
     desc: "Load and save MCP item metadata"
     cmds:
       - echo "🔧 Loading and saving MCP item metadata.."
       - "{{.UV_CMD}} run dev_tools/lineage/cli.py load-and-save-mcp-item-metadata"
+
+  deployment-type-check:
+    desc: "ℹ️ Validate MCP_DEPLOYMENT_TYPE and print the effective MCP deployment mode"
+    silent: true
+    vars:
+      RAW_MCP_DEPLOYMENT_TYPE: '{{.MCP_DEPLOYMENT_TYPE_RESOLVED}}'
+    cmds:
+      - |
+        case "{{.RAW_MCP_DEPLOYMENT_TYPE}}" in
+          datarobot-serverless|datarobot-workload-preview)
+            echo "✅ MCP deployment type is set up as MCP_DEPLOYMENT_TYPE={{.RAW_MCP_DEPLOYMENT_TYPE}}"
+            ;;
+          "")
+            echo "⚠️  MCP_DEPLOYMENT_TYPE is not set; deploy will default to MCP_DEPLOYMENT_TYPE=datarobot-serverless."
+            echo "ℹ️  To choose explicitly, set in .env or your shell:"
+            echo "       MCP_DEPLOYMENT_TYPE=datarobot-serverless"
+            echo "    or MCP_DEPLOYMENT_TYPE=datarobot-workload-preview"
+            ;;
+          *)
+            echo "❌  Invalid MCP_DEPLOYMENT_TYPE '{{.RAW_MCP_DEPLOYMENT_TYPE}}'."
+            echo "ℹ️  Set a valid value in .env or your shell:"
+            echo "       MCP_DEPLOYMENT_TYPE=datarobot-serverless"
+            echo "    or MCP_DEPLOYMENT_TYPE=datarobot-workload-preview"
+            exit 1
+            ;;
+        esac
+
   install:
     desc: "🔧 Install dependencies"
+    vars:
+      EFFECTIVE_DEPLOYMENT_TYPE: '{{.MCP_DEPLOYMENT_TYPE_RESOLVED | default "datarobot-serverless"}}'
+    deps:
+      - deployment-type-check
     cmds:
       - echo "🔧 Installing dependencies.."
       - "{{.UV_CMD}} sync --all-extras"
-      - task: generate-docker-requirement-file
-      - task: load-and-save-mcp-item-metadata
+      # MCP item metadata is only consumed by datarobot-serverless provisioning.
+      # (go-task has no `if:` on task calls, so this is a shell conditional.)
+      - |
+        if [ "{{.EFFECTIVE_DEPLOYMENT_TYPE}}" = "datarobot-serverless" ]; then
+          echo "🔧 Loading and saving MCP item metadata.."
+          {{.UV_CMD}} run dev_tools/lineage/cli.py load-and-save-mcp-item-metadata
+        fi
     silent: true
 
   dev:
@@ -200,17 +261,6 @@ tasks:
         fi
         echo ""
         {{.UV_CMD}} run python test_interactive.py
-    silent: true
-
-  generate-docker-requirement-file:
-    desc: "🔨 Generate docker requirements.txt file"
-    cmds:
-      - echo "🔨 Generating docker requirements.txt file..."
-      # If the content of the requirement.txt file doesn't change, don't trigger an update
-      - >-
-        {{.UV_CMD}} export --format requirements-txt --no-emit-project --project . > ./docker/requirements.txt.tmp && if !
-        cmp -s ./docker/requirements.txt.tmp ./docker/requirements.txt; then mv ./docker/requirements.txt.tmp ./docker/requirements.txt;
-        else rm ./docker/requirements.txt.tmp; fi
     silent: true
 
   release_files:

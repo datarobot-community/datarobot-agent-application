@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.12.0
+- Updated README.md prerequisites documentation:
+  - Added a cross-platform "C++ build tools" row to the prerequisite tools table (Xcode Command Line Tools for macOS, `build-essential` for Linux, Visual Studio Build Tools for Windows), and added the corresponding install commands to the macOS and Linux tabs for parity with the existing Windows-only guidance
+  - Removed the duplicate C++ build tools callout that repeated the Windows tab's instructions
+  - Retitled two collapsible section summaries to avoid "Click here" phrasing
+  - Tightened wording in a few places shared with docs.datarobot.com's Get started guide (Windows prerequisites options, the Use Case ID wizard step, and the individual-services note) for consistency across both
+- Removed ag-ui emitting events in fastapi
+- Application start script adopted changes necessary for custom environments
+- Updated `fastapi_server` component:
+  - Dropped support for Python 3.10
+  - Output logs in JSON format by default (integration with `dr xp`)
+  - Added internal telemetry implementation
+  - Allowed setting up custom execution environment with `DATAROBOT_DEFAULT_APPLICATION_EXECUTION_ENVIRONMENT`
+- Updated `agent` component from 11.11.45 to 11.11.63:
+  - Split the monolithic `infra/infra/agent.py` template into an entry router plus an `agent_infra` package (`base.py`, `deployment.py`, `workload.py`)
+  - Included `start_server.sh` and `run_agent.py` files necessary to run agent in Agentic Playground, Custom Model Deployment, and Workload API
+  - Added an experimental Workload API runtime for agent deployments, behind the `ENABLE_AGENT_ON_WORKLOAD_API` toggle
+  - Added [Deployment runtimes](docs/agent/deployment-runtimes.md) covering runtime choice, Workload API configuration, and switching later
+  - Added `agent/.drignore` controlling which agent files are uploaded to DataRobot when the Workload API builds the image from source
+  - Added forwarding of `OTEL_EXPORTER_OTLP_ENDPOINT` into Workload API containers when set in `.env`, required for moderation guard telemetry
+  - Raised the `nltk` constraint to `>=3.10.3` (CVE update)
+  - Updated `datarobot-genai` from 0.28.3 to 0.29.15
+    - Added support of emitting agent name in langgraph, llamaIndex, dragent telemetry
+    - Fixed dragent's legacy tool-name attribute
+    - Used external public API url for memory space
+    - Added support for agent card registry lookups for workloads
+    - Remote agent card cache using memory space
+    - Fixed: A2A maintain separate agent_card copies when sharing auth_provider
+    - Added audience validation middleware for agent
+    - Fixed stale keep-alive connections failing memory space cache reads
+- Updated `mcp_server` component from 0.0.50 to 0.0.59:
+  - Added `start_server.sh` file necessary to run MCP in Custom Model Deployment and Workload API
+  - Added support for Workload API deployments
+  - Added OAuth config fixes
+- Updated `base` component:
+  - Bumped `pulumi-datarobot` to `>=0.11.1` and `pulumi` to `>=3.252.0` in `infra` to support Workload API deployments
+  - Bumped `datarobot-pulumi-utils` to `>=0.1.8` with the `llm` extra
+
 ## 11.11.6
 - Fixed the `fastapi_server` AG-UI stream emitting a `RunFinishedEvent` after a `RunErrorEvent` forwarded from the DRAgent server, which violated the AG-UI single-terminal-event invariant and made the frontend AG-UI client reject the trailing event and mask the underlying agent error
 

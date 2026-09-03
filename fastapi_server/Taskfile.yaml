@@ -41,9 +41,16 @@ tasks:
       - auth-check
       - migrate
     cmds:
-      - echo "🔨 Starting development server"
-      - cd ../frontend_web && task build
-      - "{{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload"
+      - |
+        echo "🔨 Starting development server"
+        set -e
+        # Custom change: build frontend_web before uvicorn so static assets stay fresh.
+        # Upstream fastapi_server does not depend on frontend_web; do not drop on re-sync.
+        (cd ../frontend_web && task build)
+        (cd .. && exec dr --skip-plugin-update-check xp --plain-output) &
+        DR_XP_PID=$!
+        trap "kill $DR_XP_PID 2>/dev/null || true" EXIT
+        {{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     env:
       TEST_USER_EMAIL: developer@example.com
   lint:

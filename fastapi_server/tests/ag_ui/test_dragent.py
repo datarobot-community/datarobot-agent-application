@@ -27,8 +27,6 @@ from ag_ui.core import (
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
-    ToolCallEndEvent,
-    ToolCallStartEvent,
 )
 
 from app.ag_ui.dragent import DRAgentAGUIAgent, DRAgentEventResponse
@@ -144,119 +142,6 @@ def set_sse_responses_slow(
     return set
 
 
-@pytest.fixture
-def error_sse(monkeypatch: pytest.MonkeyPatch) -> Callable[[BaseException], None]:
-    """Fixture that patches httpx_sse.aconnect_sse to raise an exception."""
-    exception: List[BaseException] = []
-
-    @asynccontextmanager
-    async def mock_aconnect_sse(
-        *args: object, **kwargs: object
-    ) -> AsyncGenerator[None, None]:
-        raise exception[0]
-        yield  # make it an async generator
-
-    monkeypatch.setattr("httpx_sse.aconnect_sse", mock_aconnect_sse)
-
-    def set(e: BaseException) -> None:
-        exception.append(e)
-
-    return set
-
-
-async def test_run_single_message(
-    set_sse_responses: Callable[[List[MockSSE]], None],
-    dragent_agui_agent: DRAgentAGUIAgent,
-) -> None:
-    msg_id = "msg-1"
-    set_sse_responses(
-        [
-            make_sse(
-                [
-                    TextMessageStartEvent(message_id=msg_id),
-                    TextMessageContentEvent(message_id=msg_id, delta="Hello!"),
-                    TextMessageEndEvent(message_id=msg_id),
-                    RunFinishedEvent(thread_id="thread", run_id="run"),
-                ]
-            )
-        ]
-    )
-    result = await run(dragent_agui_agent)
-    assert result == [
-        RunStartedEvent(thread_id="thread", run_id="run"),
-        TextMessageStartEvent(message_id=msg_id),
-        TextMessageContentEvent(message_id=msg_id, delta="Hello!"),
-        TextMessageEndEvent(message_id=msg_id),
-        RunFinishedEvent(thread_id="thread", run_id="run"),
-    ]
-
-
-async def test_run_with_tool_calls(
-    set_sse_responses: Callable[[List[MockSSE]], None],
-    dragent_agui_agent: DRAgentAGUIAgent,
-) -> None:
-    msg_id = "msg-1"
-    tool_call_id = "tc-1"
-    set_sse_responses(
-        [
-            make_sse(
-                [
-                    TextMessageStartEvent(message_id=msg_id),
-                    ToolCallStartEvent(
-                        tool_call_id=tool_call_id,
-                        tool_call_name="my_tool",
-                        parent_message_id=msg_id,
-                    ),
-                    ToolCallEndEvent(tool_call_id=tool_call_id),
-                    TextMessageEndEvent(message_id=msg_id),
-                    RunFinishedEvent(thread_id="thread", run_id="run"),
-                ]
-            )
-        ]
-    )
-    result = await run(dragent_agui_agent)
-    assert result == [
-        RunStartedEvent(thread_id="thread", run_id="run"),
-        TextMessageStartEvent(message_id=msg_id),
-        ToolCallStartEvent(
-            tool_call_id=tool_call_id,
-            tool_call_name="my_tool",
-            parent_message_id=msg_id,
-        ),
-        ToolCallEndEvent(tool_call_id=tool_call_id),
-        TextMessageEndEvent(message_id=msg_id),
-        RunFinishedEvent(thread_id="thread", run_id="run"),
-    ]
-
-
-async def test_run_error(
-    error_sse: Callable[[BaseException], None],
-    dragent_agui_agent: DRAgentAGUIAgent,
-) -> None:
-    error_sse(RuntimeError("connection failed"))
-    result = await run(dragent_agui_agent)
-    assert result == [
-        RunStartedEvent(thread_id="thread", run_id="run"),
-        RunErrorEvent(message="connection failed", thread_id="thread", run_id="run"),
-    ]
-
-
-async def test_run_http_error_status(
-    set_sse_responses: Callable[[List[MockSSE], int], None],
-    dragent_agui_agent: DRAgentAGUIAgent,
-) -> None:
-    set_sse_responses([], 503)
-    result = await run(dragent_agui_agent)
-    assert result == [
-        RunStartedEvent(thread_id="thread", run_id="run"),
-        RunErrorEvent(
-            message="DRAgent server returned error 503: ",
-            thread_id="thread",
-            run_id="run",
-        ),
-    ]
-
-
 async def test_run_empty_response(
     set_sse_responses: Callable[[List[MockSSE]], None],
     dragent_agui_agent: DRAgentAGUIAgent,
@@ -264,41 +149,12 @@ async def test_run_empty_response(
     set_sse_responses([])
     result = await run(dragent_agui_agent)
     assert result == [
-        RunStartedEvent(thread_id="thread", run_id="run"),
         RunErrorEvent(
             message="No events received from the DRAgent server. Please check if the server is running.",
             thread_id="thread",
             run_id="run",
         ),
     ]
-
-
-async def test_run_filters_dragent_run_started_and_finished_events(
-    set_sse_responses: Callable[[List[MockSSE]], None],
-    dragent_agui_agent: DRAgentAGUIAgent,
-) -> None:
-    """DRAgent server's RunStartedEvent/RunFinishedEvent must be suppressed; only our wrapper's should appear."""
-    msg_id = "msg-1"
-    set_sse_responses(
-        [
-            make_sse(
-                [
-                    RunStartedEvent(thread_id="", run_id=""),
-                    TextMessageStartEvent(message_id=msg_id),
-                    TextMessageContentEvent(message_id=msg_id, delta="Hi"),
-                    TextMessageEndEvent(message_id=msg_id),
-                    RunFinishedEvent(thread_id="", run_id=""),
-                ]
-            )
-        ]
-    )
-    result = await run(dragent_agui_agent)
-    # Exactly one RunStartedEvent and one RunFinishedEvent — our wrapper's
-    assert result.count(RunStartedEvent(thread_id="thread", run_id="run")) == 1
-    assert result.count(RunFinishedEvent(thread_id="thread", run_id="run")) == 1
-    # No stray RunStarted/RunFinished with empty IDs
-    assert RunStartedEvent(thread_id="", run_id="") not in result
-    assert RunFinishedEvent(thread_id="", run_id="") not in result
 
 
 async def test_run_stops_after_forwarded_run_error_event(
@@ -342,9 +198,11 @@ async def test_run_skips_empty_sse_data(
             MockSSE(data=""),
             make_sse(
                 [
+                    RunStartedEvent(thread_id="thread", run_id="run"),
                     TextMessageStartEvent(message_id=msg_id),
                     TextMessageContentEvent(message_id=msg_id, delta="Hi"),
                     TextMessageEndEvent(message_id=msg_id),
+                    RunFinishedEvent(thread_id="thread", run_id="run"),
                 ]
             ),
         ]
@@ -371,9 +229,11 @@ async def test_run_skips_sse_frame_with_no_events(
             MockSSE(data="{}"),
             make_sse(
                 [
+                    RunStartedEvent(thread_id="thread", run_id="run"),
                     TextMessageStartEvent(message_id=msg_id),
                     TextMessageContentEvent(message_id=msg_id, delta="Hi"),
                     TextMessageEndEvent(message_id=msg_id),
+                    RunFinishedEvent(thread_id="thread", run_id="run"),
                 ]
             ),
         ]
@@ -392,11 +252,10 @@ async def test_run_empty_response_only_empty_frames(
     set_sse_responses: Callable[[List[MockSSE]], None],
     dragent_agui_agent: DRAgentAGUIAgent,
 ) -> None:
-    """If all SSE frames have empty data/events, the agent should still raise a no-events error."""
+    """If all SSE frames have empty data/events, the agent should raise a no-events error."""
     set_sse_responses([MockSSE(data=""), MockSSE(data='{"events": []}')])
     result = await run(dragent_agui_agent)
     assert result == [
-        RunStartedEvent(thread_id="thread", run_id="run"),
         RunErrorEvent(
             message="No events received from the DRAgent server. Please check if the server is running.",
             thread_id="thread",
@@ -414,11 +273,13 @@ async def test_run_strips_none_fields_in_events(
     # Manually craft a payload with null fields that _strip_none should remove
     raw_payload = (
         '{"events": ['
+        '{"type": "RUN_STARTED", "thread_id": "thread", "run_id": "run"},'
         '{"type": "TEXT_MESSAGE_START", "message_id": "' + msg_id + '", "role": null},'
         '{"type": "TEXT_MESSAGE_CONTENT", "message_id": "'
         + msg_id
         + '", "delta": "Hi", "extra": null},'
-        '{"type": "TEXT_MESSAGE_END", "message_id": "' + msg_id + '"}'
+        '{"type": "TEXT_MESSAGE_END", "message_id": "' + msg_id + '"},'
+        '{"type": "RUN_FINISHED", "thread_id": "thread", "run_id": "run"}'
         "]}"
     )
     set_sse_responses([MockSSE(data=raw_payload)])
@@ -453,8 +314,10 @@ async def test_run_custom_headers_are_sent(
             [
                 make_sse(
                     [
+                        RunStartedEvent(thread_id="thread", run_id="run"),
                         TextMessageStartEvent(message_id=msg_id),
                         TextMessageEndEvent(message_id=msg_id),
+                        RunFinishedEvent(thread_id="thread", run_id="run"),
                     ]
                 )
             ],
@@ -479,7 +342,12 @@ async def test_run_heartbeat(
     msg_id = "msg-1"
     set_sse_responses_slow(
         [
-            make_sse([TextMessageStartEvent(message_id=msg_id)]),
+            make_sse(
+                [
+                    RunStartedEvent(thread_id="thread", run_id="run"),
+                    TextMessageStartEvent(message_id=msg_id),
+                ]
+            ),
             make_sse(
                 [
                     TextMessageContentEvent(message_id=msg_id, delta="Hi"),

@@ -20,7 +20,8 @@ The generated project includes the MCP server application, supporting developmen
 │   │   │   └── user_tools.py
 │   │   └── main.py
 │   ├── dev_tools/
-│   ├── docker/
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   ├── docs/
 │   ├── tests/
 │   ├── .env.template
@@ -40,7 +41,7 @@ The application is organized by responsibility:
 - `app/prompts/` and `app/resources/` are loaded automatically for custom prompts and resources.
 - `app/tests/` contains integration and unit tests for the application code.
 - `dev_tools/` contains auxiliary developer utilities.
-- `docker/` contains the container entrypoint and Docker build files.
+- `Dockerfile` and `.dockerignore` define container builds. The app root is the Docker context for custom execution-environment builds; `.dockerignore` keeps EE images deps-only while workload-docker bundles `app/` via the Files catalog.
 
 This structure keeps runtime code, documentation, and support tooling separate while still making them easy to navigate.
 

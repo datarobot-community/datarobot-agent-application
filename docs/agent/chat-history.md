@@ -2,7 +2,7 @@
 
 Agent applications support **multi-turn chat history** across all frameworks (LangGraph, CrewAI, LlamaIndex, and NAT). When a request includes prior user and assistant messages, `datarobot-genai` extracts them from the AG-UI `RunAgentInput` and injects them into the agent as conversation context so the model can reference earlier turns.
 
-This is **session chat history**&mdash;the messages you send in the current request. It is separate from [persistent agent memory](./agent-memory.md), which recalls facts across conversations for the same user.
+This is **session chat history** — the messages sent in the current request. It is separate from [persistent agent memory](./agent-memory.md), which retrieves facts across conversations for the same user.
 
 | Section | Description |
 |---|---|
@@ -15,10 +15,10 @@ This is **session chat history**&mdash;the messages you send in the current requ
 
 ## How it works
 
-DRAgent agents receive input as [AG-UI](https://docs.ag-ui.com/introduction) `RunAgentInput` objects. The `messages` field carries the conversation transcript. `datarobot-genai` reads prior turns from `messages` (everything before the final user message) and makes them available to your agent:
+DRAgent agents receive input as [AG-UI](https://docs.ag-ui.com/introduction) `RunAgentInput` objects. The `messages` field carries the conversation transcript. `datarobot-genai` reads prior turns from `messages` (everything before the final user message) and makes them available to the agent:
 
-1. **Extract**&mdash;`extract_history_messages()` normalizes prior turns (including tool calls and reasoning when present) and truncates to `max_history_messages` (default `20`).
-2. **Inject**&mdash;each framework adapter either replays structured native messages to the model or fills a `{chat_history}` text placeholder in your prompts.
+1. **Extract** — `extract_history_messages()` normalizes prior turns (including tool calls and reasoning when present) and truncates to `max_history_messages` (default `20`).
+2. **Inject** — each framework adapter either replays structured native messages to the model or fills a `{chat_history}` text placeholder in prompts.
 
 Deployed agents and HTTP clients that use the OpenAI-style chat-completions shape send the same information: a `messages` array whose last entry is the current user turn. Earlier `user`, `assistant`, `tool`, and `system` entries become history.
 
@@ -43,27 +43,27 @@ The agent can answer the follow-up because the first user turn and assistant rep
 
 | Framework | Default in this template | How prior turns reach the model |
 |---|---|---|
-| **LangGraph** | Structured history | Prior turns replay as native `HumanMessage` / `AIMessage` / `ToolMessage` objects before the current turn. The prompt template uses `{topic}` only&mdash;no `{chat_history}` placeholder. |
+| **LangGraph** | Structured history | Prior turns replay as native `HumanMessage` / `AIMessage` / `ToolMessage` objects before the current turn. The prompt template uses `{topic}` only — no `{chat_history}` placeholder. |
 | **LlamaIndex** | Structured history | Prior turns pass to `AgentWorkflow.run()` as native `ChatMessage` history (tool calls preserved). System prompts do not declare `{chat_history}`. |
 | **CrewAI** | Text summary via `{chat_history}` | The template includes `"chat_history": ""` in `kickoff_inputs` and `{chat_history}` at the end of task descriptions. The base class fills it with a plain-text `Prior conversation:\n...` block when history exists. |
 | **NAT** | Message list on the orchestrator | Prior messages in the request are passed through to the `per_user_tool_calling_agent` orchestrator as conversation context. No YAML placeholder is required. |
-| **Base** | Manual | Implement history yourself in `invoke()` using `run_agent_input.messages` or `history_messages()`. |
+| **Base** | Manual | Implement history manually in `invoke()` using `run_agent_input.messages` or `history_messages()`. |
 
 ### Structured history vs text summary
 
-**Structured history** (LangGraph and LlamaIndex defaults)&mdash;prior turns are replayed as role-tagged messages with tool metadata intact. This preserves tool-call sequences across turns.
+**Structured history** (LangGraph and LlamaIndex defaults) — prior turns are replayed as role-tagged messages with tool metadata intact. This preserves tool-call sequences across turns.
 
-**Text summary** (CrewAI default in this template)&mdash;prior turns flatten to a transcript such as `user: ...\nassistant: ...`. CrewAI's `Crew.kickoff()` accepts only string variables, so this is the supported pattern for CrewAI agents.
+**Text summary** (CrewAI default in this template) — prior turns flatten to a transcript such as `user: ...\nassistant: ...`. CrewAI's `Crew.kickoff()` accepts only string variables, so this is the supported pattern for CrewAI agents.
 
-You can switch LangGraph or LlamaIndex to a text summary by adding `{chat_history}` to your prompt (LangGraph `ChatPromptTemplate` or LlamaIndex user message). You can disable structured replay with `structured_history=False` on `MyAgent(...)`.
+Switch LangGraph or LlamaIndex to a text summary by adding `{chat_history}` to the prompt (LangGraph `ChatPromptTemplate` or LlamaIndex user message). Disable structured replay with `structured_history=False` on `MyAgent(...)`.
 
 ## Template opt-in
 
 Chat history injection is **automatic when the client sends prior turns in `messages`**:
 
-- **LangGraph / LlamaIndex**&mdash;structured replay is on by default when the prompt has no `{chat_history}` variable.
-- **CrewAI**&mdash;include `"chat_history": ""` in `kickoff_inputs` and place `{chat_history}` at the **end** of a task `description` or agent `backstory` as a self-contained section. On the first turn the value stays empty; when history exists the base class replaces it with a `Prior conversation:` block.
-- **NAT**&mdash;no template change; send prior messages in the request.
+- **LangGraph / LlamaIndex** — structured replay is on by default when the prompt has no `{chat_history}` variable.
+- **CrewAI** — include `"chat_history": ""` in `kickoff_inputs` and place `{chat_history}` at the **end** of a task `description` or agent `backstory` as a self-contained section. On the first turn the value stays empty; when history exists the base class replaces it with a `Prior conversation:` block.
+- **NAT** — no template change; send prior messages in the request.
 
 To **disable** history for a framework agent, omit the `{chat_history}` key from CrewAI `kickoff_inputs`, set `structured_history=False` on LangGraph/LlamaIndex `MyAgent`, or set `max_history_messages=0`.
 
@@ -74,7 +74,7 @@ Pass these kwargs when constructing `MyAgent` in `register.py` (or override on t
 | Parameter | Default | Description |
 |---|---|---|
 | `max_history_messages` | `20` (or `DATAROBOT_GENAI_MAX_HISTORY_MESSAGES`) | Maximum prior messages to include. Set to `0` to disable history. |
-| `structured_history` | `True` (LangGraph, LlamaIndex) | When `True` and the prompt has no `{chat_history}`, replay native messages. When `False`, only the current turn is sent unless you use `{chat_history}`. |
+| `structured_history` | `True` (LangGraph, LlamaIndex) | When `True` and the prompt has no `{chat_history}`, replay native messages. When `False`, only the current turn is sent unless the prompt uses `{chat_history}`. |
 
 ```python
 agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
@@ -82,7 +82,7 @@ agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
 
 ## Testing locally
 
-`task agent:cli -- execute --user_prompt "..."` sends a **single-turn** prompt. To exercise multi-turn history, start the dev server and POST a full AG-UI payload to the streaming endpoint:
+`task agent:cli -- execute --user_prompt "..."` sends a **single-turn** prompt. To exercise multi-turn history, start the dev server and send a `POST` request with a full AG-UI payload to the streaming endpoint:
 
 ```sh
 dr run agent:dev
@@ -116,7 +116,7 @@ Parse the `data:` lines in the response for AG-UI text events. For deployed agen
 |---|---|---|
 | **Scope** | Messages in the current request | Facts stored across sessions per user |
 | **Configuration** | Built into `datarobot-genai` adapters | `use_agent_memory` at project generation + `workflow.yaml` |
-| **Use when** | The client sends the full or partial transcript | The agent should recall durable facts without the client resending them |
+| **Use when** | The client sends the full or partial transcript | The agent retains durable facts across sessions without the client resending them |
 
 Both can be enabled together: the client supplies recent turns as chat history while `streaming_memory_agent` retrieves long-term memories for the same user.
 
