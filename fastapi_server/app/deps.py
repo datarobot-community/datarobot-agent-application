@@ -154,8 +154,12 @@ async def create_deps(
     user_repo: UserRepositoryLike
     application_memory_space_id = resolve_application_memory_space_id(config)
     if application_memory_space_id:
+        logger.info(
+            "Configuring DataRobot client for application memory",
+            extra={"memory_service_endpoint": config.memory_service_endpoint},
+        )
         datarobot.Client(
-            endpoint=config.datarobot_endpoint,
+            endpoint=config.memory_service_endpoint,
             token=config.datarobot_api_token,
         )
         chat_registry = ChatSessionRegistry(application_memory_space_id)

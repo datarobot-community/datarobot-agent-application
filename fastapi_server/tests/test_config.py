@@ -169,3 +169,60 @@ def test__config__allows_application_memory_before_memory_id_is_wired() -> None:
     )
     assert config.use_application_memory_space is True
     assert config.application_memory_space_id is None
+
+
+def test__config__memory_service_endpoint_prefers_public_api_endpoint() -> None:
+    config = Config(
+        session_secret_key="test-secret",
+        datarobot_endpoint="http://datarobot-nginx/api/v2",
+        datarobot_api_token="test-token",
+        datarobot_public_api_endpoint="https://app.example.com/api/v2/",
+    )
+    assert config.memory_service_endpoint == "https://app.example.com/api/v2"
+
+
+def test__config__memory_service_endpoint_falls_back_to_datarobot_endpoint() -> None:
+    config = Config(
+        session_secret_key="test-secret",
+        datarobot_endpoint="https://app.example.com/api/v2/",
+        datarobot_api_token="test-token",
+    )
+    assert config.memory_service_endpoint == "https://app.example.com/api/v2"
+
+
+def test__config__memory_service_endpoint_normalizes_missing_api_v2() -> None:
+    config = Config(
+        session_secret_key="test-secret",
+        datarobot_endpoint="http://datarobot-nginx/api/v2",
+        datarobot_api_token="test-token",
+        datarobot_public_api_endpoint="https://app.example.com",
+    )
+    assert config.memory_service_endpoint == "https://app.example.com/api/v2"
+
+
+def test__config__memory_service_endpoint_ignores_empty_public_api_endpoint() -> None:
+    config = Config(
+        session_secret_key="test-secret",
+        datarobot_endpoint="http://datarobot-nginx/api/v2",
+        datarobot_api_token="test-token",
+        datarobot_public_api_endpoint="  ",
+    )
+    assert config.memory_service_endpoint == "http://datarobot-nginx/api/v2"
+
+
+def test__config__loads_public_api_endpoint_from_runtime_parameter() -> None:
+    env_vars = dict(
+        MLOPS_RUNTIME_PARAM_SESSION_SECRET_KEY=(
+            '{"type":"credential","payload":{"credentialType":"api_token",'
+            '"apiToken":"test-secret-key"}}'
+        ),
+        DATAROBOT_ENDPOINT="http://datarobot-nginx/api/v2",
+        DATAROBOT_API_TOKEN="local-test-datarobot-api-key",
+        MLOPS_RUNTIME_PARAM_DATAROBOT_PUBLIC_API_ENDPOINT=(
+            '{"type":"string","payload":"https://app.example.com/api/v2"}'
+        ),
+    )
+    with patch.dict(os.environ, env_vars, clear=True):
+        config = Config()
+        assert config.datarobot_public_api_endpoint == "https://app.example.com/api/v2"
+        assert config.memory_service_endpoint == "https://app.example.com/api/v2"

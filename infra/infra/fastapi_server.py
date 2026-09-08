@@ -135,6 +135,21 @@ if env_flag_enabled("USE_APPLICATION_MEMORY_SPACE"):
             ),
         ]
     )
+    # Custom applications do not receive DATAROBOT_PUBLIC_API_ENDPOINT from the
+    # platform (custom models do). On-prem DATAROBOT_ENDPOINT is rewritten to
+    # internal nginx, which does not route /memory. Pass the public API URL
+    # from deploy time so the FastAPI app can reach the memory service.
+    public_api_endpoint = os.environ.get("DATAROBOT_ENDPOINT", "").strip().rstrip("/")
+    if public_api_endpoint:
+        if not public_api_endpoint.endswith("/api/v2"):
+            public_api_endpoint = f"{public_api_endpoint}/api/v2"
+        memory_runtime_parameters.append(
+            pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+                key="DATAROBOT_PUBLIC_API_ENDPOINT",
+                type="string",
+                value=public_api_endpoint,
+            )
+        )
     _ = memory_space.id.apply(
         lambda memory_space_id: pulumi.info(
             f"Memory space configured for application: {memory_space_id}"

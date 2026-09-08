@@ -666,7 +666,11 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
         result = workload.provision_workload_agent([])
 
         workload.pulumi_datarobot.Artifact.assert_called_once()
-        assert _artifact_kwargs(workload)["source"].dir == str(tmp_path)
+        source = _artifact_kwargs(workload)["source"]
+        assert source.dir == str(tmp_path)
+        # This app root ships its own reviewed .drignore, so autogeneration
+        # must stay off.
+        assert source.generate_ignore is False
         dockerfile = _artifact_container(workload).image_build_config.dockerfile
         assert dockerfile.source == "generated"
         assert dockerfile.entrypoints == ["sh", "workload/run_server.sh"]

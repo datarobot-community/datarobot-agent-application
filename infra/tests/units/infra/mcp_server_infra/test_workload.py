@@ -329,7 +329,22 @@ class TestWorkloadEnvironmentVars:
         "OTEL_ATTRIBUTES": "{}",
         "OTEL_ENABLED": "true",
         "OTEL_ENABLED_HTTP_INSTRUMENTORS": "false",
+        "MCP_ENABLE_OAUTH_CLAIM_VALIDATION": "false",
     }
+
+    def test_claim_validation_is_forwarded_when_on(self) -> None:
+        with env(
+            SESSION_SECRET_KEY=None,
+            MCP_ENABLE_OAUTH_CLAIM_VALIDATION="true",
+            MCP_XAA_TOKEN_AUDIENCE="https://mcp.example.com",
+        ):
+            forwarded = {
+                v["name"]: v["value"]
+                for v in workload._workload_environment_vars("[test]")
+            }
+
+        assert forwarded["MCP_ENABLE_OAUTH_CLAIM_VALIDATION"] == "true"
+        assert forwarded["MCP_XAA_TOKEN_AUDIENCE"] == "https://mcp.example.com"
 
     def test_custom_mcp_server_name(self) -> None:
         with env(MCP_SERVER_NAME="my-mcp", SESSION_SECRET_KEY=None):

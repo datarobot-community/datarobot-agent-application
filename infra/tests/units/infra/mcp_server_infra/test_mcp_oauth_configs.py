@@ -15,6 +15,7 @@ import pytest
 
 from infra.mcp_server_infra.mcp_oauth_configs import (
     AUTHORIZATION_SERVERS_ENV_VAR,
+    ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR,
     ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
     OAUTH_METADATA_ENV_VARS,
     OAUTH_PROTECTED_RESOURCE_WELL_KNOWN_PATH,
@@ -29,6 +30,7 @@ from infra.mcp_server_infra.mcp_oauth_configs import (
     XAA_TOKEN_URL_ENV_VAR,
     XAA_TRUSTED_ISSUER_ENV_VAR,
     get_workload_mcp_oauth_routes,
+    mcp_enable_oauth_claim_validation_value,
     mcp_enable_unauthenticated_well_known_route_value,
     mcp_oauth_metadata_env_vars,
     mcp_tag_scope_env_vars,
@@ -51,6 +53,7 @@ def _without_oauth_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     for name in (
         ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
+        ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR,
         *OAUTH_METADATA_ENV_VARS,
     ):
         monkeypatch.delenv(name, raising=False)
@@ -192,6 +195,36 @@ class TestUnauthenticatedWellKnownRouteFlag:
         )
 
 
+class TestOAuthClaimValidationFlag:
+    def test_defaults_to_false(self) -> None:
+        assert mcp_enable_oauth_claim_validation_value() == "false"
+
+    @pytest.mark.parametrize(
+        ("env_value", "expected"),
+        [
+            ("true", "true"),
+            ("TRUE", "true"),
+            ("  True  ", "true"),
+            ("1", "true"),
+            ("yes", "true"),
+            ("on", "true"),
+            ("false", "false"),
+            ("0", "false"),
+            ("no", "false"),
+            ("banana", "false"),
+        ],
+    )
+    def test_accepted_spellings_are_normalized(
+        self, monkeypatch: pytest.MonkeyPatch, env_value: str, expected: str
+    ) -> None:
+        monkeypatch.setenv(ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR, env_value)
+
+        assert mcp_enable_oauth_claim_validation_value() == expected
+
+    def test_the_flag_is_not_a_metadata_setting(self) -> None:
+        assert ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR not in OAUTH_METADATA_ENV_VARS
+
+
 class TestOAuthAndWellKnownEnvVars:
     def test_the_flag_leads_and_metadata_follows(
         self, complete_xaa_env: None, monkeypatch: pytest.MonkeyPatch
@@ -203,18 +236,20 @@ class TestOAuthAndWellKnownEnvVars:
                 "name": ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
                 "value": "true",
             },
+            {"name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR, "value": "false"},
             {"name": XAA_TRUSTED_ISSUER_ENV_VAR, "value": TRUSTED_ISSUER},
             {"name": XAA_EXCHANGE_AUDIENCE_ENV_VAR, "value": EXCHANGE_AUDIENCE},
             {"name": XAA_TOKEN_URL_ENV_VAR, "value": TOKEN_URL},
             {"name": XAA_SCOPES_ENV_VAR, "value": "scope"},
         ]
 
-    def test_only_the_flag_when_no_metadata_is_configured(self) -> None:
+    def test_only_the_flags_when_no_metadata_is_configured(self) -> None:
         assert oauth_and_well_known_env_vars() == [
             {
                 "name": ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
                 "value": "false",
             },
+            {"name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR, "value": "false"},
         ]
 
 

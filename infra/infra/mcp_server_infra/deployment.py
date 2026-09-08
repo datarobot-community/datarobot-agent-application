@@ -47,6 +47,7 @@ from .mcp_cli_configs import (
 )
 from .mcp_execution_environment import provision_mcp_execution_environment
 from .mcp_oauth_configs import (
+    mcp_enable_oauth_claim_validation_value,
     mcp_enable_unauthenticated_well_known_route_value,
     mcp_oauth_metadata_env_vars,
 )
@@ -149,6 +150,11 @@ def provision_deployment_mcp_server(
             key="mcp_enable_unauthenticated_well_known_route",
             type="boolean",
             value=mcp_enable_unauthenticated_well_known_route_value(),
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="mcp_enable_oauth_claim_validation",
+            type="boolean",
+            value=mcp_enable_oauth_claim_validation_value(),
         ),
         *_enabled_tools_runtime_params(mcp_cli_enabled_set),
     ]

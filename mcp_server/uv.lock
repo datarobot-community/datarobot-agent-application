@@ -537,7 +537,7 @@ wheels = [
 
 [[package]]
 name = "datarobot"
-version = "3.17.0"
+version = "3.19.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -553,9 +553,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/2e/2d72db2fe202e2f5151a3d465a026c7ffa0f06ec0900260973daeb2cf69c/datarobot-3.17.0.tar.gz", hash = "sha256:a3587725adb06bfc58942dec0f7cd26e7ba0918e11b6e72a6848636ba5fb58fa", size = 834279, upload-time = "2026-06-30T12:52:39.292Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/4e/0cc58b5d55c0c50d5c5b464b004afcfee6cfcbbec5b3b8918270470d046b/datarobot-3.19.0.tar.gz", hash = "sha256:5319c45f525ffaf38283468ecae9437fc6ced7969f7dac647253e729f851738c", size = 918779, upload-time = "2026-09-01T12:09:15.358Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/bb/9771102c62cea69f9e1ade151a23855d93c959109d30668fba598272d9ab/datarobot-3.17.0-py3-none-any.whl", hash = "sha256:c54471022ea29324fe8a21b34b9473d1d75da1599de66ad8ef8d28dde47b08b0", size = 902398, upload-time = "2026-06-30T12:52:37.68Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/f1/dc6a0e6e9a53cc3c7ce98d68d25b9f426f2b342c9ff897c75088aead41c0/datarobot-3.19.0-py3-none-any.whl", hash = "sha256:1631d687689b0fb999c107ba6d3bdb09c73d63c576a4bd8db53329dbd29063ed", size = 995969, upload-time = "2026-09-01T12:09:13.562Z" },
 ]
 
 [package.optional-dependencies]
@@ -581,11 +581,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.27.13"
+version = "0.29.31"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/08/e8/e7cc29bf037bb66c9e6d8acec697ed2ca6f7f06b29174a94fe9e75f97e7e/datarobot_genai-0.27.13.tar.gz", hash = "sha256:e2137f414b09cb4eeb62a7c8c6f8145d357146a10d127f989c9ba171a0c2cf2a", size = 590008, upload-time = "2026-08-14T17:34:24.71Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/01/c0b71bda48739a04951f2262a1097da71163270da4af3c8fdedb63da837f/datarobot_genai-0.29.31.tar.gz", hash = "sha256:c77482e8d4de898932065d9c636e902015078af109b883b82e984eaa264203d0", size = 632427, upload-time = "2026-09-04T13:36:59.497Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/e1/5b6d5f0805571307dcb79ea334075b38b6d0c884c1fb65fbfd22173ca0d0/datarobot_genai-0.27.13-py3-none-any.whl", hash = "sha256:1c74678e621277df2fd579899cec65357fb795f18987d5e7432c4ad1ceaf3749", size = 835521, upload-time = "2026-08-14T17:34:22.353Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/77/dd3457c6f444ea01716ab07cd19426a355bc0d793a27e4f36b29b412e658/datarobot_genai-0.29.31-py3-none-any.whl", hash = "sha256:d380b99b2567f0237229e5abbd1ad72b75ab2265db6208d090a7bcd21d1e7b23", size = 887315, upload-time = "2026-09-04T13:36:57.613Z" },
 ]
 
 [package.optional-dependencies]
@@ -987,7 +987,7 @@ name = "importlib-metadata"
 version = "9.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12'" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a9/01/15bb152d77b21318514a96f43af312635eb2500c96b55398d020c93d86ea/importlib_metadata-9.0.0.tar.gz", hash = "sha256:a4f57ab599e6a2e3016d7595cfd72eb4661a5106e787a95bcc90c7105b831efc", size = 56405, upload-time = "2026-03-20T06:42:56.999Z" }
 wheels = [
@@ -1300,7 +1300,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", marker = "extra == 'dev'", specifier = ">=8.3.0" },
-    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.27.4,<0.28.0" },
+    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.29.30,<0.30.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.6.1" },
@@ -2667,8 +2667,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
-    { name = "jeepney", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "cryptography" },
+    { name = "jeepney" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [

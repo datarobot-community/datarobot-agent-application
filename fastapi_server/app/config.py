@@ -20,12 +20,25 @@ from pydantic import Field, ValidationInfo, field_validator
 from app.auth.oauth import OAuthImpl
 from app.telemetry.enums import FormatType, LogLevel
 
+_API_V2_SUFFIX = "/api/v2"
+
+
+def normalize_datarobot_api_v2_endpoint(endpoint: str) -> str:
+    """Return ``endpoint`` with exactly one trailing ``/api/v2`` and no trailing slash."""
+    base = endpoint.strip().rstrip("/")
+    if not base:
+        return base
+    if base.endswith(_API_V2_SUFFIX):
+        return base
+    return f"{base}{_API_V2_SUFFIX}"
+
 
 class Config(DataRobotAppFrameworkBaseSettings):
     session_secret_key: str
 
     datarobot_endpoint: str
     datarobot_api_token: str
+    datarobot_public_api_endpoint: str | None = None
 
     session_max_age: int = 14 * 24 * 60 * 60  # 14 days, in seconds
     session_https_only: bool = True
@@ -131,6 +144,28 @@ class Config(DataRobotAppFrameworkBaseSettings):
     @classmethod
     def _coerce_empty_string(cls, v: object) -> object:
         return False if v == "" else v
+
+    @field_validator("datarobot_public_api_endpoint", mode="before")
+    @classmethod
+    def _empty_public_api_endpoint_is_none(cls, v: object) -> object:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    @property
+    def memory_service_endpoint(self) -> str:
+        """Return the DataRobot API endpoint for agentic memory calls.
+
+        On-prem custom applications set ``datarobot_endpoint`` to internal nginx
+        (``http://datarobot-nginx/api/v2``), which routes core API calls but not
+        ``/memory``. Custom models get ``DATAROBOT_PUBLIC_API_ENDPOINT`` from the
+        platform; custom applications do not, so Pulumi wires the public URL as a
+        runtime parameter when application memory is enabled.
+        """
+        public = (self.datarobot_public_api_endpoint or "").strip()
+        if public:
+            return normalize_datarobot_api_v2_endpoint(public)
+        return normalize_datarobot_api_v2_endpoint(self.datarobot_endpoint)
 
     @property
     def application_endpoint(self) -> str:

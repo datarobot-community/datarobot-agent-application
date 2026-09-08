@@ -303,6 +303,9 @@ def _create_generated_image_artifact(
         status="locked",
         source=pulumi_datarobot.ArtifactSourceArgs(
             dir=application_path,
+            # This app root ships its own reviewed .drignore, so skip the
+            # provider's default-.drignore autogeneration entirely.
+            generate_ignore=False,
             # wait_for_build defaults to True
         ),
         opts=pulumi.ResourceOptions(depends_on=[execution_environment]),

@@ -47,12 +47,60 @@ async def test_create_deps_uses_memory_repositories_when_enabled() -> None:
         APPLICATION_MEMORY_SPACE_ID="space-test",
     )
 
-    with patch("app.deps.datarobot.Client"):
+    with patch("app.deps.datarobot.Client") as mock_client:
         async with create_deps(config) as deps:
             assert isinstance(deps.chat_repo, MemoryChatRepository)
             assert isinstance(deps.message_repo, MemoryMessageRepository)
             assert isinstance(deps.identity_repo, MemoryIdentityRepository)
             assert isinstance(deps.user_repo, MemoryUserRepository)
+        mock_client.assert_called_once_with(
+            endpoint="https://api.test.datarobot.com/api/v2",
+            token="test-datarobot-api-key",
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_deps_uses_public_api_endpoint_for_memory_client() -> None:
+    config = Config(
+        session_secret_key="test-session-secret-key",
+        session_https_only=False,
+        database_uri="sqlite+aiosqlite:///:memory:",
+        datarobot_endpoint="http://datarobot-nginx/api/v2",
+        datarobot_api_token="test-datarobot-api-key",
+        datarobot_public_api_endpoint="https://public.example.com/api/v2",
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID="space-test",
+    )
+
+    with patch("app.deps.datarobot.Client") as mock_client:
+        async with create_deps(config):
+            pass
+        mock_client.assert_called_once_with(
+            endpoint="https://public.example.com/api/v2",
+            token="test-datarobot-api-key",
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_deps_normalizes_public_api_endpoint_without_api_v2() -> None:
+    config = Config(
+        session_secret_key="test-session-secret-key",
+        session_https_only=False,
+        database_uri="sqlite+aiosqlite:///:memory:",
+        datarobot_endpoint="http://datarobot-nginx/api/v2",
+        datarobot_api_token="test-datarobot-api-key",
+        datarobot_public_api_endpoint="https://public.example.com",
+        USE_APPLICATION_MEMORY_SPACE=True,
+        APPLICATION_MEMORY_SPACE_ID="space-test",
+    )
+
+    with patch("app.deps.datarobot.Client") as mock_client:
+        async with create_deps(config):
+            pass
+        mock_client.assert_called_once_with(
+            endpoint="https://public.example.com/api/v2",
+            token="test-datarobot-api-key",
+        )
 
 
 def test_resolve_application_memory_space_id_returns_none_when_disabled() -> None:

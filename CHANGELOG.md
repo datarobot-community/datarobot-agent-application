@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+- Added `DATAROBOT_PUBLIC_API_ENDPOINT` as a runtime parameter for the application when application memory is enabled (required on-prem, where `DATAROBOT_ENDPOINT` is internal nginx).
+- Updated `mcp_server` component from 0.0.59 to 0.0.60:
+  - Added the opt-in `MCP_ENABLE_OAUTH_CLAIM_VALIDATION` runtime parameter/env wiring for OAuth JWT audience claim validation.
+  - Updated the `datarobot-genai[drmcp]` dependency to the `>=0.29.30,<0.30.0` range and refreshed `uv.lock` to `0.29.31`.
+- Enabled dependency installation commands on Windows
+- Updated `agent` component from 11.11.63 to 11.11.67:
+  - Stopped the generated image artifact's `.drignore` autogeneration from overriding `agent/.drignore`, since the app root already ships its own reviewed copy
+  - Bumped `datarobot-genai` from 0.29.15 to 0.29.31:
+    - Added support for mounting A2A under a configurable path, with a path-agnostic well-known discovery fallback
+    - Validated A2A mount paths and fail fast on startup route collisions
+    - Fixed `HEAD` requests returning 405 on health and agent-card routes
+    - Fixed unauthenticated agent-card requests leaking which agents exist
+    - Routed agent memory-space traffic through the enclave gateway when configured
+    - Fixed the A2A agent card URL to honor the API gateway route
+    - Fixed the model-monitoring response header not being set behind a root path
+    - Added agent name and session id to agent tracing spans
+  - Raised constraint-dependencies: `banks>=2.4.5`, `mistune>=3.3.3`, `langchain-core>=1.3.3`, `mako>=1.3.12`, `ujson>=5.13.0`, `datasets>=5.0.1`, `gitpython>=3.1.59`
 
 ## 11.12.0
 - Updated README.md prerequisites documentation:
