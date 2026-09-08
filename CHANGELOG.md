@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+
+## 11.12.2
 - Added `DATAROBOT_PUBLIC_API_ENDPOINT` as a runtime parameter for the application when application memory is enabled (required on-prem, where `DATAROBOT_ENDPOINT` is internal nginx).
 - Updated `mcp_server` component from 0.0.59 to 0.0.60:
   - Added the opt-in `MCP_ENABLE_OAUTH_CLAIM_VALIDATION` runtime parameter/env wiring for OAuth JWT audience claim validation.
