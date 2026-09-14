@@ -20,6 +20,8 @@ import pulumi
 import pulumi_datarobot
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
+from infra.mcp_server_infra.mcp_utils import DR_CREDENTIAL_API_TOKEN_KEY
+
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 PERPLEXITY_API_KEY: Final[str] = "PERPLEXITY_API_KEY"
 TAVILY_API_KEY: Final[str] = "TAVILY_API_KEY"
@@ -89,10 +91,6 @@ custom_model_runtime_parameters: list[
 # (env var name, credential) pairs mirroring custom_model_runtime_parameters,
 # consumed by the workload path as "dr-credential" env var references.
 workload_env_var_credentials: list[tuple[str, pulumi_datarobot.ApiTokenCredential]] = []
-
-# Field holding the token inside a DataRobot api_token credential; used as the
-# `key` of "dr-credential" env var references in Workload artifact specs.
-DR_CREDENTIAL_API_TOKEN_KEY: Final[str] = "apiToken"
 
 
 def _register_credential(

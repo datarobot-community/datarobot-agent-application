@@ -41,31 +41,46 @@ describe('AGENTS.md path validation', () => {
     // Check that frontend_web/src/pages/ exists
     const pagesDir = resolve(FRONTEND_ROOT, 'src/pages');
     expect(existsSync(pagesDir), 'frontend_web/src/pages/ should exist').toBe(true);
-    expect(statSync(pagesDir).isDirectory(), 'frontend_web/src/pages/ should be a directory').toBe(true);
+    expect(statSync(pagesDir).isDirectory(), 'frontend_web/src/pages/ should be a directory').toBe(
+      true
+    );
 
     // Check that frontend_web/src/routesConfig.tsx exists
     const routesConfig = resolve(FRONTEND_ROOT, 'src/routesConfig.tsx');
     expect(existsSync(routesConfig), 'frontend_web/src/routesConfig.tsx should exist').toBe(true);
-    expect(statSync(routesConfig).isFile(), 'frontend_web/src/routesConfig.tsx should be a file').toBe(true);
+    expect(
+      statSync(routesConfig).isFile(),
+      'frontend_web/src/routesConfig.tsx should be a file'
+    ).toBe(true);
 
     // Check that frontend_web/src/components/ exists
     const componentsDir = resolve(FRONTEND_ROOT, 'src/components');
     expect(existsSync(componentsDir), 'frontend_web/src/components/ should exist').toBe(true);
-    expect(statSync(componentsDir).isDirectory(), 'frontend_web/src/components/ should be a directory').toBe(true);
+    expect(
+      statSync(componentsDir).isDirectory(),
+      'frontend_web/src/components/ should be a directory'
+    ).toBe(true);
 
     // Check that frontend_web/src/components/ui/ exists
     const uiDir = resolve(FRONTEND_ROOT, 'src/components/ui');
     expect(existsSync(uiDir), 'frontend_web/src/components/ui/ should exist').toBe(true);
-    expect(statSync(uiDir).isDirectory(), 'frontend_web/src/components/ui/ should be a directory').toBe(true);
+    expect(
+      statSync(uiDir).isDirectory(),
+      'frontend_web/src/components/ui/ should be a directory'
+    ).toBe(true);
 
     // Check that frontend_web/src/api/ exists
     const apiDir = resolve(FRONTEND_ROOT, 'src/api');
     expect(existsSync(apiDir), 'frontend_web/src/api/ should exist').toBe(true);
-    expect(statSync(apiDir).isDirectory(), 'frontend_web/src/api/ should be a directory').toBe(true);
+    expect(statSync(apiDir).isDirectory(), 'frontend_web/src/api/ should be a directory').toBe(
+      true
+    );
 
     // Check that frontend_web/src/theme/ exists
     const themeDir = resolve(FRONTEND_ROOT, 'src/theme');
     expect(existsSync(themeDir), 'frontend_web/src/theme/ should exist').toBe(true);
-    expect(statSync(themeDir).isDirectory(), 'frontend_web/src/theme/ should be a directory').toBe(true);
+    expect(statSync(themeDir).isDirectory(), 'frontend_web/src/theme/ should be a directory').toBe(
+      true
+    );
   });
 });

@@ -5,7 +5,7 @@ By default it provides tools for DataRobot operations, but can be extended with 
 
 ## MCP Server Development Guidelines
 
-IMPORTANT: Do NOT import code from `agent/` or `fastapi_server/` directories. The MCP server has independent dependencies to avoid conflicts. 
+IMPORTANT: Do NOT import code from `agent/` or `fastapi_server/` directories. The MCP server has independent dependencies to avoid conflicts.
 IMPORTANT: The MCP server runs as an independent service. Agents connect to it via MCP protocol (HTTP), not direct Python imports.
 
 - You may modify files ONLY inside `mcp_server/` directory.
@@ -66,16 +66,15 @@ async def tool_name(
 Before making any changes to the mcp_server code, install dependencies by running shell command:
 
 ```shell
-dr task run mcp_server:install
+dr run mcp_server:install
 ```
 
 ## MCP Server Testing
 
 ```shell
-dr task run mcp_server:lint
+dr run mcp_server:lint
 ```
 
 ```shell
-dr task run mcp_server:test
+dr run mcp_server:test
 ```
-

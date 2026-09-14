@@ -6,7 +6,7 @@
 The following command should be run after agent code modification:
 
 ```shell
-dr task run agent:install
+dr run agent:install
 ```
 
 > **Warning:** When using a custom Docker context (`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset and an `agent/docker_context/` folder is present), modifying `pyproject.toml` or `uv.lock` triggers a full execution environment rebuild on the next deployment. This rebuild can take **10–20 minutes** depending on the number of dependencies. When using the default DataRobot execution environment (the default configuration), dependency changes do not trigger a rebuild.
@@ -98,7 +98,7 @@ agent = MyAgent(
 **IMPORTANT**: Add required tools in the `agent/agent` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
-dr task run agent:install
+dr run agent:install
 ```
 
 **IMPORTANT**: Tools must be imported and passed to agent nodes inside `graph_factory`.
@@ -123,11 +123,11 @@ Review and update the tests in the `agent/tests` directory after code changes we
 Run the following shell commands to run the tests:
 
 ```shell
-dr task run agent:lint
+dr run agent:lint
 ```
 
 ```shell
-dr task run agent:test
+dr run agent:test
 ```
 
 ## Post Deployment Validation
@@ -135,7 +135,7 @@ dr task run agent:test
 Run the following shell command to validate the agent after deployment. If the response has no errors then the deployment is successful.
 
 ```shell
-dr task run agent:cli -- -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
+dr run agent:cli -- -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
 ```
 
 ## Setting up custom metric and report values

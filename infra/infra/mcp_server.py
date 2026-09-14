@@ -32,8 +32,16 @@ from . import project_dir, use_case
 from .mcp_server_infra.deployment import (
     provision_deployment_mcp_server,
 )
-from .mcp_server_infra.mcp_bundle import normalize_shell_scripts
+from .mcp_server_infra.mcp_bundle import FileBundler, normalize_shell_scripts
+from .mcp_server_infra.mcp_execution_environment import (
+    provision_mcp_execution_environment,
+)
 from .mcp_server_infra.workload import (
+    WorkloadBuilder,
+    WorkloadConfiguration,
+    WorkloadGeneratedDockerfileManager,
+    WorkloadProvidedDockerfileManager,
+    WorkloadProvider,
     provision_workload_mcp_server,
     provision_workload_mcp_server_from_image_uri,
 )
@@ -108,32 +116,47 @@ EXCLUDE_PATTERNS = [
     ]
 ]
 
-env_mcp_deployment_type = os.getenv("MCP_DEPLOYMENT_TYPE", "").strip().lower()
 
 MCP_DEPLOYMENT_TYPE_SERVERLESS: Final[str] = "datarobot-serverless"
 MCP_DEPLOYMENT_TYPE_WORKLOAD_PREVIEW: Final[str] = "datarobot-workload-preview"
+MCP_DEPLOYMENT_TYPE_WORKLOAD: Final[str] = "datarobot-workload"
 INVALID_MCP_DEPLOYMENT_TYPE: Final[str] = "not-found-mcp-deployment-type"
 
-# WE MUST set a default value to datarobot-serverless to avoid breaking changes
-# to any automation using up-yes. Otherwise, any automation
-# will require user intervation to set the MCP_DEPLOYMENT_TYPE value TO UNBLOCK the failures.
-MCP_DEPLOYMENT_TYPE = env_mcp_deployment_type or INVALID_MCP_DEPLOYMENT_TYPE
 
-if MCP_DEPLOYMENT_TYPE == INVALID_MCP_DEPLOYMENT_TYPE:
-    pulumi.warn(
-        "!!! MCP_DEPLOYMENT_TYPE not set — defaulting to 'datarobot-serverless'. "
-        "Set MCP_DEPLOYMENT_TYPE explicitly to silence this warning!"
-    )
-    MCP_DEPLOYMENT_TYPE = MCP_DEPLOYMENT_TYPE_SERVERLESS
+class InitialConfiguration:
+    def __init__(self, configuration_var: str):
+        self.configuration_var = configuration_var.strip().lower()
+        self._truthy_values: Final[frozenset[str]] = frozenset({"true"})
+        self._falsy_values: Final[frozenset[str]] = frozenset({"false"})
 
-if MCP_DEPLOYMENT_TYPE not in (
-    MCP_DEPLOYMENT_TYPE_SERVERLESS,
-    MCP_DEPLOYMENT_TYPE_WORKLOAD_PREVIEW,
-):
-    pulumi.error(
-        f"Unrecognized MCP_DEPLOYMENT_TYPE '{MCP_DEPLOYMENT_TYPE}'; Terminating deployment."
-    )
-    sys.exit(1)
+    def _resolve_enable_mcp_on_workload_api(self) -> bool:
+        default = False
+        if not self.configuration_var:
+            pulumi.info(
+                f"ENABLE_MCP_ON_WORKLOAD_API is not present — defaulted to {default}."
+            )
+            return default
+        if self.configuration_var in self._truthy_values:
+            pulumi.info("ENABLE_MCP_ON_WORKLOAD_API value resolved to true.")
+            return True
+        if self.configuration_var in self._falsy_values:
+            pulumi.info("ENABLE_MCP_ON_WORKLOAD_API value resolved to false.")
+            return False
+        pulumi.error(
+            "ENABLE_MCP_ON_WORKLOAD_API user's value is invalid, it should be true or false."
+        )
+        sys.exit(1)
+
+    def resolve_mcp_deployment_type(self) -> str:
+        workload_deployment_enabled = self._resolve_enable_mcp_on_workload_api()
+        if workload_deployment_enabled:
+            return MCP_DEPLOYMENT_TYPE_WORKLOAD
+        return MCP_DEPLOYMENT_TYPE_SERVERLESS
+
+
+enable_mcp_on_workload_api = os.getenv("ENABLE_MCP_ON_WORKLOAD_API", "")
+setup = InitialConfiguration(enable_mcp_on_workload_api)
+MCP_DEPLOYMENT_TYPE = setup.resolve_mcp_deployment_type()
 
 pulumi.export(mcp_server_asset_name + " MCP_DEPLOYMENT_TYPE", MCP_DEPLOYMENT_TYPE)
 
@@ -179,7 +202,10 @@ def get_deployments_app_files() -> list[tuple[str, str]]:
     return normalize_shell_scripts(unique_source_files)
 
 
-if MCP_DEPLOYMENT_TYPE == MCP_DEPLOYMENT_TYPE_WORKLOAD_PREVIEW:
+if MCP_DEPLOYMENT_TYPE in {
+    MCP_DEPLOYMENT_TYPE_WORKLOAD_PREVIEW,
+    MCP_DEPLOYMENT_TYPE_WORKLOAD,
+}:
     env_workload_mcp_image_uri = os.getenv("MCP_WORKLOAD_IMAGE_URI", "").strip()
     if env_workload_mcp_image_uri:
         _mcp_exports = provision_workload_mcp_server_from_image_uri(
@@ -187,10 +213,65 @@ if MCP_DEPLOYMENT_TYPE == MCP_DEPLOYMENT_TYPE_WORKLOAD_PREVIEW:
             workload_image_uri=env_workload_mcp_image_uri,
         )
     else:
-        _mcp_exports = provision_workload_mcp_server(
-            mcp_server_asset_name=mcp_server_asset_name,
-            get_deployments_app_files=get_deployments_app_files,
-        )
+        # it is a C2W (code to workload) deployment
+        if MCP_DEPLOYMENT_TYPE == MCP_DEPLOYMENT_TYPE_WORKLOAD_PREVIEW:
+            _mcp_exports = provision_workload_mcp_server(
+                mcp_server_asset_name=mcp_server_asset_name,
+                get_deployments_app_files=get_deployments_app_files,
+            )
+        elif MCP_DEPLOYMENT_TYPE == MCP_DEPLOYMENT_TYPE_WORKLOAD:
+            workload_config = WorkloadConfiguration.from_os_env(mcp_server_asset_name)
+            workload_builder = WorkloadBuilder(mcp_server_asset_name, workload_config)
+
+            mcp_dir_abs_path = (
+                deployments_application_path  # _deployments_application_path()
+            )
+            file_bundler = FileBundler(
+                deployment_app_abs_path=mcp_dir_abs_path,
+                project_dir_abs_path=project_dir,
+            )
+            dockerfile_relative_path = FileBundler.resolve_dockerfile_relative_path(
+                deployment_app_abs_path=mcp_dir_abs_path
+            )
+            workload_manager: (
+                WorkloadProvidedDockerfileManager
+                | WorkloadGeneratedDockerfileManager
+                | None
+            ) = None
+            if dockerfile_relative_path:
+                workload_manager = WorkloadProvidedDockerfileManager(
+                    mcp_server_asset_name,
+                    dockerfile_relative_path,
+                    file_bundler,
+                    workload_builder,
+                )
+            else:
+                # generated dockerfile
+                execution_env = provision_mcp_execution_environment(
+                    mcp_server_asset_name,
+                    resource_name_suffix=" [Workload Generated Dockerfile]",
+                )
+                if execution_env:
+                    workload_artifact_entrypoint = (
+                        WorkloadConfiguration.resolve_workload_entrypoint()
+                    )
+                    workload_manager = WorkloadGeneratedDockerfileManager(
+                        mcp_server_asset_name,
+                        execution_env,
+                        file_bundler,
+                        workload_builder,
+                        workload_artifact_entrypoint,
+                    )
+                else:
+                    message = (
+                        "Internal error: execution environment is required for Workload "
+                        "DockerfileGenerated builds"
+                    )
+                    pulumi.error(message)
+                    raise RuntimeError(message)
+            workload_provider = WorkloadProvider(workload_manager)
+            mcp_export = workload_provider.provision_mcp_server()
+            _mcp_exports = mcp_export.to_dict()
 else:
     _mcp_exports = provision_deployment_mcp_server(
         mcp_server_asset_name=mcp_server_asset_name,

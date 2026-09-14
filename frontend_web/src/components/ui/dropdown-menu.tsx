@@ -37,28 +37,34 @@ function DropdownMenuContent({
           // Background & Text
           'bg-input text-foreground',
           // Positioning & Layering
-          'z-50 origin-(--radix-dropdown-menu-content-transform-origin)',
+          `
+                      z-50
+                      origin-(--radix-dropdown-menu-content-transform-origin)
+                    `,
           // Sizing
-          'max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem]',
+          `
+                      max-h-(--radix-dropdown-menu-content-available-height)
+                      min-w-[8rem]
+                    `,
           // Overflow
           'overflow-x-hidden overflow-y-auto',
           // Shape & Border
-          'rounded-md border shadow-md',
+          'shadow-md rounded-md border',
           // Spacing
           'py-2',
           // Animations (open / close)
           `
-            data-[state=closed]:animate-out
-            data-[state=open]:animate-in
-          `,
+                      data-[state=closed]:animate-out
+                      data-[state=open]:animate-in
+                    `,
           `
-            data-[state=closed]:fade-out-0
-            data-[state=open]:fade-in-0
-          `,
+                      data-[state=closed]:fade-out-0
+                      data-[state=open]:fade-in-0
+                    `,
           `
-            data-[state=closed]:zoom-out-95
-            data-[state=open]:zoom-in-95
-          `,
+                      data-[state=closed]:zoom-out-95
+                      data-[state=open]:zoom-in-95
+                    `,
           // Animations based on menu side
           'data-[side=bottom]:slide-in-from-top-2',
           'data-[side=top]:slide-in-from-bottom-2',
@@ -97,18 +103,22 @@ function DropdownMenuItem({
       data-testid={testId}
       className={cn(
         `
-          daisbled:cursor-default
-          relative flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-foreground outline-hidden select-none
-          focus:bg-sidebar-accent
-          data-[disabled]:pointer-events-none data-[disabled]:opacity-50
-          data-[inset]:pl-8
-          data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10
-          data-[variant=destructive]:focus:text-destructive
-          dark:data-[variant=destructive]:focus:bg-destructive/20
-          [&_svg]:pointer-events-none [&_svg]:shrink-0
-          [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground
-          data-[variant=destructive]:*:[svg]:text-destructive!
-        `,
+                  daisbled:cursor-default
+                  gap-2 px-4 py-2 text-sm
+                  data-[inset]:pl-8
+                  [&_svg:not([class*='size-'])]:size-4
+                  relative flex cursor-pointer items-center text-foreground
+                  outline-hidden select-none
+                  focus:bg-sidebar-accent
+                  data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                  data-[variant=destructive]:text-destructive
+                  data-[variant=destructive]:focus:bg-destructive/10
+                  data-[variant=destructive]:focus:text-destructive
+                  dark:data-[variant=destructive]:focus:bg-destructive/20
+                  [&_svg]:pointer-events-none [&_svg]:shrink-0
+                  [&_svg:not([class*='text-'])]:text-muted-foreground
+                  data-[variant=destructive]:*:[svg]:text-destructive!
+                `,
         selected && 'border-l-2 border-accent bg-secondary',
         className
       )}
@@ -128,26 +138,29 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       className={cn(
         `
-          group relative flex cursor-pointer items-center gap-2 py-1.5 pr-2 pl-10 text-sm outline-hidden select-none
-          focus:bg-secondary
-          disabled:cursor-default
-          data-[disabled]:pointer-events-none data-[disabled]:text-muted-foreground
-          [&_svg]:pointer-events-none [&_svg]:shrink-0
-          [&_svg:not([class*='size-'])]:size-4
-        `,
+                  group gap-2 py-1.5 pr-2 pl-10 text-sm
+                  [&_svg:not([class*='size-'])]:size-4
+                  relative flex cursor-pointer items-center outline-hidden
+                  select-none
+                  focus:bg-secondary
+                  disabled:cursor-default
+                  data-[disabled]:pointer-events-none
+                  data-[disabled]:text-muted-foreground
+                  [&_svg]:pointer-events-none [&_svg]:shrink-0
+                `,
         className
       )}
       checked={checked}
       {...props}
     >
-      <span className="absolute left-4 flex">
+      <span className="left-4 absolute flex">
         <Checkbox
           checked={checked}
           disabled={props.disabled}
           className={`
-            group-hover:border-[color-mix(in_oklch,var(--accent)_80%,white)]
-            group-hover:data-[state=checked]:bg-[color-mix(in_oklch,var(--accent)_80%,white)]
-          `}
+                      group-hover:border-[color-mix(in_oklch,var(--accent)_80%,white)]
+                      group-hover:data-[state=checked]:bg-[color-mix(in_oklch,var(--accent)_80%,white)]
+                    `}
         />
       </span>
       {children}
@@ -171,27 +184,33 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       className={cn(
         // Make this a group to target children on hover
-        'group relative flex items-center gap-2',
+        'group gap-2 relative flex items-center',
         // Spacing
         'py-1.5 pr-2 pl-10',
         // Typography
         'text-sm outline-hidden select-none',
         // Cursor / Interactivity
         `
-          cursor-pointer
-          disabled:cursor-default
-        `,
+                  cursor-pointer
+                  disabled:cursor-default
+                `,
         // Focus
         'focus:bg-secondary',
         // Disabled state
         // 'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-        'data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:text-muted-foreground',
-        'data-[state=checked]:data-[disabled]:[&>*]:border-muted-foreground',
+        `
+                  data-[disabled]:pointer-events-none
+                  data-[disabled]:cursor-not-allowed
+                  data-[disabled]:text-muted-foreground
+                `,
+        `
+                  data-[state=checked]:data-[disabled]:[&>*]:border-muted-foreground
+                `,
         // SVG / Child elements
         `
-          [&_svg]:pointer-events-none [&_svg]:shrink-0
-          [&_svg:not([class*='size-'])]:size-4
-        `,
+                  [&_svg:not([class*='size-'])]:size-4
+                  [&_svg]:pointer-events-none [&_svg]:shrink-0
+                `,
         // Checked state
         'data-[state=checked]:[&>*]:border-accent',
         className
@@ -201,15 +220,17 @@ function DropdownMenuRadioItem({
       <span
         className={cn(
           // Positioning
-          'pointer-events-none absolute left-4',
+          'left-4 pointer-events-none absolute',
           // Layout / Flex
-          'flex size-4 items-center justify-center',
+          'size-4 flex items-center justify-center',
           // Shape / Border / Shadow
-          'rounded-2xl border border-primary shadow-xs',
+          'rounded-2xl shadow-xs border border-primary',
           // Transitions
           'transition-[border,color,fill,box-shadow]',
           // Hover state
-          'group-hover:border-[color-mix(in_oklch,var(--accent)_80%,white)]',
+          `
+                      group-hover:border-[color-mix(in_oklch,var(--accent)_80%,white)]
+                    `,
           // Disabled state
           'group-data-[disabled]:border-muted-foreground'
         )}
@@ -222,10 +243,17 @@ function DropdownMenuRadioItem({
               // Colors
               'fill-accent stroke-accent',
               // Hover state
-              'group-hover:fill-[color-mix(in_oklch,var(--accent)_80%,white)]',
-              'group-hover:stroke-[color-mix(in_oklch,var(--accent)_80%,white)]',
+              `
+                              group-hover:fill-[color-mix(in_oklch,var(--accent)_80%,white)]
+                            `,
+              `
+                              group-hover:stroke-[color-mix(in_oklch,var(--accent)_80%,white)]
+                            `,
               // Disabled state
-              'group-data-[disabled]:fill-muted-foreground group-data-[disabled]:stroke-muted-foreground'
+              `
+                              group-data-[disabled]:fill-muted-foreground
+                              group-data-[disabled]:stroke-muted-foreground
+                            `
             )}
           />
         </DropdownMenuPrimitive.ItemIndicator>
@@ -248,9 +276,10 @@ function DropdownMenuLabel({
       data-inset={inset}
       className={cn(
         `
-          mn-label px-4 py-2
-          data-[inset]:pl-8
-        `,
+                  px-4 py-2
+                  data-[inset]:pl-8
+                  mn-label
+                `,
         className
       )}
       {...props}
@@ -275,7 +304,7 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'spa
   return (
     <span
       data-slot="dropdown-menu-shortcut"
-      className={cn('ml-auto caption-01 tracking-widest', className)}
+      className={cn('tracking-widest ml-auto caption-01', className)}
       {...props}
     />
   );
@@ -301,21 +330,23 @@ function DropdownMenuSubTrigger({
       data-inset={inset}
       className={cn(
         `
-          daisbled:cursor-default
-          flex cursor-pointer items-center gap-2 px-4 py-2 text-sm outline-hidden select-none
-          focus:bg-sidebar-accent
-          data-[inset]:pl-8
-          data-[state=open]:bg-secondary
-          [&_svg]:pointer-events-none [&_svg]:shrink-0
-          [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground
-        `,
+                  daisbled:cursor-default
+                  gap-2 px-4 py-2 text-sm
+                  data-[inset]:pl-8
+                  [&_svg:not([class*='size-'])]:size-4
+                  flex cursor-pointer items-center outline-hidden select-none
+                  focus:bg-sidebar-accent
+                  data-[state=open]:bg-secondary
+                  [&_svg]:pointer-events-none [&_svg]:shrink-0
+                  [&_svg:not([class*='text-'])]:text-muted-foreground
+                `,
         selected && 'border-l-2 border-accent',
         className
       )}
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto size-4" />
+      <ChevronRightIcon className="size-4 ml-auto" />
     </DropdownMenuPrimitive.SubTrigger>
   );
 }
@@ -329,15 +360,19 @@ function DropdownMenuSubContent({
       data-slot="dropdown-menu-sub-content"
       className={cn(
         `
-          z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border bg-input py-2
-          text-secondary-foreground shadow-lg
-          data-[side=bottom]:slide-in-from-top-2
-          data-[side=left]:slide-in-from-right-2
-          data-[side=right]:slide-in-from-left-2
-          data-[side=top]:slide-in-from-bottom-2
-          data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95
-          data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95
-        `,
+                  data-[side=bottom]:slide-in-from-top-2
+                  data-[side=left]:slide-in-from-right-2
+                  data-[side=right]:slide-in-from-left-2
+                  data-[side=top]:slide-in-from-bottom-2
+                  data-[state=closed]:animate-out data-[state=closed]:fade-out-0
+                  data-[state=closed]:zoom-out-95
+                  data-[state=open]:animate-in data-[state=open]:fade-in-0
+                  data-[state=open]:zoom-in-95
+                  py-2 shadow-lg z-50 min-w-[8rem]
+                  origin-(--radix-dropdown-menu-content-transform-origin)
+                  overflow-hidden rounded-md border bg-input
+                  text-secondary-foreground
+                `,
         className
       )}
       {...props}

@@ -48,7 +48,7 @@ export class BufferedHttpAgent extends HttpAgent {
 
     // Instantiate via source$.constructor so the returned Observable belongs to the same
     // rxjs instance as @ag-ui/client, avoiding the pnpm dual-instance conflict at runtime.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const ObservableCtor: new (fn: any) => AgentRunResult = (source$ as any).constructor;
 
     return new ObservableCtor(

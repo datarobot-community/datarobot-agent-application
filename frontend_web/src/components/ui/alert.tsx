@@ -12,29 +12,32 @@ const ALERT_VARIANT = {
 
 const alertVariants = cva(
   `
-    relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-lg border bg-input body p-4
-    has-[>svg]:grid-cols-[calc(var(--spacing)*5)_1fr] has-[>svg]:gap-x-3
-    [&>svg]:size-5
-  `,
+      gap-y-0.5 p-4
+      has-[>svg]:gap-x-3
+      [&>svg]:size-5
+      rounded-lg relative grid w-full grid-cols-[0_1fr] items-start border
+      bg-input body
+      has-[>svg]:grid-cols-[calc(var(--spacing)*5)_1fr]
+    `,
   {
     variants: {
       variant: {
         [ALERT_VARIANT.info]: `
-          border-primary
-          [&>svg]:text-primary
-        `,
+                  border-primary
+                  [&>svg]:text-primary
+                `,
         [ALERT_VARIANT.destructive]: `
-          border-destructive-foreground
-          [&>svg]:text-destructive-foreground
-        `,
+                  border-destructive-foreground
+                  [&>svg]:text-destructive-foreground
+                `,
         [ALERT_VARIANT.warning]: `
-          border-warning/75
-          [&>svg]:text-warning/75
-        `,
+                  border-warning/75
+                  [&>svg]:text-warning/75
+                `,
         [ALERT_VARIANT.success]: `
-          border-success/75
-          [&>svg]:text-success/75
-        `,
+                  border-success/75
+                  [&>svg]:text-success/75
+                `,
       },
     },
     defaultVariants: {
@@ -64,9 +67,10 @@ function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="alert-title"
       className={cn(
         `
-          col-start-2 line-clamp-1 min-h-4 body tracking-tight
-          [&:not(:last-child)]:mb-1
-        `,
+                  min-h-4 tracking-tight
+                  [&:not(:last-child)]:mb-1
+                  col-start-2 line-clamp-1 body
+                `,
         className
       )}
       {...props}
@@ -80,9 +84,10 @@ function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) 
       data-slot="alert-description"
       className={cn(
         `
-          col-start-2 grid justify-items-start gap-1 caption-01
-          [&_p]:leading-relaxed
-        `,
+                  gap-1
+                  [&_p]:leading-relaxed
+                  col-start-2 grid justify-items-start caption-01
+                `,
         className
       )}
       {...props}
@@ -96,10 +101,11 @@ function AlertFooter({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="alert-footer"
       className={cn(
         `
-          col-start-2 mt-4 flex min-h-0 items-center gap-4 body
-          [&>*:first-child]:pl-0
-          [&>a]:no-underline
-        `,
+                  mt-4 min-h-0 gap-4
+                  [&>*:first-child]:pl-0
+                  col-start-2 flex items-center body
+                  [&>a]:no-underline
+                `,
         className
       )}
       {...props}

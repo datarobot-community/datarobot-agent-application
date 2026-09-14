@@ -5,8 +5,18 @@ export function StartNewChat({ createChat }: { createChat: () => void }) {
   const { t } = useTranslation();
 
   return (
-    <section className="flex min-h-full flex-1 items-center justify-center px-6 py-12 text-center">
-      <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-lg px-8 py-10 shadow-xs">
+    <section
+      className={`
+              px-6 py-12 flex min-h-full flex-1 items-center justify-center
+              text-center
+            `}
+    >
+      <div
+        className={`
+                  max-w-md gap-6 px-8 py-10 shadow-xs rounded-lg flex w-full
+                  flex-col items-center
+                `}
+      >
         <div className="space-y-3">
           <p className="heading-02 capitalize">{t('No chats selected')}</p>
           <p className="body-secondary">

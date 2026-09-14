@@ -412,8 +412,11 @@ def provision_deployment_agent(
         deployment_completions_endpoint = agent_deployment.id.apply(
             lambda id: f"{dr_url}/deployments/{id}/chat/completions"
         )
+        # Suffix follows `a2a.mount_path` from workflow.yaml -- `directAccess` forwards
+        # the full prefixed path to the container, so this must match where the agent
+        # actually mounted A2A or the URL resolves nowhere.
         deployment_a2a_endpoint = agent_deployment.id.apply(
-            lambda id: f"{dr_url}/deployments/{id}/directAccess/a2a/"
+            lambda id: base.a2a_url(f"{dr_url}/deployments/{id}/directAccess")
         )
 
         export(
@@ -424,6 +427,11 @@ def provision_deployment_agent(
             "Agent Deployment Chat Endpoint " + base.agent_asset_name,
             deployment_completions_endpoint,
         )
+        if base.IS_A2A_SERVER_ENABLED:
+            pulumi.export(
+                "Agent Deployment A2A Endpoint " + base.agent_asset_name,
+                deployment_a2a_endpoint,
+            )
 
     app_runtime_parameters = [
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(

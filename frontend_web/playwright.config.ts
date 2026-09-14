@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export const baseURL = (process.env.WEB_URL || 'http://localhost:5173');
+export const baseURL = process.env.WEB_URL || 'http://localhost:5173';
 
 export default defineConfig({
   testDir: './e2e',
@@ -54,7 +54,7 @@ export default defineConfig({
       dependencies: ['auth'],
       use: {
         storageState: './e2e/storageState.json',
-        ...devices['Desktop Chrome']
+        ...devices['Desktop Chrome'],
       },
     },
   ],

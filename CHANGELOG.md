@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.12.3
+- Management of dependencies:
+  - Declared the `dev` plugin (`drdev`) in `versions.yaml`; `task install` no longer installs `datarobot[core]` itself
+  - Updated `dr-cli` to 0.5.1 to ensure deterministic dependencies installation
+  - Added `copier` and `pulumi-datarobot` as template dependencies to `versions.yaml`
+  - Added dependencies installation command to `task install` to ensure all of the necessary dependencies are in place before running the template
+  - Reworked dependency management in devcontainer: use `versions.yaml` and `dr` to unify with bare-metal experience
+  - Updated default pulumi-datarobot plugin version in taskfile
+  - Bumped up pulumi version
+- Updated `llm` component from 11.11.7 to 11.11.10:
+  - Added a "DataRobot NIM Deployed LLM" setup flow (`NIM_DEPLOYMENT_ID`, model name) and its `infra/configurations/llm/nim_deployed_llm.py` config, selectable via `INFRA_ENABLE_LLM=nim_deployed_llm.py`
+  - Added a "LLM from a Registered Model" setup flow (`TEXTGEN_REGISTERED_MODEL_ID`, timeout)
+  - Added OpenAI-compatible external provider support (Nebius, Groq, xAI, DeepSeek, self-hosted vLLM, ...)
+  - Changed external/Bedrock/Anthropic/Cohere API key and token CLI prompts to `secret_string`
+  - Moved LLM smoke tests, gateway catalog validation, `ensure_datarobot_prefix`, and credential runtime-parameter handling out of `infra/infra/libllm.py` and into `datarobot-pulumi-utils`
+  - Removed the now-unused local `infra/infra/libllm.py`
+- Updated af-component-react, fixed vulnerabilities
+- Updated `agent` component from 11.11.67 to 11.11.76:
+  - Removed Pulumi provisioning of the MemorySpace behind the remote [A2A](docs/agent/agent2agent.md) agent-card cache, and the now-unused `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` runtime parameter
+  - Bumped `datarobot-genai` from 0.29.31 to 0.29.40 to resolve crewai CVEs
+  - Added support for a custom mount path (`a2a.mount_path`) for the agent-to-agent (A2A) server
+- Updated `mcp_server` component from 0.0.60 to 0.0.65:
+  - Support datarobot-workload deployment type
+  - CI improvements for uv.lock staleness regeneration
+  - Refactored user runtime parameters and fixed workload environment propagation
+  - Updated drmcp dependency and added uv lock generator pipeline
+  - Replaced MCP_DEPLOYMENT_TYPE with user driven boolean flag
+
 ## 11.12.2
 - Added `DATAROBOT_PUBLIC_API_ENDPOINT` as a runtime parameter for the application when application memory is enabled (required on-prem, where `DATAROBOT_ENDPOINT` is internal nginx).
 - Updated `mcp_server` component from 0.0.59 to 0.0.60:

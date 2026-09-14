@@ -21,6 +21,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+import yaml
 
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -471,179 +472,230 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert by_key["EXTERNAL_MCP_TRANSPORT"].value == "sse"
 
 
+# --- A2A workflow.yaml helpers ----------------------------------------------
+#
+# Everything below reads the agent's workflow.yaml through `base`. The config is
+# built as a dict and serialized by yaml, so each test reads as the setting under
+# test rather than as hand-indented YAML embedded in a string literal.
+
+#: A front end with no `a2a` block at all.
+WORKFLOW_WITHOUT_A2A = {"general": {"front_end": {"streaming": True}}}
+
+
+def _workflow_with_a2a(**a2a_fields):
+    """workflow.yaml config whose ``general.front_end.a2a`` block carries ``a2a_fields``."""
+    return {
+        "general": {"front_end": {"a2a": {"server": {"name": "test"}, **a2a_fields}}}
+    }
+
+
+def _write_workflow_yaml(monkeypatch, tmp_path, config, *, in_agent_subdir=False):
+    """Point ``base.project_dir`` at a tmp agent whose workflow.yaml holds ``config``.
+
+    ``in_agent_subdir`` writes it to ``agent/agent/`` instead of the
+    agent root, exercising ``_find_workflow_yaml``'s fallback location.
+    """
+    import infra.agent_infra.base as base
+
+    agent_dir = tmp_path / "agent"
+    if in_agent_subdir:
+        agent_dir = agent_dir / "agent"
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    (agent_dir / "workflow.yaml").write_text(yaml.safe_dump(config))
+    monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
+
+
+def _without_workflow_yaml(monkeypatch, tmp_path):
+    """Point ``base.project_dir`` at a tmp dir holding no workflow.yaml at all."""
+    import infra.agent_infra.base as base
+
+    monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
+
+
+def _collect_pulumi_warnings(monkeypatch):
+    """Capture ``pulumi.warn`` messages emitted from this point on."""
+    import infra.agent_infra.base as base
+
+    messages: list[str] = []
+    monkeypatch.setattr(base.pulumi, "warn", messages.append)
+    return messages
+
+
 class TestCheckA2aServerEnabled:
     def test_true_when_workflow_yaml_has_a2a(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    a2a:\n      server:\n        name: test\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
+        _write_workflow_yaml(monkeypatch, tmp_path, _workflow_with_a2a())
         assert base.check_a2a_server_enabled() is True
 
     def test_true_when_workflow_yaml_in_agent_subdir(self, monkeypatch, tmp_path):
         """workflow.yaml under agent/ (fallback) is checked when the root copy is absent."""
         import infra.agent_infra.base as base
 
-        agent_dir = tmp_path / "agent" / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    a2a:\n      server:\n        name: test\n"
+        _write_workflow_yaml(
+            monkeypatch, tmp_path, _workflow_with_a2a(), in_agent_subdir=True
         )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
         assert base.check_a2a_server_enabled() is True
 
     def test_false_when_no_a2a_key(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    streaming: true\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
+        _write_workflow_yaml(monkeypatch, tmp_path, WORKFLOW_WITHOUT_A2A)
         assert base.check_a2a_server_enabled() is False
 
     def test_false_when_workflow_yaml_absent(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
+        _without_workflow_yaml(monkeypatch, tmp_path)
         assert base.check_a2a_server_enabled() is False
-
-
-class TestCheckA2aRemoteClientEnabled:
-    def test_true_when_workflow_yaml_has_authenticated_a2a_client(
-        self, monkeypatch, tmp_path
-    ):
-        import infra.agent_infra.base as base
-
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "function_groups:\n"
-            "  remote_agent:\n"
-            "    _type: authenticated_a2a_client\n"
-            "    url: https://app.datarobot.com/api/v2/deployments/abc/directAccess/a2a/\n"
-            "    auth_provider: datarobot_auth\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
-        assert base._check_a2a_remote_client_enabled() is True
-
-    def test_false_when_no_remote_a2a_client(self, monkeypatch, tmp_path):
-        import infra.agent_infra.base as base
-
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    streaming: true\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
-        assert base._check_a2a_remote_client_enabled() is False
-
-    def test_false_when_workflow_yaml_absent(self, monkeypatch, tmp_path):
-        import infra.agent_infra.base as base
-
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-        assert base._check_a2a_remote_client_enabled() is False
 
 
 class TestCheckA2aUnauthenticatedWellKnownRouteEnabled:
     def test_true_when_flag_set_in_workflow_yaml(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    a2a:\n"
-            "      enable_unauthenticated_well_known_route: true\n"
-            "      server:\n        name: test\n"
+        _write_workflow_yaml(
+            monkeypatch,
+            tmp_path,
+            _workflow_with_a2a(enable_unauthenticated_well_known_route=True),
         )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
         assert base.check_a2a_unauthenticated_well_known_route_enabled() is True
 
     def test_false_when_flag_absent(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    a2a:\n      server:\n        name: test\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
+        _write_workflow_yaml(monkeypatch, tmp_path, _workflow_with_a2a())
         assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
 
     def test_false_when_flag_explicitly_false(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        agent_dir = tmp_path / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    a2a:\n"
-            "      enable_unauthenticated_well_known_route: false\n"
-            "      server:\n        name: test\n"
+        _write_workflow_yaml(
+            monkeypatch,
+            tmp_path,
+            _workflow_with_a2a(enable_unauthenticated_well_known_route=False),
         )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
         assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
 
     def test_false_when_workflow_yaml_absent(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
+        _without_workflow_yaml(monkeypatch, tmp_path)
         assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
 
 
-class TestRegistryCacheMemorySpace:
-    """Provision AGENT_CARD_REGISTRY_MEMORY_SPACE_ID when remote A2A clients are configured."""
+class TestGetA2aMountPath:
+    """`a2a.mount_path` drives every A2A URL and route infra emits.
 
-    def test_registry_cache_space_param_included_when_remote_a2a_enabled(
-        self, monkeypatch
-    ):
+    datarobot-genai mounts the A2A app at `/{mount_path}`, so a value read wrong here
+    produces URLs that resolve nowhere -- and, on the workload runtime, an
+    unauthenticated agent-card route attached to a dead path that 404s silently.
+    """
+
+    def _resolve(self, monkeypatch, tmp_path, **a2a_fields) -> str:
+        """Mount path resolved from an ``a2a`` block carrying ``a2a_fields``."""
         import infra.agent_infra.base as base
 
-        monkeypatch.setattr(base, "IS_A2A_REMOTE_CLIENT_ENABLED", True)
-        params = base.build_shared_agent_runtime_parameters()
-        space_param = next(
-            p for p in params if p.key == base.AGENT_CARD_REGISTRY_MEMORY_SPACE_ID
-        )
-        assert space_param.type == "string"
-        assert space_param.value is not None
-        base.pulumi_datarobot.MemorySpace.assert_any_call(
-            base.agent_asset_name + " Agent Card Registry Cache",
-        )
+        _write_workflow_yaml(monkeypatch, tmp_path, _workflow_with_a2a(**a2a_fields))
+        return base.get_a2a_mount_path()
 
-    def test_registry_cache_space_param_absent_when_remote_a2a_disabled(
-        self, monkeypatch
-    ):
+    def test_default_when_a2a_block_absent(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        monkeypatch.setattr(base, "IS_A2A_REMOTE_CLIENT_ENABLED", False)
-        params = base.build_shared_agent_runtime_parameters()
-        assert not any(
-            p.key == base.AGENT_CARD_REGISTRY_MEMORY_SPACE_ID for p in params
-        )
+        _write_workflow_yaml(monkeypatch, tmp_path, WORKFLOW_WITHOUT_A2A)
+        assert base.get_a2a_mount_path() == "a2a"
 
-    def test_registry_cache_space_id_disk_export(self, monkeypatch):
-        from unittest.mock import ANY, MagicMock
-
+    def test_default_when_workflow_yaml_absent(self, monkeypatch, tmp_path):
         import infra.agent_infra.base as base
 
-        monkeypatch.setattr(base, "IS_A2A_REMOTE_CLIENT_ENABLED", True)
-        monkeypatch.setattr(base, "export", MagicMock())
-        base.build_shared_agent_runtime_parameters()
+        _without_workflow_yaml(monkeypatch, tmp_path)
+        assert base.get_a2a_mount_path() == "a2a"
 
-        base.export.assert_any_call(
-            base.AGENT_CARD_REGISTRY_MEMORY_SPACE_ID,
-            ANY,
+    def test_default_when_mount_path_absent(self, monkeypatch, tmp_path):
+        assert self._resolve(monkeypatch, tmp_path) == "a2a"
+
+    def test_custom_value(self, monkeypatch, tmp_path):
+        assert (
+            self._resolve(monkeypatch, tmp_path, mount_path="custom-a2a-mount-path")
+            == "custom-a2a-mount-path"
+        )
+
+    def test_surrounding_slashes_stripped(self, monkeypatch, tmp_path):
+        """`"/a2a/"` and `"a2a"` are equivalent, matching datarobot-genai's normalization."""
+        assert (
+            self._resolve(monkeypatch, tmp_path, mount_path="/custom-a2a-mount-path/")
+            == "custom-a2a-mount-path"
+        )
+
+    def test_interior_slashes_kept_for_multi_segment_mount(self, monkeypatch, tmp_path):
+        assert self._resolve(monkeypatch, tmp_path, mount_path="api/a2a") == "api/a2a"
+
+    def test_blank_falls_back_to_default_with_warning(self, monkeypatch, tmp_path):
+        """Empty is rejected by datarobot-genai at startup; infra warns but does not raise."""
+        warnings = _collect_pulumi_warnings(monkeypatch)
+
+        assert self._resolve(monkeypatch, tmp_path, mount_path="/") == "a2a"
+        assert len(warnings) == 1
+        assert "empty" in warnings[0]
+
+    def test_invalid_segment_warns_but_passes_through(self, monkeypatch, tmp_path):
+        """The container is the authoritative validator, so infra must not block the deploy."""
+        warnings = _collect_pulumi_warnings(monkeypatch)
+
+        assert self._resolve(monkeypatch, tmp_path, mount_path="bad path") == "bad path"
+        assert len(warnings) == 1
+        assert "bad path" in warnings[0]
+
+    def test_dot_leading_segment_warns_but_passes_through(self, monkeypatch, tmp_path):
+        warnings = _collect_pulumi_warnings(monkeypatch)
+
+        assert (
+            self._resolve(monkeypatch, tmp_path, mount_path=".well-known")
+            == ".well-known"
+        )
+        assert len(warnings) == 1
+
+    def test_valid_value_does_not_warn(self, monkeypatch, tmp_path):
+        warnings = _collect_pulumi_warnings(monkeypatch)
+
+        assert self._resolve(monkeypatch, tmp_path, mount_path="api/a2a") == "api/a2a"
+        assert warnings == []
+
+
+class TestA2aUrl:
+    def test_appends_mount_path_with_single_trailing_slash(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setattr(base, "A2A_MOUNT_PATH", "a2a")
+        assert (
+            base.a2a_url("https://example.com/deployments/abc/directAccess")
+            == "https://example.com/deployments/abc/directAccess/a2a/"
+        )
+
+    def test_follows_custom_mount_path(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setattr(base, "A2A_MOUNT_PATH", "custom-a2a-mount-path")
+        assert (
+            base.a2a_url("https://example.com/deployments/abc/directAccess")
+            == "https://example.com/deployments/abc/directAccess/custom-a2a-mount-path/"
+        )
+
+    def test_collapses_trailing_slash_on_base(self, monkeypatch):
+        """Workload endpoints arrive with a trailing slash; the join must not double it."""
+        import infra.agent_infra.base as base
+
+        monkeypatch.setattr(base, "A2A_MOUNT_PATH", "a2a")
+        assert base.a2a_url("https://workload.example.com/") == (
+            "https://workload.example.com/a2a/"
+        )
+
+    def test_multi_segment_mount_path(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setattr(base, "A2A_MOUNT_PATH", "api/a2a")
+        assert base.a2a_url("https://workload.example.com") == (
+            "https://workload.example.com/api/a2a/"
         )
 
 

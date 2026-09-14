@@ -18,7 +18,9 @@ type TabsVariant = (typeof TABS_VARIANT)[keyof typeof TABS_VARIANT];
 const tabsListVariants = cva('inline-flex items-center', {
   variants: {
     variant: {
-      [TABS_VARIANT.default]: 'rounded-lg border-2 border-sidebar-border bg-sidebar-border',
+      [TABS_VARIANT.default]: `
+              rounded-lg border-2 border-sidebar-border bg-sidebar-border
+            `,
       [TABS_VARIANT.underline]: 'border-b border-border',
     },
   },
@@ -113,7 +115,10 @@ function TabsList({
       <div ref={listRef}>{props.children}</div>
       {isUnderline && indicatorStyle && (
         <span
-          className="absolute bottom-0 h-0.5 bg-accent transition-all duration-300 ease-in-out"
+          className={`
+                      bottom-0 h-0.5 ease-in-out absolute bg-accent
+                      transition-all duration-300
+                    `}
           data-testid="tabs-indicator"
           style={{
             left: indicatorStyle.left,
@@ -138,27 +143,42 @@ function TabsTrigger({
       className={cn(
         // Base styles
         `
-          inline-flex cursor-pointer items-center justify-center gap-1.5 text-sm font-medium transition-colors select-none
-          disabled:cursor-default
-        `,
+                  gap-1.5 text-sm font-medium inline-flex cursor-pointer
+                  items-center justify-center transition-colors select-none
+                  disabled:cursor-default
+                `,
         // Default variant styles
-        'rounded-lg px-4 py-1.5 text-secondary-foreground',
+        'px-4 py-1.5 rounded-lg text-secondary-foreground',
         `
-          outline-hidden
-          focus:bg-muted focus:text-accent-foreground
-          focus-visible:border-ring focus-visible:ring-[1px] focus-visible:ring-ring
-        `,
+                  outline-hidden
+                  focus:bg-muted focus:text-accent-foreground
+                  focus-visible:border-ring focus-visible:ring-[1px]
+                  focus-visible:ring-ring
+                `,
         'hover:bg-muted hover:text-accent-foreground',
         `
-          focus:z-2
-          data-[state=active]:border-accent data-[state=active]:bg-sidebar-accent data-[state=active]:text-foreground
-        `,
-        'data-[disabled]:pointer-events-none data-[disabled]:text-muted-foreground data-[disabled]:opacity-50',
+                  focus:z-2
+                  data-[state=active]:border-accent
+                  data-[state=active]:bg-sidebar-accent
+                  data-[state=active]:text-foreground
+                `,
+        `
+                  data-[disabled]:pointer-events-none
+                  data-[disabled]:text-muted-foreground
+                  data-[disabled]:opacity-50
+                `,
         // Underline variant styles (when parent has data-variant="underline")
-        'group-data-[variant=underline]:rounded-none group-data-[variant=underline]:px-3 group-data-[variant=underline]:py-2',
+        `
+                  group-data-[variant=underline]:px-3
+                  group-data-[variant=underline]:py-2
+                  group-data-[variant=underline]:rounded-none
+                `,
         'group-data-[variant=underline]:focus-visible:ring-offset-2',
         'group-data-[variant=underline]:hover:bg-transparent',
-        'group-data-[variant=underline]:data-[state=active]:border-0 group-data-[variant=underline]:data-[state=active]:bg-transparent',
+        `
+                  group-data-[variant=underline]:data-[state=active]:border-0
+                  group-data-[variant=underline]:data-[state=active]:bg-transparent
+                `,
         className
       )}
       value={value}

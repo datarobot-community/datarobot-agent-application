@@ -69,6 +69,7 @@ def tool_flag_env_vars() -> list[dict[str, str]]:
         {
             "name": env_key,
             "value": bool_from_env_or_cli(env_key, mcp_opt, "false", enabled_set),
+            "source": "string",
         }
         for env_key, mcp_opt in (*TOOL_FLAGS, *DYNAMIC_FLAGS)
     ]

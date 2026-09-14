@@ -1,11 +1,9 @@
 {
 	"name": "Application Framework Studio Devcontainer",
 	"build": {
-		"dockerfile": "Dockerfile"
+		"dockerfile": "Dockerfile",
+		"context": ".."
 	},
-    "features": {
-        "ghcr.io/devcontainers/features/node:1": {}
-    },
     "customizations": {
         "jetbrains": {
             "plugins": [

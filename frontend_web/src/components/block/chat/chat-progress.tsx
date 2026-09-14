@@ -54,25 +54,33 @@ export function ChatProgress({
             key={id}
             className={cn(
               'py-0 transition-all duration-300',
-              allDone && !hasError && 'border-green-500/30 opacity-80',
+              allDone && !hasError && `border-green-500/30 opacity-80`,
               hasError && 'border-red-500/30 opacity-80'
             )}
           >
             <CardContent className="p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div
+                className={`
+                                  mb-3 flex items-center justify-between
+                                `}
+              >
+                <div className="gap-2 flex items-center">
                   {hasError ? (
                     <XCircle className="size-4 text-red-500" />
                   ) : allDone ? (
-                    <CheckCircle2 className="size-4 text-green-500" />
+                    <CheckCircle2 className={`size-4 text-green-500`} />
                   ) : (
-                    <Loader2 className="size-4 animate-spin text-blue-500" />
+                    <Loader2
+                      className={`
+                                              size-4 animate-spin text-blue-500
+                                            `}
+                    />
                   )}
                   <span className="mn-label">
                     {hasError ? 'Failed' : allDone ? 'Completed' : 'Processing'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="gap-2 flex items-center">
                   <Badge
                     variant={hasError ? 'destructive' : allDone ? 'info' : 'default'}
                     className="caption-01"
@@ -85,9 +93,10 @@ export function ChatProgress({
                     <button
                       onClick={() => handleClose(id)}
                       className={`
-                        text-muted-foreground transition-colors
-                        hover:text-foreground
-                      `}
+                                              text-muted-foreground
+                                              transition-colors
+                                              hover:text-foreground
+                                            `}
                       aria-label="Close"
                     >
                       <X className="size-4" />
@@ -101,24 +110,49 @@ export function ChatProgress({
                   <div key={step.name}>
                     <div
                       className={cn(
-                        'flex items-center gap-2 body transition-all duration-200',
+                        `
+                                                  gap-2 flex items-center body
+                                                  transition-all duration-200
+                                                `,
                         step.done ? 'text-muted-foreground' : 'text-foreground',
                         step.error && 'text-red-500'
                       )}
                     >
                       {step.error ? (
-                        <XCircle className="size-3.5 shrink-0 text-red-500" />
+                        <XCircle
+                          className={`
+                                                      size-3.5 text-red-500
+                                                      shrink-0
+                                                    `}
+                        />
                       ) : step.done ? (
-                        <CheckCircle2 className="size-3.5 shrink-0 text-green-500" />
+                        <CheckCircle2
+                          className={`
+                                                      size-3.5 text-green-500
+                                                      shrink-0
+                                                    `}
+                        />
                       ) : (
-                        <Circle className="size-3.5 shrink-0 text-muted-foreground" />
+                        <Circle
+                          className={`
+                                                      size-3.5 shrink-0
+                                                      text-muted-foreground
+                                                    `}
+                        />
                       )}
-                      <span className={cn(step.done && !step.error && 'line-through')}>
+                      <span className={cn(step.done && !step.error && `line-through`)}>
                         {step.name}
                       </span>
                     </div>
                     {step.error && (
-                      <div className="mt-1 ml-5.5 caption-01 text-red-500/80">{step.error}</div>
+                      <div
+                        className={`
+                                                  mt-1 ml-5.5 text-red-500/80
+                                                  caption-01
+                                                `}
+                      >
+                        {step.error}
+                      </div>
                     )}
                   </div>
                 ))}

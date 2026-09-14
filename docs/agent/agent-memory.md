@@ -43,10 +43,12 @@ Valid values are `none`, `mem0`, and `datarobot_memory_service`.
 
 When memory is enabled (`mem0` or `datarobot_memory_service`), the template also:
 
-- Adds the `memory` extra to the `datarobot-genai` dependency in `pyproject.toml`.
-- Selects a memory-aware `uv.lock` partial.
 - Adds memory-related fields to `agent/config.py`.
 - Provisions provider-specific runtime parameters in infrastructure code.
+
+Enabling memory does **not** change the dependency set. Both providers are already
+reachable through `datarobot-genai`, so the generated `pyproject.toml` is identical
+either way and the render uses the chosen framework's ordinary `uv.lock`.
 
 ---
 

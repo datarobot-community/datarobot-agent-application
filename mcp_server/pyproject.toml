@@ -7,7 +7,7 @@ version = "0.0.0"
 description = "DataRobot MCP Server"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[drmcp]>=0.29.30,<0.30.0",
+    "datarobot-genai[drmcp]>=0.29.41,<0.30.0",
 ]
 
 [project.optional-dependencies]
@@ -16,7 +16,7 @@ dev = [
     "pytest>=8.0.0",
     "ruff>=0.3.0",
     "mypy>=1.8.0",
-    "pydantic>=2.6.1",
+    "pydantic>=2.6.3",
     "pytest-asyncio>=0.23.5",
     "pre-commit>=3.6.0",
     "types-requests>=2.31.0",

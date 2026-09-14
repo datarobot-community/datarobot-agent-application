@@ -284,7 +284,7 @@ The following commands support local development of the agent component.
 Install the agent component dependencies:
 
 ```sh
-dr task run agent:install
+dr run agent:install
 ```
 
 > **Warning:** When using a custom Docker context (`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset and an `agent/docker_context/` folder is present), modifying `pyproject.toml` or `uv.lock` triggers a full execution environment rebuild on the next deployment. This rebuild can take 10–20 minutes depending on the number of dependencies. When using the default DataRobot execution environment (the default configuration), dependency changes do not trigger a rebuild.
@@ -294,7 +294,7 @@ dr task run agent:install
 Run the agent component test suite:
 
 ```sh
-dr task run agent:test
+dr run agent:test
 ```
 
 ### Run linter
@@ -302,7 +302,7 @@ dr task run agent:test
 Run the linter against the agent component:
 
 ```sh
-dr task run agent:lint
+dr run agent:lint
 ```
 
 ### Run locally

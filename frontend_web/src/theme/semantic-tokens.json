@@ -31,14 +31,38 @@
       "kind": "text",
       "tokens": [
         { "name": "foreground", "light": "alpine-light-10", "dark": "midnight-gray-10" },
-        { "name": "muted-foreground", "light": "alpine-light-30", "dark": "midnight-gray-30" },
-        { "name": "card-foreground", "light": "alpine-light-10", "dark": "midnight-gray-10" },
-        { "name": "popover-foreground", "light": "alpine-light-10", "dark": "midnight-gray-10" },
-        { "name": "primary-foreground", "light": "alpine-light-100", "dark": "midnight-gray-90" },
-        { "name": "secondary-foreground", "light": "alpine-light-20", "dark": "midnight-gray-20" },
+        {
+          "name": "muted-foreground",
+          "light": "alpine-light-30",
+          "dark": "midnight-gray-30"
+        },
+        {
+          "name": "card-foreground",
+          "light": "alpine-light-10",
+          "dark": "midnight-gray-10"
+        },
+        {
+          "name": "popover-foreground",
+          "light": "alpine-light-10",
+          "dark": "midnight-gray-10"
+        },
+        {
+          "name": "primary-foreground",
+          "light": "alpine-light-100",
+          "dark": "midnight-gray-90"
+        },
+        {
+          "name": "secondary-foreground",
+          "light": "alpine-light-20",
+          "dark": "midnight-gray-20"
+        },
         { "name": "accent-foreground", "light": "purple-70", "dark": "purple-40" },
         { "name": "destructive-foreground", "light": "red-70", "dark": "red-40" },
-        { "name": "sidebar-foreground", "light": "alpine-light-10", "dark": "midnight-gray-10" },
+        {
+          "name": "sidebar-foreground",
+          "light": "alpine-light-10",
+          "dark": "midnight-gray-10"
+        },
         {
           "name": "sidebar-primary-foreground",
           "light": "alpine-light-20",
@@ -69,7 +93,11 @@
       "tokens": [
         { "name": "border", "light": "alpine-light-50", "dark": "midnight-gray-50" },
         { "name": "ring", "light": "alpine-light-0", "dark": "midnight-gray-0" },
-        { "name": "sidebar-border", "light": "alpine-light-60", "dark": "midnight-gray-60" },
+        {
+          "name": "sidebar-border",
+          "light": "alpine-light-60",
+          "dark": "midnight-gray-60"
+        },
         { "name": "sidebar-ring", "light": "alpine-light-0", "dark": "midnight-gray-50" }
       ]
     },

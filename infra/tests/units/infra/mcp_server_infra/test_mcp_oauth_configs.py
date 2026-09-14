@@ -29,6 +29,7 @@ from infra.mcp_server_infra.mcp_oauth_configs import (
     XAA_TOKEN_ENDPOINT_AUTH_METHOD_ENV_VAR,
     XAA_TOKEN_URL_ENV_VAR,
     XAA_TRUSTED_ISSUER_ENV_VAR,
+    WorkloadArtifactContainerRoute,
     get_workload_mcp_oauth_routes,
     mcp_enable_oauth_claim_validation_value,
     mcp_enable_unauthenticated_well_known_route_value,
@@ -79,12 +80,13 @@ class TestOAuthMetadataEnvVars:
         monkeypatch.setenv(SCOPE_SOURCE_ENV_VAR, "tags")
 
         assert mcp_oauth_metadata_env_vars() == [
-            {"name": RESOURCE_ENV_VAR, "value": "https://resource"},
+            {"name": RESOURCE_ENV_VAR, "value": "https://resource", "source": "string"},
             {
                 "name": AUTHORIZATION_SERVERS_ENV_VAR,
                 "value": "https://as1,https://as2",
+                "source": "string",
             },
-            {"name": SCOPE_SOURCE_ENV_VAR, "value": "tags"},
+            {"name": SCOPE_SOURCE_ENV_VAR, "value": "tags", "source": "string"},
         ]
 
     def test_values_are_forwarded_verbatim(
@@ -235,12 +237,33 @@ class TestOAuthAndWellKnownEnvVars:
             {
                 "name": ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
                 "value": "true",
+                "source": "string",
             },
-            {"name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR, "value": "false"},
-            {"name": XAA_TRUSTED_ISSUER_ENV_VAR, "value": TRUSTED_ISSUER},
-            {"name": XAA_EXCHANGE_AUDIENCE_ENV_VAR, "value": EXCHANGE_AUDIENCE},
-            {"name": XAA_TOKEN_URL_ENV_VAR, "value": TOKEN_URL},
-            {"name": XAA_SCOPES_ENV_VAR, "value": "scope"},
+            {
+                "name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR,
+                "value": "false",
+                "source": "string",
+            },
+            {
+                "name": XAA_TRUSTED_ISSUER_ENV_VAR,
+                "value": TRUSTED_ISSUER,
+                "source": "string",
+            },
+            {
+                "name": XAA_EXCHANGE_AUDIENCE_ENV_VAR,
+                "value": EXCHANGE_AUDIENCE,
+                "source": "string",
+            },
+            {
+                "name": XAA_TOKEN_URL_ENV_VAR,
+                "value": TOKEN_URL,
+                "source": "string",
+            },
+            {
+                "name": XAA_SCOPES_ENV_VAR,
+                "value": "scope",
+                "source": "string",
+            },
         ]
 
     def test_only_the_flags_when_no_metadata_is_configured(self) -> None:
@@ -248,8 +271,13 @@ class TestOAuthAndWellKnownEnvVars:
             {
                 "name": ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
                 "value": "false",
+                "source": "string",
             },
-            {"name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR, "value": "false"},
+            {
+                "name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR,
+                "value": "false",
+                "source": "string",
+            },
         ]
 
 
@@ -263,12 +291,14 @@ class TestWorkloadOAuthRoutes:
     ) -> None:
         monkeypatch.setenv(ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR, "true")
 
-        assert get_workload_mcp_oauth_routes() == [
-            {
-                "path": OAUTH_PROTECTED_RESOURCE_WELL_KNOWN_PATH,
-                "auth": "disabled",
-            },
+        actual = get_workload_mcp_oauth_routes()
+
+        expected = [
+            WorkloadArtifactContainerRoute(
+                path=OAUTH_PROTECTED_RESOURCE_WELL_KNOWN_PATH, auth="disabled"
+            )
         ]
+        assert actual == expected
 
 
 class TestTagScopeEnvVars:
@@ -286,8 +316,13 @@ class TestTagScopeEnvVars:
             {
                 "name": f"{TAG_SCOPES_ENV_VAR_PREFIX}DATABASE",
                 "value": "mcp:tools:write",
+                "source": "string",
             },
-            {"name": f"{TAG_SCOPES_ENV_VAR_PREFIX}READONLY", "value": "mcp:tools:read"},
+            {
+                "name": f"{TAG_SCOPES_ENV_VAR_PREFIX}READONLY",
+                "value": "mcp:tools:read",
+                "source": "string",
+            },
         ]
 
     def test_a_blank_variable_is_not_forwarded(
@@ -303,6 +338,6 @@ class TestTagScopeEnvVars:
     ) -> None:
         monkeypatch.setenv(f"{TAG_SCOPES_ENV_VAR_PREFIX}DATABASE", "mcp:tools:write")
 
-        names = {env_var["name"] for env_var in mcp_oauth_metadata_env_vars()}
+        names = {env_var["name"] for env_var in mcp_tag_scope_env_vars()}
 
         assert f"{TAG_SCOPES_ENV_VAR_PREFIX}DATABASE" in names

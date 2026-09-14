@@ -27,7 +27,7 @@ from mcp_server_clients.http_session import (
 
 BUILD_SUCCESS = "COMPLETED"
 BUILD_FAILURES = frozenset({"FAILED", "CANCELLED"})
-WORKLOAD_ARTIFACT_TYPE = "service"
+WORKLOAD_ARTIFACT_TYPE = "mcp"
 DEFAULT_REQUEST_TIMEOUT_S = 60
 # Tolerated consecutive poll failures (e.g. transient 502s) while a build runs.
 MAX_TRANSIENT_POLL_FAILURES = 3

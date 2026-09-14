@@ -81,12 +81,15 @@ export function ChatTextInput({
         onCompositionStart={() => setIsComposing(true)}
         onCompositionEnd={() => setIsComposing(false)}
         onKeyDown={keyDownHandler}
-        className="h-auto min-h-20 flex-1 shrink-0 resize-none overflow-x-hidden overflow-y-auto pr-12"
+        className={`
+                  min-h-20 pr-12 h-auto flex-1 shrink-0 resize-none
+                  overflow-x-hidden overflow-y-auto
+                `}
       />
       {runningAgent ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="absolute right-2 bottom-2">
+            <span className="right-2 bottom-2 absolute">
               <Button testId="send-message-disabled-btn" type="submit" size="icon" disabled>
                 <Loader2 className="animate-spin" />
               </Button>
@@ -98,7 +101,7 @@ export function ChatTextInput({
         <Button
           type="submit"
           onClick={() => handleSubmit(value)}
-          className="absolute right-2 bottom-2"
+          className="right-2 bottom-2 absolute"
           size="icon"
           testId="send-message-btn"
           disabled={!value.trim().length}

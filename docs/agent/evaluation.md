@@ -36,7 +36,7 @@ Local evaluation requires the following dependencies and environment variables.
 
 Local evaluation uses **`nat eval`** plugins shipped in `datarobot-genai` **0.26.10 or higher** (`dr_eval_plugins` entry point). The agent template already depends on `datarobot-genai[dragent, …]`; ensure the lockfile resolves to a version that includes the eval plugins.
 
-Pytest evaluation tests use `@pytest.mark.timeout`; `pytest-timeout` is included in the template `dev` optional dependencies (`dr task run agent:install`).
+Pytest evaluation tests use `@pytest.mark.timeout`; `pytest-timeout` is included in the template `dev` optional dependencies (`dr run agent:install`).
 
 No separate `datarobot-moderations` install is required&mdash;evaluators call the same out-of-the-box scorers in-process.
 
@@ -237,7 +237,7 @@ The following issues are common when running local evaluation.
 
 **Cause:** `datarobot-genai` is earlier than 0.26.10, which first shipped the DataRobot moderation eval plugins.
 
-**Fix:** Upgrade `datarobot-genai` in `pyproject.toml` and refresh the lockfile (`dr task run agent:install`).
+**Fix:** Upgrade `datarobot-genai` in `pyproject.toml` and refresh the lockfile (`dr run agent:install`).
 
 ### Missing evaluation dependencies
 
@@ -248,7 +248,7 @@ The following issues are common when running local evaluation.
 **Fix:**
 
 ```sh
-dr task run agent:install
+dr run agent:install
 ```
 
 ### Timeout errors

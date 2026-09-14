@@ -14,13 +14,28 @@
 
 import os
 from contextlib import contextmanager
+from pathlib import Path
 from typing import ClassVar
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pulumi_datarobot
 import pytest
 
 from infra.mcp_server_infra import workload
+from infra.mcp_server_infra.mcp_utils import (
+    DR_CREDENTIAL_API_TOKEN_KEY,
+    InfraProviderOutput,
+    MCPRuntimeParameter,
+    MCPRuntimeParameterAPITokenCredential,
+    PulumiOutputEndpoints,
+)
+from infra.mcp_server_infra.workload import (
+    WorkloadBuilder,
+    WorkloadConfiguration,
+    WorkloadGeneratedDockerfileManager,
+    WorkloadProvidedDockerfileManager,
+    WorkloadProvider,
+)
 
 # Bound to a name so call sites stay a fixed width: this file is a copier
 # template and the app name inside the label varies in length, which otherwise
@@ -101,7 +116,11 @@ def stub_provision(*, dockerfile: str | None):
         ),
         patch.object(workload, "_create_workload", return_value=wl),
         patch.object(
-            workload, "_export_workload_endpoints", return_value="https://host/mcp"
+            workload,
+            "_export_workload_endpoints",
+            return_value=PulumiOutputEndpoints(
+                base_endpoint="https://host/", mcp_endpoint="https://host/mcp"
+            ),
         ),
         pulumi_stubs(),
     ):
@@ -172,51 +191,73 @@ class TestWorkloadEntrypoint:
 
 class TestUserParamEnvVars:
     def test_string_params_become_uppercased_env_vars(self) -> None:
-        params = [
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="user_name", type="string", value="alice"
+        credential_params = [
+            MCPRuntimeParameterAPITokenCredential(
+                name="my_secret", value="credential-id"
             ),
         ]
-        with patch.object(workload, "MCP_USER_RUNTIME_PARAMETERS", params):
-            assert workload.user_param_env_vars() == [
-                {"name": "USER_NAME", "value": "alice"}
-            ]
+        params = [
+            MCPRuntimeParameter(name="user_name", type="string", value="alice"),
+        ]
+        with (
+            patch.object(
+                workload, "MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS", credential_params
+            ),
+            patch.object(workload, "MCP_USER_RUNTIME_PARAMETERS", params),
+        ):
+            actual = workload.user_param_env_vars()
+
+            assert actual[0]["name"] == "USER_NAME"
+            assert actual[1]["name"] == "MY_SECRET"
 
     def test_credential_params_become_dr_credential_references(self) -> None:
-        params = [
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="my_secret", type="credential", value="credential-id"
-            ),
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="user_name", type="string", value="alice"
+        credential_params = [
+            MCPRuntimeParameterAPITokenCredential(
+                name="my_secret", value="credential-raw-value"
             ),
         ]
-        with patch.object(workload, "MCP_USER_RUNTIME_PARAMETERS", params):
-            env_vars = workload.user_param_env_vars()
+        mock_pulumi_output = Mock(id="some-id")
+        mock_api_token_credential_cls = MagicMock(return_value=mock_pulumi_output)
+        with (
+            patch.object(
+                workload, "MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS", credential_params
+            ),
+            patch.object(workload, "MCP_USER_RUNTIME_PARAMETERS", []),
+            patch.object(
+                pulumi_datarobot, "ApiTokenCredential", mock_api_token_credential_cls
+            ),
+        ):
+            actual = workload.user_param_env_vars()
 
-        assert env_vars == [
+        mock_api_token_credential_cls.assert_called_once()
+        assert actual == [
             {
                 "name": "MY_SECRET",
                 "source": "dr-credential",
-                "drCredentialId": "credential-id",
-                "key": "apiToken",
+                "drCredentialId": mock_pulumi_output.id,
+                "key": DR_CREDENTIAL_API_TOKEN_KEY,
             },
-            {"name": "USER_NAME", "value": "alice"},
         ]
 
     def test_user_params_included_in_workload_environment_vars(self) -> None:
-        params = [
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="user_name", type="string", value="alice"
+        credential_params = [
+            MCPRuntimeParameterAPITokenCredential(
+                name="my_secret", value="credential-id"
             ),
+        ]
+        params = [
+            MCPRuntimeParameter(name="user_name", type="string", value="alice"),
         ]
         with (
             env(MCP_SERVER_NAME=None, SESSION_SECRET_KEY=None),
+            patch.object(
+                workload, "MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS", credential_params
+            ),
             patch.object(workload, "MCP_USER_RUNTIME_PARAMETERS", params),
         ):
             env_vars = workload._workload_environment_vars(ASSET_NAME)
 
-        assert {"name": "USER_NAME", "value": "alice"} in env_vars
+        assert {"name": "USER_NAME", "value": "alice", "source": "string"} in env_vars
         assert {"name": "MCP_SERVER_NAME", "value": "datarobot-mcp-server"} in env_vars
         assert "AUTH_RESOLUTION_STRATEGY" in {entry["name"] for entry in env_vars}
 
@@ -234,7 +275,7 @@ class TestSessionSecretEnvVars:
         entry = entries[0]
         assert entry["name"] == "SESSION_SECRET_KEY"
         assert entry["source"] == "dr-credential"
-        assert entry["key"] == "apiToken"
+        assert entry["key"] == DR_CREDENTIAL_API_TOKEN_KEY
         assert "super-secret" not in str(entry.get("value", ""))
 
 
@@ -341,6 +382,7 @@ class TestWorkloadEnvironmentVars:
             forwarded = {
                 v["name"]: v["value"]
                 for v in workload._workload_environment_vars("[test]")
+                if v.get("source") not in {"credential", "dr-credential"}
             }
 
         assert forwarded["MCP_ENABLE_OAUTH_CLAIM_VALIDATION"] == "true"
@@ -364,6 +406,7 @@ class TestWorkloadEnvironmentVars:
             forwarded = {
                 v["name"]: v["value"]
                 for v in workload._workload_environment_vars("[test]")
+                if v.get("source") not in {"credential", "dr-credential"}
             }
 
         for name, default in self.DEPLOYMENT_PARITY_DEFAULTS.items():
@@ -384,6 +427,7 @@ class TestWorkloadEnvironmentVars:
             forwarded = {
                 v["name"]: v["value"]
                 for v in workload._workload_environment_vars("[test]")
+                if v.get("source") not in {"credential", "dr-credential"}
             }
 
         assert forwarded["MCP_SERVER_LOG_LEVEL"] == "DEBUG"
@@ -411,27 +455,34 @@ class TestCreateWorkload:
         mock = MagicMock()
         with (
             patch.object(workload.pulumi_datarobot, "Workload", mock),
-            env(MCP_WORKLOAD_REPLICA_COUNT="3", MCP_WORKLOAD_CPU="2.5"),
+            env(
+                MCP_WORKLOAD_REPLICA_COUNT="3",
+                MCP_WORKLOAD_CPU="2.5",
+                MCP_WORKLOAD_MEMORY="1200",
+            ),
         ):
             workload._create_workload(
                 mcp_server_asset_name="srv", artifact_id="art-id", depends_on=[]
             )
-        container = mock.call_args.kwargs["runtime"]["container_groups"][0][
-            "containers"
-        ][0]
-        actual = container["resource_allocation"]
-        expected = {"cpu": 2.5, "memory": workload.DEFAULT_WORKLOAD_MEMORY_BYTES}
-        assert actual == expected
+        container = mock.call_args.kwargs["runtime"].container_groups[0].containers[0]
+        actual = container.resource_allocation
+
+        expected = {"cpu": 2.5, "memory": "1200"}
+        assert actual.cpu == expected["cpu"]
+        assert actual.memory == expected["memory"]
 
 
 class TestExportWorkloadEndpoints:
     def test_mcp_endpoint_appends_suffix(self) -> None:
-        wl = MagicMock(
-            endpoint=MockOutput("https://host/"), id="w1", name="srv", artifact_id="a1"
-        )
+        endpoint = Mock(apply=lambda fn: fn("https://host/"))
+        wl = Mock(endpoint=endpoint)
+
         with pulumi_stubs():
             actual = workload._export_workload_endpoints("srv", wl)
-        expected = "https://host/mcp"
+
+        expected = PulumiOutputEndpoints(
+            base_endpoint=endpoint, mcp_endpoint="https://host/mcp"
+        )
         assert actual == expected
 
     def test_exports_workload_metadata(self) -> None:
@@ -550,7 +601,11 @@ class TestProvisionWorkloadMcpServerFromImageUri:
             patch.object(workload.pulumi_datarobot, "Artifact", return_value=artifact),
             patch.object(workload, "_create_workload", return_value=wl),
             patch.object(
-                workload, "_export_workload_endpoints", return_value="https://host/mcp"
+                workload,
+                "_export_workload_endpoints",
+                return_value=PulumiOutputEndpoints(
+                    base_endpoint="https://host/", mcp_endpoint="https://host/mcp"
+                ),
             ),
             pulumi_stubs(),
         ):
@@ -563,12 +618,18 @@ class TestProvisionWorkloadMcpServerFromImageUri:
     def test_exports_workload_image_uri(self) -> None:
         spec = MagicMock(to_pulumi_args=MagicMock(return_value={"type": "service"}))
         artifact = MagicMock(artifact_id="art-id")
-        wl = MagicMock(endpoint=MockOutput("https://host/"))
+        base_endpoint = "https://host/"
+        wl = MagicMock(endpoint=MockOutput(base_endpoint))
+        endpoints = PulumiOutputEndpoints(
+            base_endpoint=base_endpoint, mcp_endpoint=base_endpoint + "mcp"
+        )
         with (
             patch.object(workload, "build_artifact_from_image_uri", return_value=spec),
             patch.object(workload.pulumi_datarobot, "Artifact", return_value=artifact),
             patch.object(workload, "_create_workload", return_value=wl),
-            patch.object(workload, "_export_workload_endpoints", return_value="ep"),
+            patch.object(
+                workload, "_export_workload_endpoints", return_value=endpoints
+            ),
             pulumi_stubs() as stubs,
         ):
             workload.provision_workload_mcp_server_from_image_uri(
@@ -577,3 +638,223 @@ class TestProvisionWorkloadMcpServerFromImageUri:
             actual = stubs["export"].call_args_list[0].args
         expected = ("srv Workload Image URI", "img:tag")
         assert actual == expected
+
+
+class TestWorkloadProvider:
+    @pytest.fixture
+    def mock_workload_manager(self):
+        manager = Mock()
+        return manager
+
+    def test_call_provision_mcp_server_from_workload_manager(
+        self, mock_workload_manager
+    ):
+        provider = WorkloadProvider(mock_workload_manager)
+
+        provider.provision_mcp_server()
+
+        mock_workload_manager.provision_mcp_server.assert_called_once()
+
+    def test_provision_mcp_server_return(self, mock_workload_manager):
+        infra_provider_output = InfraProviderOutput(
+            execution_environment="execution_environment",
+            deployment="deployment",
+            mcp_server_mcp_endpoint="deployment_endpoints/mcp",
+            mcp_server_base_endpoint="deployment_endpoints",
+            mcp_custom_model_runtime_parameters=[],
+        )
+        mock_workload_manager.provision_mcp_server.return_value = infra_provider_output
+        provider = WorkloadProvider(mock_workload_manager)
+
+        actual = provider.provision_mcp_server()
+
+        expected = infra_provider_output
+        assert actual == expected
+
+
+@pytest.mark.usefixtures("mock_require_env")
+class TestWorkloadProvidedDockerfileManager:
+    @pytest.fixture
+    def mock_require_env(self):
+        with patch.object(
+            workload,
+            "_require_env",
+            return_value="configured",
+        ) as require_env:
+            yield require_env
+
+    @pytest.fixture
+    def mock_file_bundler(self, tmp_path):
+        file_bundler = Mock()
+        file_bundler.setup_dir_for_artifact_provided_dockerfile.return_value = (
+            tmp_path / ".build"
+        )
+        return file_bundler
+
+    @pytest.fixture
+    def mock_workload_builder(self):
+        builder = Mock()
+        builder.build_workload_from_image_build_config.return_value = Mock()
+        yield builder
+
+    def test_call_provision_mcp_server(self, mock_file_bundler, mock_workload_builder):
+        workload_manager = WorkloadProvidedDockerfileManager(
+            "mcp_name", Path("Dockerfile"), mock_file_bundler, mock_workload_builder
+        )
+
+        workload_manager.provision_mcp_server()
+
+    def test_provision_mcp_server_return(
+        self, mock_file_bundler, mock_workload_builder
+    ):
+        workload_manager = WorkloadProvidedDockerfileManager(
+            "mcp_name", Path("Dockerfile"), mock_file_bundler, mock_workload_builder
+        )
+
+        actual = workload_manager.provision_mcp_server()
+
+        expected = InfraProviderOutput(
+            execution_environment=None,
+            deployment=None,
+            mcp_server_mcp_endpoint=ANY,
+            mcp_server_base_endpoint=ANY,
+            mcp_custom_model_runtime_parameters=[],
+        )
+        assert actual == expected
+
+
+@pytest.mark.usefixtures("mock_require_env")
+class TestWorkloadGeneratedDockerfileManager:
+    @pytest.fixture
+    def mock_require_env(self):
+        with patch.object(
+            workload,
+            "_require_env",
+            return_value="configured",
+        ) as require_env:
+            yield require_env
+
+    @pytest.fixture
+    def mock_file_bundler(self, tmp_path):
+        file_bundler = Mock()
+        file_bundler.setup_dir_for_artifact_provided_dockerfile.return_value = (
+            tmp_path / ".build"
+        )
+        return file_bundler
+
+    @pytest.fixture
+    def mock_workload_result(self):
+        workload = Mock(
+            spec=pulumi_datarobot.Workload(
+                "resource_name", artifact_id="aid123", runtime=Mock()
+            )
+        )
+        workload.endpoint = Mock()
+        workload.id = "wid123"
+        workload.name = "name"
+        yield workload
+
+    @pytest.fixture
+    def mock_workload_builder(self, mock_workload_result):
+        builder = Mock()
+        builder.build_from_artifact_image_build_config.return_value = (
+            mock_workload_result
+        )
+        yield builder
+
+    @pytest.fixture
+    def mock_execution_env(self):
+        exec_env = Mock(spec=pulumi_datarobot.ExecutionEnvironment)
+        yield exec_env
+
+    def test_call_provision_mcp_server(
+        self, mock_file_bundler, mock_execution_env, mock_workload_builder
+    ):
+        workload_manager = WorkloadGeneratedDockerfileManager(
+            "mcp_name", mock_execution_env, mock_file_bundler, mock_workload_builder
+        )
+
+        workload_manager.provision_mcp_server()
+
+    def test_provision_mcp_server_return(
+        self, mock_file_bundler, mock_execution_env, mock_workload_builder
+    ):
+        workload_manager = WorkloadGeneratedDockerfileManager(
+            "mcp_name", mock_execution_env, mock_file_bundler, mock_workload_builder
+        )
+
+        actual = workload_manager.provision_mcp_server()
+
+        expected = InfraProviderOutput(
+            execution_environment=mock_execution_env,
+            deployment=None,
+            mcp_server_mcp_endpoint=ANY,
+            mcp_server_base_endpoint=ANY,
+            mcp_custom_model_runtime_parameters=[],
+        )
+        assert actual == expected
+
+
+@pytest.mark.usefixtures("mock_workload_cls", "mock_artifact_cls")
+class TestWorkloadBuilder:
+    @pytest.fixture
+    def mock_artifact_cls(self):
+        artifact = Mock(spec=pulumi_datarobot.Artifact)
+        artifact.artifact_id = "art-id"
+        with patch.object(
+            workload.pulumi_datarobot, "Artifact", return_value=artifact
+        ) as mock_cls:
+            yield mock_cls
+
+    @pytest.fixture
+    def mock_workload_cls(self):
+        wl = Mock(endpoint="https://host/", id="wid", artifact_id="art-id")
+        # 'name' attribute is protected in Mock obj, so we explicitly need to set it
+        # to avoid assert issues
+        wl.name = "mcp_name"
+        with patch.object(
+            workload.pulumi_datarobot, "Workload", return_value=wl
+        ) as mock_cls:
+            yield mock_cls
+
+    def test_build_from_artifact_image_build_config_calls_artifact_and_workload_once(
+        self, mock_artifact_cls, mock_workload_cls
+    ):
+        builder = WorkloadBuilder("mcp_name", WorkloadConfiguration())
+
+        builder.build_from_artifact_image_build_config(
+            "artifact-name", "/tmp/src", Mock()
+        )
+
+        mock_artifact_cls.assert_called_once()
+        mock_workload_cls.assert_called_once()
+
+    def test_uses_provided_dockerfile_image_build_config(self, mock_artifact_cls):
+        builder = WorkloadBuilder("mcp_name", WorkloadConfiguration())
+        provided_dockerfile_image_build_config = pulumi_datarobot.ArtifactSpecContainerGroupContainerImageBuildConfigDockerfileArgs(
+            source="provided", path="Dockerfile"
+        )
+
+        builder.build_from_artifact_image_build_config(
+            "artifact-name", "/tmp/src", provided_dockerfile_image_build_config
+        )
+        spec = mock_artifact_cls.call_args.kwargs["spec"]
+        actual = spec.container_groups[0].containers[0].image_build_config.dockerfile
+
+        assert actual is provided_dockerfile_image_build_config
+
+    def test_uses_generated_dockerfile_image_build_config(self, mock_artifact_cls):
+        builder = WorkloadBuilder("mcp_name", WorkloadConfiguration())
+        generated_dockerfile_image_build_config = pulumi_datarobot.ArtifactSpecContainerGroupContainerImageBuildConfigDockerfileArgs(
+            source="generated",
+            execution_environment_id="ee-id",
+            execution_environment_version_id="ee-ver",
+        )
+
+        builder.build_from_artifact_image_build_config(
+            "artifact-name", "/tmp/src", generated_dockerfile_image_build_config
+        )
+        spec = mock_artifact_cls.call_args.kwargs["spec"]
+        actual = spec.container_groups[0].containers[0].image_build_config.dockerfile
+
+        assert actual is generated_dockerfile_image_build_config

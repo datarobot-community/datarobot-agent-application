@@ -59,9 +59,13 @@ export function ProviderTile({
 
   return (
     <Card>
-      <CardHeader className="flex w-full items-center gap-2">
+      <CardHeader className="gap-2 flex w-full items-center">
         {providerLogo && (
-          <div className="flex size-9 shrink-0 items-center justify-center">
+          <div
+            className={`
+                          size-9 flex shrink-0 items-center justify-center
+                        `}
+          >
             <img src={providerLogo} alt={displayName} className="size-full object-contain" />
           </div>
         )}
@@ -71,7 +75,10 @@ export function ProviderTile({
         <CardContent>
           <div
             className={cn(
-              'flex w-full items-center justify-center gap-1 rounded-md border px-4 py-2',
+              `
+                              gap-1 px-4 py-2 flex w-full items-center
+                              justify-center rounded-md border
+                            `,
               STATUS_CONFIG[status].borderClass
             )}
           >

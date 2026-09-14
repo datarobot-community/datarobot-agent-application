@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
 import pulumi
 import pytest
 
+import infra as infra_dir
 from infra.mcp_server_infra.mcp_bundle import (
+    FileBundler,
     ensure_docker_build_context_files,
     get_docker_bundle_files,
     get_workload_source_files,
     merge_source_files,
     normalize_shell_scripts,
+)
+from infra.mcp_server_infra.workload import (
+    GENERATED_DOCKERFILE_BUILD_DIR_IGNORE_PATTERNS,
+    PROVIDED_DOCKERFILE_BUILD_DIR_IGNORE_PATTERNS,
 )
 
 
@@ -166,3 +174,129 @@ def test_normalize_shell_scripts_leaves_other_files_alone(tmp_path: Path):
     normalize_shell_scripts([(str(module), "app/main.py")])
 
     assert module.read_bytes() == b"x = 1\r\n"
+
+
+@contextmanager
+def env(**variables: str | None):
+    """Temporarily set or remove environment variables."""
+    originals = {name: os.environ.get(name) for name in variables}
+    try:
+        for name, value in variables.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        yield
+    finally:
+        for name, original in originals.items():
+            if original is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = original
+
+
+class TestFileBundler:
+    @pytest.fixture
+    def project_dir(self):
+        yield infra_dir.project_dir.parent
+
+    @pytest.fixture
+    def deployment_app_path(self, project_dir):
+        yield project_dir / "mcp_server"
+
+    def test_setup_build_dir_for_workload_artifact_source_dir_return(self, tmp_path):
+        ignore_patterns = ["file.py"]
+        source_dir = tmp_path / "src"
+        source_dir.mkdir()
+        dockerfile_rel_path = "Dockerfile"
+        dockerfile = source_dir / dockerfile_rel_path
+        dockerfile.write_text("hi")
+        build_dir = tmp_path / ".build"
+        file_bundler = FileBundler(source_dir, project_dir_abs_path=tmp_path)
+
+        actual = file_bundler.setup_build_dir_for_workload_artifact_source_dir(
+            build_dir, ignore_patterns
+        )
+
+        expected = build_dir
+        assert actual == expected
+        assert build_dir.exists()
+
+    def test_setup_build_dir_for_workload_artifact_source_dir__for_provided_dockerfile(
+        self, tmp_path, deployment_app_path, project_dir
+    ):
+        file_bundler = FileBundler(deployment_app_path, project_dir)
+        ignore_patterns = PROVIDED_DOCKERFILE_BUILD_DIR_IGNORE_PATTERNS
+        build_dir = tmp_path / ".build"
+
+        file_bundler.setup_build_dir_for_workload_artifact_source_dir(
+            build_dir, ignore_patterns
+        )
+
+        assert build_dir.exists()
+        assert (build_dir / "app").exists()
+        assert (build_dir / "start_server.sh").exists()
+        assert (build_dir / "pyproject.toml").exists()
+        assert (build_dir / "Dockerfile").exists()
+        # no check for uv.lock because the base mcp template doesn't have one
+        assert not (build_dir / ".dockerignore").exists()
+
+    def test_setup_build_dir_for_workload_artifact_source_dir__for_generated_dockerfile(
+        self, tmp_path, deployment_app_path, project_dir
+    ):
+        file_bundler = FileBundler(deployment_app_path, project_dir)
+        build_dir = tmp_path
+        ignore_patterns = GENERATED_DOCKERFILE_BUILD_DIR_IGNORE_PATTERNS
+
+        file_bundler.setup_build_dir_for_workload_artifact_source_dir(
+            build_dir, ignore_patterns
+        )
+
+        assert build_dir.exists()
+        assert (build_dir / "app").exists()
+        assert (build_dir / "start_server.sh").exists()
+        assert (build_dir / "pyproject.toml").exists()
+        # no check for uv.lock because the base mcp template doesn't have one
+        assert not (build_dir / "Dockerfile").exists()
+        assert not (build_dir / ".dockerignore").exists()
+
+    @pytest.mark.parametrize("value", ["none", "false", "0", "NONE"])
+    def test_resolve_dockerfile_relative_path__disabled_values_return_none(
+        self, value: str, tmp_path
+    ):
+        with env(MCP_WORKLOAD_DOCKERFILE_PATH=value):
+            actual = FileBundler.resolve_dockerfile_relative_path(tmp_path)
+
+            expected = None
+            assert actual == expected
+
+    def test_resolve_dockerfile_relative_path__explicit_dockerfile_path(self, tmp_path):
+        with env(MCP_WORKLOAD_DOCKERFILE_PATH="custom/Dockerfile"):
+            actual = FileBundler.resolve_dockerfile_relative_path(tmp_path)
+
+            expected = "custom/Dockerfile"
+            assert actual == expected
+
+    def test_resolve_dockerfile_relative_path__when_dockerfile_missing(self, tmp_path):
+        project_dir = tmp_path / "infra" / "infra"
+        with (
+            env(MCP_WORKLOAD_DOCKERFILE_PATH=None),
+        ):
+            actual = FileBundler.resolve_dockerfile_relative_path(project_dir)
+
+            expected = None
+            assert actual == expected
+
+    def test_resolve_dockerfile_relative_path__returns_default_dockerfile(
+        self, tmp_path
+    ):
+        mcp_dir = tmp_path / "infra" / "mcp_server"
+        mcp_dir.mkdir(parents=True)
+        (mcp_dir / "Dockerfile").write_text("FROM scratch\n")
+        with (
+            env(MCP_WORKLOAD_DOCKERFILE_PATH=None),
+        ):
+            actual = FileBundler.resolve_dockerfile_relative_path(mcp_dir)
+
+            expected = "Dockerfile"
+            assert actual == expected

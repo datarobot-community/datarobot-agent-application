@@ -13,7 +13,7 @@
 # limitations under the License.
 import os
 import re
-from typing import Final
+from typing import Final, cast
 
 import pulumi
 import pulumi_datarobot
@@ -216,7 +216,10 @@ fastapi_server_app = pulumi_datarobot.CustomApplication(
     source_version_id=fastapi_server_app_source.version_id,
     use_case_ids=[use_case.id],
     allow_auto_stopping=True,
-    resources=fastapi_server_app_source.resources,  # type: ignore[arg-type]
+    resources=cast(
+        pulumi_datarobot.CustomApplicationResourcesArgs,
+        fastapi_server_app_source.resources,
+    ),
     required_key_scope_level=fastapi_server_app_source.required_key_scope_level,
     opts=pulumi.ResourceOptions(depends_on=[fastapi_server_app_source]),
 )

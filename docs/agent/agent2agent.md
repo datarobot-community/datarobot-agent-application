@@ -9,7 +9,6 @@ To expose an agent via A2A:
 To connect an agent to a remote agent via A2A:
 
 - Uncomment the `function_groups` and `workflow.tool_names` blocks in `workflow.yaml`.
-- Run `task deploy-dev` (or `dr start`) so Pulumi provisions a MemorySpace for the agent card registry L2 cache and injects `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID`. See [Central registry (`registry`)](#central-registry-registry).
 
 Enable the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag in DataRobot to use environment variables in `workflow.yaml` files.
 
@@ -32,7 +31,7 @@ Anonymous `GET /.well-known/agent-card.json` requests are opt-in. By default, un
 
 Platform administrators must also enable unauthenticated routing per cluster before the well-known route is reachable for anonymous callers on deployed agents.
 
-On the **Workload API** runtime (`ENABLE_AGENT_ON_WORKLOAD_API=true`), setting this flag also adds an optional-auth route for `/a2a/.well-known/agent-card.json` to the workload artifact specification during deploy. See [Deployment runtimes](./deployment-runtimes.md#anonymous-agent-card-discovery).
+On the **Workload API** runtime (`ENABLE_AGENT_ON_WORKLOAD_API=true`), setting this flag also adds optional-auth routes for `/a2a/.well-known/agent-card.json` (see [`mount_path`](#a2a-mount-path-mount_path)) and the root fallback `/.well-known/agent-card.json` to the workload artifact specification during deploy. See [Deployment runtimes](./deployment-runtimes.md#anonymous-agent-card-discovery).
 
 ```yaml
 general:
@@ -43,6 +42,36 @@ general:
         name: "My Agent"
         description: "An example agent."
 ```
+
+## A2A mount path: `mount_path`
+
+The A2A server is mounted at `/a2a/` by default. Set `general.front_end.a2a.mount_path` to serve it from a different suffix.
+
+```yaml
+general:
+  front_end:
+    a2a:
+      mount_path: "custom-a2a-mount-path"
+      server:
+        name: "My Agent"
+```
+
+| Rule | Detail |
+|------|--------|
+| Slashes | Leading and trailing slashes are stripped—`"/a2a/"` and `"a2a"` are equivalent. |
+| Segments | Multi-segment values such as `"api/a2a"` are allowed. Each segment must use letters, digits, `-`, `.`, `_`, or `~`, and must not start with a dot. |
+| Root | Mounting at the application root is not supported. An empty value is rejected. |
+
+The agent card URL, the card discovery path, the `<AGENT_APP_NAME>_A2A_ENDPOINT` runtime parameter, and the Pulumi A2A endpoint exports all follow this value. The card is also served at the root `/.well-known/agent-card.json` for clients that do not know the mount path.
+
+Read the exact URL after deploying:
+
+```bash
+pulumi stack output "Agent Deployment A2A Endpoint <asset>"   # Custom Models runtime
+pulumi stack output "Agent Workload A2A Endpoint <asset>"     # Workload API runtime
+```
+
+> **Warning:** Callers configured with an explicit `url` are not updated automatically. Update any client pointing at `.../directAccess/a2a/` when the agent it calls changes its mount path.
 
 ## Agent card resolution
 
@@ -70,17 +99,18 @@ Use this when calling a DataRobot-hosted agent protected by Okta XAA or any othe
 
 The RPC base URL is derived from the `url` advertised on the card; specifying it separately is not necessary. When a workflow has many registry-backed function groups, all cards are resolved in a maximum of two HTTP calls (one for deployment IDs, one for external IDs) and cached in-memory until the TTL expires.
 
-Registry lookups use a two-tier cache:
+Registry lookups use a cache. For an agent deployed to a workload on an enclave there is a second tier cache:
 
 | Tier | Backend | Scope |
 |------|---------|-------|
 | L1 | In-process memory | Single worker / replica |
-| L2 | DataRobot MemorySpace (`AGENT_CARD_REGISTRY_MEMORY_SPACE_ID`) | Shared across replicas and pod restarts |
+| L2 | DataRobot MemorySpace (created during agent startup) | Shared across replicas and pod restarts |
 
-When `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` is set, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
+The L2 cache uses the MemorySpace Session API, which is covered by `ENABLE_GENAI_EXPERIMENTATION` (already enabled for agent deployments). It does not require `ENABLE_AGENTIC_MEMORY_API` — that flag is only for mem0-compatible [agent memory](./agent-memory.md).
 
-> [!IMPORTANT]
-> When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), Pulumi provisions a dedicated MemorySpace for the registry L2 cache and injects `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` as a runtime parameter. Run `task deploy-dev` (or `dr start`) after uncommenting remote A2A client blocks so the space is created and the ID is written to `.env`. This cache is separate from [agent memory](./agent-memory.md) (`AGENT_MEMORY_SPACE_ID`).
+When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), `datarobot-genai` creates or adopts a MemorySpace for the registry L2 cache at startup for agents deployed to a workload on an enclave. The space is scoped to the deployment or workload via a `deduplication_key`, so replicas share one cache without Pulumi wiring. Agents that do not declare remote A2A clients never provision this space. Locally, only in-process L1 caching is used.
+
+When configured, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
 
 Lookup by deployment ID — use when the DataRobot deployment ID of the remote agent is known:
 
@@ -117,7 +147,6 @@ The registry lookup honors the following environment variables:
 | `AGENT_CARD_REGISTRY_CACHE_TTL` | No | Cache TTL in seconds. Default `86400` (24 hours). Set to `0` to disable caching. |
 | `AGENT_CARD_REGISTRY_TIMEOUT` | No | HTTP timeout in seconds for registry requests. Default `30`. |
 | `AGENT_CARD_REGISTRY_ON_DUPLICATE` | No | Resolution strategy when multiple cards share the same external ID: `first` (default) keeps the earliest registered card, `last` keeps the most recently registered card, `error` raises an exception. `first` is recommended for stability — `last` and `error` may alter agent behavior if a duplicate is introduced later. |
-| `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` | No | DataRobot MemorySpace ID for the registry L2 cache. Provisioned automatically when remote A2A clients are configured in `workflow.yaml`; shared across replicas. When unset, only in-process L1 caching is used. |
 
 
 ## Configuration reference

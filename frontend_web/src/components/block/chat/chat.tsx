@@ -80,7 +80,7 @@ export function Chat({ initialMessages, children }: ChatProps) {
   });
 
   return (
-    <div className="flex size-full min-w-0 flex-col gap-4 p-2">
+    <div className="min-w-0 gap-4 p-2 flex size-full flex-col">
       {children || (
         <>
           <ScrollArea

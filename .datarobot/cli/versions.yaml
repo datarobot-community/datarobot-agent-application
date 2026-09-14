@@ -1,7 +1,7 @@
 ---
 dr:
   name: DataRobot CLI
-  minimum-version: 0.2.79
+  minimum-version: 0.5.1
   command: dr self version
   url: https://github.com/datarobot-oss/cli
   install:
@@ -51,14 +51,42 @@ task:
   url: https://taskfile.dev/
   install:
     macos: brew install go-task
-    linux: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+    linux: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b "$HOME/.local/bin"
     windows: winget install Task.Task
+copier:
+  name: Copier project templating tool
+  minimum-version: 9.0.0
+  command: copier --version
+  url: https://copier.readthedocs.io/en/stable/
+  install:
+    macos: uv tool install copier
+    linux: uv tool install copier
+    windows: uv tool install copier
+drdev:
+  name: DataRobot dev services plugin
+  minimum-version: 3.19.0
+  command: dr plugin version dev
+  url: https://pypi.org/project/datarobot/
+  install:
+    macos: uv tool install --force "datarobot[core]>=3.19.0"
+    linux: uv tool install --force "datarobot[core]>=3.19.0"
+    windows: uv tool install --force "datarobot[core]>=3.19.0"
 pulumi:
   name: Pulumi Infrastructure as Code tool
-  minimum-version: 3.206.0
+  minimum-version: 3.262.0
   command: pulumi version
   url: https://www.pulumi.com/
   install:
     macos: brew install pulumi
     linux: curl -fsSL https://get.pulumi.com | sh
     windows: winget install Pulumi.Pulumi
+pulumi-datarobot:
+  name: DataRobot Pulumi resource plugin
+  minimum-version: 0.11.3
+  # Windows compatible check version
+  command: uv run python .datarobot/cli/scripts/pulumi-plugin-version.py datarobot
+  url: https://github.com/datarobot-community/pulumi-datarobot
+  install:
+    macos: pulumi plugin install resource datarobot 0.11.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.11.3
+    linux: pulumi plugin install resource datarobot 0.11.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.11.3
+    windows: pulumi plugin install resource datarobot 0.11.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.11.3

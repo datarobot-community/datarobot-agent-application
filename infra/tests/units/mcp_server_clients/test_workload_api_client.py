@@ -32,6 +32,9 @@ from mcp_server_clients.workload_api_client import (
     build_artifact_from_image_uri,
 )
 
+from infra.mcp_server_infra.mcp_oauth_configs import WorkloadArtifactContainerRoute  # isort: skip
+from infra.mcp_server_infra.mcp_utils import DR_CREDENTIAL_API_TOKEN_KEY  # isort:skip
+
 
 def test_workload_artifact_spec_type_is_service():
     container = Container(
@@ -78,10 +81,14 @@ def test_image_uri_pulumi_args_use_the_provider_shape():
                 "name": "SESSION_SECRET_KEY",
                 "source": "dr-credential",
                 "drCredentialId": "cred-123",
-                "key": "apiToken",
+                "key": DR_CREDENTIAL_API_TOKEN_KEY,
             },
         ],
-        routes=[{"path": "/.well-known/oauth-protected-resource", "auth": "disabled"}],
+        routes=[
+            WorkloadArtifactContainerRoute(
+                path="/.well-known/oauth-protected-resource", auth="disabled"
+            ).to_dict()
+        ],
     )
 
     args = spec.to_pulumi_args()
@@ -99,7 +106,7 @@ def test_image_uri_pulumi_args_use_the_provider_shape():
             "name": "SESSION_SECRET_KEY",
             "source": "dr-credential",
             "credential_id": "cred-123",
-            "key": "apiToken",
+            "key": DR_CREDENTIAL_API_TOKEN_KEY,
         },
     ]
 

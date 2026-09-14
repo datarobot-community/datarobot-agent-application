@@ -50,14 +50,19 @@ class ChatMessageErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className={'flex gap-3 rounded-lg bg-card p-4'}>
+        <div className={'gap-3 p-4 rounded-lg flex bg-card'}>
           <div className="shrink-0">
-            <div className="flex size-8 items-center justify-center rounded-full bg-destructive/20 text-destructive">
+            <div
+              className={`
+                              size-8 flex items-center justify-center
+                              rounded-full bg-destructive/20 text-destructive
+                            `}
+            >
               <AlertTriangle className="size-4" />
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <div className="mb-1 flex items-center gap-2">
+            <div className="mb-1 gap-2 flex items-center">
               <span className="mn-label text-destructive">{this.props.title}</span>
             </div>
             <CodeBlock code={JSON.stringify(this.props.message, null, 2)} />
@@ -153,16 +158,17 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
   return (
     <div
       className={`
-        my-2 overflow-hidden rounded-lg border border-border bg-card/50
-        dark:bg-card/30
-      `}
+              my-2 rounded-lg overflow-hidden border border-border bg-card/50
+              dark:bg-card/30
+            `}
     >
       {/* Header */}
       <div
         className={`
-          flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-2
-          dark:bg-muted/20
-        `}
+                  gap-2 px-3 py-2 flex items-center border-b border-border
+                  bg-muted/30
+                  dark:bg-muted/20
+                `}
       >
         <Wrench className="size-4 text-muted-foreground" />
         <span className="body-secondary">{t('Tool Call')}</span>
@@ -173,12 +179,17 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
         {hasResult ? (
           <CheckCircle2
             className={`
-              ml-auto size-4 text-green-500
-              dark:text-green-400
-            `}
+                          size-4 text-green-500
+                          dark:text-green-400
+                          ml-auto
+                        `}
           />
         ) : (
-          <Loader2 className="ml-auto size-4 animate-spin text-muted-foreground" />
+          <Loader2
+            className={`
+                          size-4 animate-spin ml-auto text-muted-foreground
+                        `}
+          />
         )}
       </div>
 
@@ -186,11 +197,16 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
       {toolInvocation.args && (
         <div
           className={`
-            border-b border-border
-            last:border-b-0
-          `}
+                      border-b border-border
+                      last:border-b-0
+                    `}
         >
-          <div className="flex items-center gap-1.5 bg-muted/20 caption-01 px-3 py-1.5">
+          <div
+            className={`
+                          gap-1.5 px-3 py-1.5 flex items-center bg-muted/20
+                          caption-01
+                        `}
+          >
             <ChevronRight className="size-3" />
             {t('Arguments')}
           </div>
@@ -201,7 +217,12 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
       {/* Result Section */}
       {result && (
         <div>
-          <div className="flex items-center gap-1.5 bg-muted/20 caption-01 px-3 py-1.5">
+          <div
+            className={`
+                          gap-1.5 px-3 py-1.5 flex items-center bg-muted/20
+                          caption-01
+                        `}
+          >
             <ChevronRight className="size-3" />
             {t('Result')}
           </div>
@@ -237,7 +258,7 @@ function ChatMessageContent({
 
   return (
     <div
-      className={cn('flex gap-3 rounded-lg p-4', isUser ? 'bg-card' : '')}
+      className={cn('gap-3 p-4 rounded-lg flex', isUser ? 'bg-card' : '')}
       data-message-id={id}
       data-thread-id={threadId}
       data-resource-id={resourceId}
@@ -246,7 +267,7 @@ function ChatMessageContent({
       <div className="shrink-0">
         <div
           className={cn(
-            'flex size-8 items-center justify-center rounded-full',
+            'size-8 flex items-center justify-center rounded-full',
             isUser
               ? 'bg-primary text-primary-foreground'
               : role === 'assistant'
@@ -260,14 +281,14 @@ function ChatMessageContent({
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="mb-1 flex items-center gap-2">
+        <div className="mb-1 gap-2 flex items-center">
           <span className="mn-label capitalize">{role}</span>
         </div>
         <div
           className={`
-            overflow-hidden body text-wrap break-words
-            [line-break:anywhere]
-          `}
+                      overflow-hidden body text-wrap break-words
+                      [line-break:anywhere]
+                    `}
         >
           {content.parts.map((part, i) => (
             <UniversalContentPart key={i} part={part} />

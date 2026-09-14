@@ -37,15 +37,15 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
 
   return (
     <div className="group relative">
-      <div className="absolute top-1 right-1 flex items-center gap-1">
+      <div className="top-1 right-1 gap-1 absolute flex items-center">
         {isCollapsible && (
           <Button
             variant="ghost"
             size="icon-sm"
             className={`
-              size-6 cursor-pointer opacity-0 transition-opacity
-              group-hover:opacity-100
-            `}
+                          size-6 cursor-pointer opacity-0 transition-opacity
+                          group-hover:opacity-100
+                        `}
             onClick={() => setIsExpanded(!isExpanded)}
             aria-label={isExpanded ? 'Collapse code' : 'Expand code'}
           >
@@ -57,9 +57,9 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
           size="icon-sm"
           className={cn(
             `
-              size-6 cursor-pointer opacity-0 transition-opacity
-              group-hover:opacity-100
-            `,
+                          size-6 cursor-pointer opacity-0 transition-opacity
+                          group-hover:opacity-100
+                        `,
             copied && 'opacity-100'
           )}
           onClick={handleCopy}
@@ -70,7 +70,10 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
       </div>
       <pre
         className={cn(
-          'm-0 overflow-x-auto rounded-none border-0 bg-transparent code px-3 py-2',
+          `
+                      m-0 px-3 py-2 overflow-x-auto rounded-none border-0
+                      bg-transparent code
+                    `,
           className
         )}
       >
@@ -80,9 +83,10 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
         <button
           onClick={() => setIsExpanded(true)}
           className={`
-            w-full cursor-pointer border-t border-border/50 bg-muted/30 caption-01 px-3 py-1 text-left transition-colors
-            hover:bg-muted/50 hover:text-foreground
-          `}
+                      px-3 py-1 w-full cursor-pointer border-t border-border/50
+                      bg-muted/30 caption-01 text-left transition-colors
+                      hover:bg-muted/50 hover:text-foreground
+                    `}
         >
           {t('{{count}} more lines (click to expand)', {
             count: lineCount - COLLAPSED_LINES,

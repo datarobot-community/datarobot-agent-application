@@ -37,7 +37,7 @@ tasks:
       - dr dotenv setup --if-needed
       - dr dotenv update
       - task install
-      - dr task run start
+      - dr run start
       - echo '✅ You are all set. Run `task dev` to start developing, or run `task deploy` to deploy to DataRobot.'
   build-agents-md:
     cmds:
@@ -61,32 +61,22 @@ tasks:
   lint:
     desc: "🧹 Run linters"
     cmds:
-      - dr task run lint
+      - dr run lint --parallel
   {{- end }}
 
   {{- if .HasInstall }}
   install:
     desc: "🛠️ Install all dependencies"
     cmds:
-      - |
-        if command -v drdev >/dev/null 2>&1; then
-          echo "drdev already installed, skipping datarobot[core] install"
-        elif [ -n "$VIRTUAL_ENV" ]; then
-          echo "Installing datarobot[core] into active virtualenv: $VIRTUAL_ENV"
-          uv pip install "datarobot[core]>=3.18.0"
-        else
-          uv tool update-shell
-          echo "Installing datarobot[core] as a uv tool"
-          uv tool install --force "datarobot[core]>=3.18.0"
-        fi
-      - dr task run install
+      - dr dependency install -y
+      - dr run install
   {{- end }}
 
   {{- if .HasTest }}
   test:
     desc: "🧪 Run tests across all components"
     cmds:
-      - dr task run test
+      - dr run test
   {{- end }}
 
   auth-check:

@@ -10,13 +10,13 @@ export function ChatError({ error, createdAt, testId = 'chat-error-message' }: C
 
   return (
     <div
-      className={cn('flex gap-3 rounded-lg p-4', 'border border-destructive/20 bg-destructive/10')}
+      className={cn('gap-3 p-4 rounded-lg flex', 'border border-destructive/20 bg-destructive/10')}
       data-testid={testId}
     >
       <div className="shrink-0">
         <div
           className={cn(
-            'flex size-8 items-center justify-center rounded-full',
+            'size-8 flex items-center justify-center rounded-full',
             'text-destructive-background bg-destructive/20'
           )}
         >
@@ -24,11 +24,17 @@ export function ChatError({ error, createdAt, testId = 'chat-error-message' }: C
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="mb-1 flex items-center gap-2">
+        <div className="mb-1 gap-2 flex items-center">
           <span className="mn-label text-destructive">{t('Error')}</span>
           <span className="caption-01">{date.toLocaleTimeString()}</span>
         </div>
-        <div className="body break-words whitespace-pre-wrap text-destructive">{error}</div>
+        <div
+          className={`
+                      body break-words whitespace-pre-wrap text-destructive
+                    `}
+        >
+          {error}
+        </div>
       </div>
     </div>
   );

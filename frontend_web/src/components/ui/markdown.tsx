@@ -23,12 +23,12 @@ type MarkdownComponentProps = PropsWithChildren<HTMLAttributes<HTMLElement>>;
 
 export const MARKDOWN_COMPONENTS = {
   ul: ({ children, ...props }: MarkdownComponentProps) => (
-    <ul className="my-4 leading-relaxed list-disc pl-8" {...props}>
+    <ul className="my-4 pl-8 leading-relaxed list-disc" {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, ...props }: MarkdownComponentProps) => (
-    <ol className="list-decimal leading-relaxed pl-8 my-4" {...props}>
+    <ol className="my-4 pl-8 leading-relaxed list-decimal" {...props}>
       {children}
     </ol>
   ),
@@ -58,7 +58,7 @@ export const MARKDOWN_COMPONENTS = {
     </Heading>
   ),
   p: ({ children, ...props }: MarkdownComponentProps) => (
-    <p className="body leading-relaxed" {...props}>
+    <p className="leading-relaxed body" {...props}>
       {children}
     </p>
   ),

@@ -413,6 +413,62 @@ class TestA2AEndpointRuntimeParameter:
         assert result["agent_a2a_endpoint"] is None
 
 
+class TestA2AEndpointUrl:
+    """`directAccess` forwards the full prefixed path into the container, so this URL
+    must carry whatever suffix `a2a.mount_path` told datarobot-genai to mount under."""
+
+    EXPORT_PREFIX = "Agent Deployment A2A Endpoint "
+
+    def _provision(self, monkeypatch, *, mount_path="a2a", a2a_enabled=True):
+        """Provision with the given A2A config; returns ``(exports, result)``.
+
+        ``CustomModelDeployment`` is stubbed so ``.id.apply(fn)`` returns fn's real
+        result, which is what makes the composed URL observable rather than a MagicMock.
+        """
+        monkeypatch.setenv("AGENT_DEPLOY", "1")
+        monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
+        deployment = _reload_deployment()
+        monkeypatch.setattr(deployment.base, "IS_A2A_SERVER_ENABLED", a2a_enabled)
+        monkeypatch.setattr(deployment.base, "A2A_MOUNT_PATH", mount_path)
+
+        mock_deployment = MagicMock()
+        mock_deployment.id.apply = MagicMock(
+            side_effect=lambda fn: fn("mock-deployment-id")
+        )
+        monkeypatch.setattr(
+            deployment, "CustomModelDeployment", MagicMock(return_value=mock_deployment)
+        )
+        monkeypatch.setattr("datarobot.Client", MagicMock())
+
+        exports: dict = {}
+        monkeypatch.setattr(
+            deployment.pulumi,
+            "export",
+            lambda name, value: exports.__setitem__(name, value),
+        )
+
+        return exports, deployment.provision_deployment_agent([])
+
+    @pytest.mark.parametrize("mount_path", ["a2a", "custom-a2a-mount-path", "api/a2a"])
+    def test_url_follows_mount_path(self, monkeypatch, mount_path):
+        _, result = self._provision(monkeypatch, mount_path=mount_path)
+        assert result["agent_a2a_endpoint"].endswith(
+            f"/deployments/mock-deployment-id/directAccess/{mount_path}/"
+        )
+
+    def test_exported_when_a2a_enabled(self, monkeypatch):
+        """Exported so the operator can read the real A2A URL out of `pulumi up`."""
+        exports, _ = self._provision(monkeypatch, mount_path="custom-a2a-mount-path")
+
+        exported = [v for k, v in exports.items() if k.startswith(self.EXPORT_PREFIX)]
+        assert len(exported) == 1
+        assert exported[0].endswith("/directAccess/custom-a2a-mount-path/")
+
+    def test_not_exported_when_a2a_disabled(self, monkeypatch):
+        exports, _ = self._provision(monkeypatch, a2a_enabled=False)
+        assert not any(k.startswith(self.EXPORT_PREFIX) for k in exports)
+
+
 class TestUpdateDeploymentPredictionsSettings:
     def test_gets_current_settings_then_patches(self, monkeypatch):
         deployment = _reload_deployment()

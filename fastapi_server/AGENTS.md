@@ -75,16 +75,15 @@ When adding a new persisted entity, implement both a SQLite repository (with mig
 Before making any changes to the backend code, install dependencies by running shell command:
 
 ```shell
-dr task run fastapi_server:install
+dr run fastapi_server:install
 ```
 
 ## Backend Testing
 
 ```shell
-dr task run fastapi_server:lint
+dr run fastapi_server:lint
 ```
 
 ```shell
-dr task run fastapi_server:test
+dr run fastapi_server:test
 ```
-

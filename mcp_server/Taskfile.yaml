@@ -8,23 +8,22 @@ includes:
     internal: true
 
 vars:
-  MCP_DEPLOYMENT_TYPE_RESOLVED:
+  ENABLE_MCP_ON_WORKLOAD_API_RESOLVED:
     sh: |
       # Lower-cased to match the pulumi-side validation, which lowercases the
       # value before checking it — both ends must accept the same spellings.
       # 1) OS env (includes the root dotenv when invoked via the repo root's task wrapper)
-      if [ -n "${MCP_DEPLOYMENT_TYPE:-}" ]; then
-        echo "$MCP_DEPLOYMENT_TYPE" | tr '[:upper:]' '[:lower:]' | xargs
+      if [ -n "${ENABLE_MCP_ON_WORKLOAD_API:-}" ]; then
+        echo "$ENABLE_MCP_ON_WORKLOAD_API" | tr '[:upper:]' '[:lower:]' | xargs
         exit 0
       fi
       # 2) Fallback for standalone `task install` runs from this app directory
       for env_file in ../.env "../.env.${ENV:-testing}" .env; do
         if [ -f "$env_file" ]; then
-          line="$(grep -E '^[[:space:]]*MCP_DEPLOYMENT_TYPE=' "$env_file" | tail -n 1 || true)"
+          line="$(grep -E '^[[:space:]]*ENABLE_MCP_ON_WORKLOAD_API=' "$env_file" | tail -n 1 || true)"
           if [ -n "$line" ]; then
-            val="${line#MCP_DEPLOYMENT_TYPE=}"
-            val="${val%\"}"; val="${val#\"}"
-            val="${val%\'}"; val="${val#\'}"
+            val="${line#ENABLE_MCP_ON_WORKLOAD_API=}"
+            val="${val%\"}"; val="${val#\"}"; val="${val%\'}"; val="${val#\'}"
             echo "$val" | tr '[:upper:]' '[:lower:]' | xargs
             exit 0
           fi
@@ -39,28 +38,31 @@ tasks:
       - echo "🔧 Loading and saving MCP item metadata.."
       - "{{.UV_CMD}} run dev_tools/lineage/cli.py load-and-save-mcp-item-metadata"
 
-  deployment-type-check:
-    desc: "ℹ️ Validate MCP_DEPLOYMENT_TYPE and print the effective MCP deployment mode"
+  workload-deployment-flag-check:
+    desc: "ℹ️ Validate ENABLE_MCP_ON_WORKLOAD_API and print the effective MCP deployment mode"
     silent: true
     vars:
-      RAW_MCP_DEPLOYMENT_TYPE: '{{.MCP_DEPLOYMENT_TYPE_RESOLVED}}'
+      RAW_ENABLE_MCP_ON_WORKLOAD_API: '{{.ENABLE_MCP_ON_WORKLOAD_API_RESOLVED}}'
     cmds:
       - |
-        case "{{.RAW_MCP_DEPLOYMENT_TYPE}}" in
-          datarobot-serverless|datarobot-workload-preview)
-            echo "✅ MCP deployment type is set up as MCP_DEPLOYMENT_TYPE={{.RAW_MCP_DEPLOYMENT_TYPE}}"
+        case "{{.RAW_ENABLE_MCP_ON_WORKLOAD_API}}" in
+          true)
+            echo "✅ ENABLE_MCP_ON_WORKLOAD_API resolves to true — deploying as DataRobot workload."
+            ;;
+          false)
+            echo "✅ ENABLE_MCP_ON_WORKLOAD_API resolves to false — deploying as DataRobot serverless."
             ;;
           "")
-            echo "⚠️  MCP_DEPLOYMENT_TYPE is not set; deploy will default to MCP_DEPLOYMENT_TYPE=datarobot-serverless."
+            echo "⚠️  ENABLE_MCP_ON_WORKLOAD_API is not set; deploy will default to DataRobot serverless."
             echo "ℹ️  To choose explicitly, set in .env or your shell:"
-            echo "       MCP_DEPLOYMENT_TYPE=datarobot-serverless"
-            echo "    or MCP_DEPLOYMENT_TYPE=datarobot-workload-preview"
+            echo "       ENABLE_MCP_ON_WORKLOAD_API=false for DataRobot serverless deployment"
+            echo "    or ENABLE_MCP_ON_WORKLOAD_API=true for DataRobot workload deployment."
             ;;
           *)
-            echo "❌  Invalid MCP_DEPLOYMENT_TYPE '{{.RAW_MCP_DEPLOYMENT_TYPE}}'."
+            echo "❌  Invalid ENABLE_MCP_ON_WORKLOAD_API '{{.RAW_ENABLE_MCP_ON_WORKLOAD_API}}'."
             echo "ℹ️  Set a valid value in .env or your shell:"
-            echo "       MCP_DEPLOYMENT_TYPE=datarobot-serverless"
-            echo "    or MCP_DEPLOYMENT_TYPE=datarobot-workload-preview"
+            echo "       ENABLE_MCP_ON_WORKLOAD_API=false for DataRobot serverless deployment"
+            echo "    or ENABLE_MCP_ON_WORKLOAD_API=true for DataRobot workload deployment."
             exit 1
             ;;
         esac
@@ -68,19 +70,19 @@ tasks:
   install:
     desc: "🔧 Install dependencies"
     vars:
-      EFFECTIVE_DEPLOYMENT_TYPE: '{{.MCP_DEPLOYMENT_TYPE_RESOLVED | default "datarobot-serverless"}}'
+      EFFECTIVE_ENABLE_MCP_ON_WORKLOAD_API: '{{.ENABLE_MCP_ON_WORKLOAD_API_RESOLVED | default "false"}}'
     deps:
-      - deployment-type-check
+      - workload-deployment-flag-check
     cmds:
       - echo "🔧 Installing dependencies.."
       - "{{.UV_CMD}} sync --all-extras"
-      # MCP item metadata is only consumed by datarobot-serverless provisioning.
-      # (go-task has no `if:` on task calls, so this is a shell conditional.)
       - |
-        if [ "{{.EFFECTIVE_DEPLOYMENT_TYPE}}" = "datarobot-serverless" ]; then
-          echo "🔧 Loading and saving MCP item metadata.."
-          {{.UV_CMD}} run dev_tools/lineage/cli.py load-and-save-mcp-item-metadata
-        fi
+        case "{{.EFFECTIVE_ENABLE_MCP_ON_WORKLOAD_API}}" in
+          false)
+            echo "🔧 Loading and saving MCP item metadata.."
+            {{.UV_CMD}} run dev_tools/lineage/cli.py load-and-save-mcp-item-metadata
+            ;;
+        esac
     silent: true
 
   dev:

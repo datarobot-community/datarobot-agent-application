@@ -6,7 +6,7 @@ This guide covers how to debug agent code during local development using the CLI
 
 - Completed `dr start` (creates `.env` and the agent virtual environment).
 - `.env` file with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT` configured.
-- Dependencies installed: `dr task run agent:install`.
+- Dependencies installed: `dr run agent:install`.
 
 ## Development server
 
@@ -17,7 +17,7 @@ All debugging approaches require the agent development server. The Taskfile runs
 Start the server in one terminal and keep it running:
 
 ```sh
-dr task run agent:dev
+dr run agent:dev
 ```
 
 Then send requests from a second terminal using the CLI.
@@ -153,7 +153,7 @@ Control NAT's log verbosity with the `NAT_LOG_LEVEL` environment variable:
 
 ```sh
 export NAT_LOG_LEVEL=DEBUG
-dr task run agent:dev
+dr run agent:dev
 ```
 
 Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `INFO` if not set.
@@ -164,7 +164,7 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 **Symptom**: `task agent:dev` fails or the server doesn't respond.
 
-**Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
+**Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr run agent:install` to ensure dependencies are up to date.
 
 ### Agent card returns 401 or empty skills
 
@@ -190,7 +190,7 @@ During local development, `GET /.well-known/agent-card.json` returns `401` when 
 
 **Symptom**: `ModuleNotFoundError` for `datarobot_genai` or framework packages.
 
-**Fix**: Confirm the IDE uses `agent/.venv/bin/python`, not a system Python. Re-run `dr task run agent:install` if the virtual environment was recreated.
+**Fix**: Confirm the IDE uses `agent/.venv/bin/python`, not a system Python. Re-run `dr run agent:install` if the virtual environment was recreated.
 
 ### Environment variables not loaded
 

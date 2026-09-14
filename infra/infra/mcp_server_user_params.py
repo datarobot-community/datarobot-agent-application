@@ -11,17 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os  # noqa # pylint: disable=unused-import
 
-import os
+from infra.mcp_server_infra.mcp_utils import (
+    MCPRuntimeParameter,
+    MCPRuntimeParameterAPITokenCredential,
+)
 
-import pulumi_datarobot
+"""
+# Example user configuration for MCP runtime parameters.
+# This file is intended as a starting point for users to copy and modify.
+# NOTE: Replace pulumi_datarobot.CustomModelRuntimeParameterValueArgs (type="string", ...) with MCPRuntimeParameter
+# NOTE: Replace pulumi_datarobot.CustomModelRuntimeParameterValueArgs (type="credential") with MCPRuntimeParameterAPITokenCredential
 
-MCP_USER_RUNTIME_PARAMETERS: list[
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-] = [
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="user_name",
-        type="string",
-        value=os.getenv("USER_NAME", "default-user"),
+MCP_USER_RUNTIME_PARAMETERS: list[MCPRuntimeParameter] = [
+   MCPRuntimeParameter(
+       name="user_name",
+       value=os.getenv("USER_NAME", "default-user"),
+       type="string",
     ),
 ]
+
+MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS: list[MCPRuntimeParameterAPITokenCredential] = [
+    MCPRuntimeParameterAPITokenCredential(
+        name="dummy-api-token",
+        value=os.getenv("DUMMY_API_TOKEN", "123abcd"),
+    ),
+]
+"""
+
+# Example parameter users can rename, remove, or extend.
+MCP_USER_RUNTIME_PARAMETERS: list[MCPRuntimeParameter] = []
+
+# Example credential users can rename, remove, or extend.
+MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS: list[MCPRuntimeParameterAPITokenCredential] = []

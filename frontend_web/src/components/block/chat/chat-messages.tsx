@@ -20,7 +20,7 @@ export type ChatMessageProps = {
 
 export function ChatMessages({ children, messages, isLoading }: ChatMessageProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="gap-2 flex flex-col">
       {isLoading && !messages?.length ? (
         <div className="space-y-4">
           <Skeleton className="h-20 w-full" />

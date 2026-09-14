@@ -151,7 +151,7 @@ export const ChatPage: React.FC = () => {
 
   if (isLoadingChats) {
     return (
-      <div className="flex w-full flex-1 flex-col space-y-4 p-4">
+      <div className="space-y-4 p-4 flex w-full flex-1 flex-col">
         <Skeleton className="h-20 w-full" />
         <Skeleton className="h-20 w-full" />
         <Skeleton className="h-20 w-full" />

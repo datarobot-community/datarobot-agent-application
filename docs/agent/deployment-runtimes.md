@@ -44,7 +44,7 @@ Then deploy:
 dr run deploy
 ```
 
-With no `WORKLOAD_*` variables set, this takes the C2W path: it uploads the agent source, builds an image on top of a DataRobot execution environment, and starts a workload running `workload/run_server.sh`. The Pulumi stack exports `Agent Workload Endpoint <asset>`, plus `Agent Workload Chat Endpoint <asset>` — the same URL with `/chat/completions` appended. When `workflow.yaml` declares `general.front_end.a2a`, an `<endpoint>/a2a/` endpoint is exported as well. Replicas start serving once the readiness probe polls `/health` successfully — within roughly 70 seconds of container start, and not configurable.
+With no `WORKLOAD_*` variables set, this takes the C2W path: it uploads the agent source, builds an image on top of a DataRobot execution environment, and starts a workload running `workload/run_server.sh`. The Pulumi stack exports `Agent Workload Endpoint <asset>`, plus `Agent Workload Chat Endpoint <asset>` — the same URL with `/chat/completions` appended. When `workflow.yaml` declares `general.front_end.a2a`, `Agent Workload A2A Endpoint <asset>` is exported as well — `<endpoint>/a2a/`, or the suffix set by [`a2a.mount_path`](./agent2agent.md#a2a-mount-path-mount_path). Replicas start serving once the readiness probe polls `/health` successfully — within roughly 70 seconds of container start, and not configurable.
 
 Take the chat endpoint from that stack output and call it like any OpenAI-compatible one:
 
@@ -123,9 +123,9 @@ This runtime is serving-only. Compared with Custom Models, these are not created
 
 ## Anonymous agent-card discovery
 
-Setting `enable_unauthenticated_well_known_route` under `general.front_end.a2a` in `workflow.yaml` does two things on this runtime. Inside the container, `datarobot_genai` serves a redacted agent card to anonymous callers instead of `401`. And on the platform, the artifact spec gains a route for `/a2a/.well-known/agent-card.json` with `auth: optional` — anonymous callers get through, and an authenticating caller's identity headers still arrive, so they receive the full card.
+Setting `enable_unauthenticated_well_known_route` under `general.front_end.a2a` in `workflow.yaml` does two things on this runtime. Inside the container, `datarobot_genai` serves a redacted agent card to anonymous callers instead of `401`. And on the platform, the artifact spec gains two `auth: optional` routes: `/a2a/.well-known/agent-card.json`, which follows [`a2a.mount_path`](./agent2agent.md#a2a-mount-path-mount_path), and the root fallback `/.well-known/agent-card.json`. Anonymous callers get through, and an authenticating caller's identity headers still arrive, so they receive the full card.
 
-The route is requested **only** when you opt in. Nothing is sent otherwise, not even an empty `routes` list, because clusters can have route configuration disabled and reject any artifact that carries the key at all. On such a cluster, opting in fails the deploy with `403 Route configuration is disabled on this cluster`; ask an administrator to enable unauthenticated routing.
+The routes are requested **only** when you opt in. Nothing is sent otherwise, not even an empty `routes` list, because clusters can have route configuration disabled and reject any artifact that carries the key at all. On such a cluster, opting in fails the deploy with `403 Route configuration is disabled on this cluster`; ask an administrator to enable unauthenticated routing.
 
 Route configuration lives in the artifact spec, so flipping this flag means a new artifact and a fresh image build — see [What changes trigger a rebuild](#what-changes-trigger-a-rebuild).
 

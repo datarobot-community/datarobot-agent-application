@@ -22,7 +22,7 @@ dr run dev
 The following command should be run after agent code modification:
 
 ```shell
-dr task run agent:install
+dr run agent:install
 ```
 
 > **Warning:** When using a custom Docker context (`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset and an `agent/docker_context/` folder is present), modifying `pyproject.toml` or `uv.lock` triggers a full execution environment rebuild on the next deployment. This rebuild can take **10–20 minutes** depending on the number of dependencies. When using the default DataRobot execution environment (the default configuration), dependency changes do not trigger a rebuild.
@@ -114,7 +114,7 @@ agent = MyAgent(
 **IMPORTANT**: Add required tools in the `agent/agent` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
-dr task run agent:install
+dr run agent:install
 ```
 
 **IMPORTANT**: Tools must be imported and passed to agent nodes inside `graph_factory`.
@@ -139,11 +139,11 @@ Review and update the tests in the `agent/tests` directory after code changes we
 Run the following shell commands to run the tests:
 
 ```shell
-dr task run agent:lint
+dr run agent:lint
 ```
 
 ```shell
-dr task run agent:test
+dr run agent:test
 ```
 
 ## Post Deployment Validation
@@ -151,7 +151,7 @@ dr task run agent:test
 Run the following shell command to validate the agent after deployment. If the response has no errors then the deployment is successful.
 
 ```shell
-dr task run agent:cli -- -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
+dr run agent:cli -- -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
 ```
 
 ## Setting up custom metric and report values
@@ -188,7 +188,7 @@ By default it provides tools for DataRobot operations, but can be extended with 
 
 ## MCP Server Development Guidelines
 
-IMPORTANT: Do NOT import code from `agent/` or `fastapi_server/` directories. The MCP server has independent dependencies to avoid conflicts. 
+IMPORTANT: Do NOT import code from `agent/` or `fastapi_server/` directories. The MCP server has independent dependencies to avoid conflicts.
 IMPORTANT: The MCP server runs as an independent service. Agents connect to it via MCP protocol (HTTP), not direct Python imports.
 
 - You may modify files ONLY inside `mcp_server/` directory.
@@ -249,17 +249,17 @@ async def tool_name(
 Before making any changes to the mcp_server code, install dependencies by running shell command:
 
 ```shell
-dr task run mcp_server:install
+dr run mcp_server:install
 ```
 
 ## MCP Server Testing
 
 ```shell
-dr task run mcp_server:lint
+dr run mcp_server:lint
 ```
 
 ```shell
-dr task run mcp_server:test
+dr run mcp_server:test
 ```
 
 # Backend Development Instructions
@@ -339,17 +339,17 @@ When adding a new persisted entity, implement both a SQLite repository (with mig
 Before making any changes to the backend code, install dependencies by running shell command:
 
 ```shell
-dr task run fastapi_server:install
+dr run fastapi_server:install
 ```
 
 ## Backend Testing
 
 ```shell
-dr task run fastapi_server:lint
+dr run fastapi_server:lint
 ```
 
 ```shell
-dr task run fastapi_server:test
+dr run fastapi_server:test
 ```
 
 # Frontend Development Instructions
@@ -360,7 +360,7 @@ By default it ships a chat UI, but it can reimplemented to contain dashboards, m
 
 ## Frontend Development Guidelines
 
-IMPORTANT: Do NOT replace this stack with a different framework (e.g. Next.js, Vue, Angular, Svelte). If the user asks to switch frameworks, because deployment pipeline and infrastructure depend on the current stack. 
+IMPORTANT: Do NOT replace this stack with a different framework (e.g. Next.js, Vue, Angular, Svelte). If the user asks to switch frameworks, because deployment pipeline and infrastructure depend on the current stack.
 IMPORTANT: The frontend depends on backend API endpoints and agent tool outputs being in place.
 
 - You may modify files ONLY inside `frontend_web/` and `fastapi_server/` for the frontend work.
@@ -404,7 +404,7 @@ Including `/api` in the path will cause **double `/api/api/` URLs** and result i
 Before making any changes to the frontend code, install dependencies (npm packages) by running shell command:
 
 ```shell
-dr task run frontend_web:install
+dr run frontend_web:install
 ```
 
 - To install new npm packages, use shell to run `npm install <package>` from the `frontend_web/` directory.
@@ -423,11 +423,11 @@ dr task run frontend_web:install
 ## Frontend Testing
 
 ```shell
-dr task run frontend_web:lint
+dr run frontend_web:lint
 ```
 
 ```shell
-dr task run frontend_web:test
+dr run frontend_web:test
 ```
 
 ## Project Deployment
@@ -435,13 +435,13 @@ dr task run frontend_web:test
 Run the following shell commands to deploy the project:
 
 ```shell
-dr task run infra:up-yes
+dr run infra:up-yes
 ```
 
 In case the deployment process fails, you can try deleting it by running the following command:
 
 ```shell
-dr task run infra:down-yes
+dr run infra:down-yes
 ```
 
 ## Local Development
@@ -454,7 +454,7 @@ dr start
 
 ## Pre-deploy Checklist
 
-Before running `dr task run infra:up-yes`, ask the user to ensure their environment is configured. The following variables must be set:
+Before running `dr run infra:up-yes`, ask the user to ensure their environment is configured. The following variables must be set:
 
 - `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`
 - `PULUMI_CONFIG_PASSPHRASE`
@@ -479,7 +479,7 @@ dr dotenv setup
 The app is live — the non-zero exit came from a post-deploy cleanup step, not the app itself. Run the following to reconcile Pulumi state:
 
 ```shell
-dr task run infra:refresh -- -y
+dr run infra:refresh -- -y
 ```
 
 Do not re-deploy.
@@ -488,7 +488,7 @@ Do not re-deploy.
 The source is still attached to a live application. Reconcile Pulumi state and retry:
 
 ```shell
-dr task run infra:refresh -- -y
+dr run infra:refresh -- -y
 ```
 
 **Docker context error on first deploy**
@@ -496,6 +496,15 @@ Set `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` in your `.env` file to point to an
 
 **Container fails to install dependencies at startup**
 If your app depends on a local package (e.g. `core/`), ensure it is included in the application bundle before deploying.
+
+**Pulumi commands fail/hang with GitHub rate-limit errors**
+`pulumi-datarobot` is a GitHub-distributed plugin, so Pulumi resolves and update-checks it via `api.github.com` (60 req/hour anonymous limit) by default. `dr dependency install`/`dr start` already install it through a direct release-download URL to dodge this. If it's still hit, set `PULUMI_SKIP_UPDATE_CHECK=1` so Pulumi stops re-checking `api.github.com` on every invocation.
+
+If the failing download is for an **old** version (a pre-existing stack's resources can be pinned to whatever `pulumi-datarobot` provider version was current when they were deployed — check `pulumi stack export` for `pulumi:providers:datarobot`), that version is still fetched via the same rate-limited GitHub API path regardless of the env var, since this template doesn't pin an explicit provider version in code. Install it manually the same rate-limit-safe way, using the version named in the error:
+
+```sh
+pulumi plugin install resource datarobot <VERSION> --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v<VERSION>
+```
 
 ## Expected Deploy Times
 

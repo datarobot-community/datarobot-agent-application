@@ -24,6 +24,7 @@ constraints = [
     { name = "authlib", specifier = ">=1.7.1" },
     { name = "banks", specifier = ">=2.4.5" },
     { name = "bleach", specifier = ">=6.4.0" },
+    { name = "crewai-tools", specifier = ">=1.15.21" },
     { name = "datasets", specifier = ">=5.0.1" },
     { name = "gitpython", specifier = ">=3.1.59" },
     { name = "h2", specifier = ">=4.4.1" },
@@ -66,7 +67,7 @@ constraints = [
 overrides = [
     { name = "aiofiles", specifier = ">=25.1,<26" },
     { name = "click", specifier = ">=8.3.3" },
-    { name = "crewai", specifier = ">=1.11.0" },
+    { name = "crewai", specifier = ">=1.15.21" },
     { name = "cryptography", specifier = ">=50.0.0" },
     { name = "json-repair", specifier = ">=0.60.1" },
     { name = "litellm", specifier = ">=1.91.1,<2.0.0" },
@@ -140,18 +141,6 @@ wheels = [
 ]
 
 [[package]]
-name = "ag-ui-protocol"
-version = "0.1.15"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/57/71/96c21ae7e2fb9b610c1a90d38bd2de8b6e5b2900a63001f3882f43e519af/ag_ui_protocol-0.1.15.tar.gz", hash = "sha256:5e23c1042c7d4e364d685e68d2fb74d37c16bc83c66d270102d8eaedce56ad82", size = 6269, upload-time = "2026-04-01T15:44:33.136Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/a0/a73398d30bb0f9ad70cd70426151a4a19527a7296e48a3a16a50e1d5db05/ag_ui_protocol-0.1.15-py3-none-any.whl", hash = "sha256:85cde077023ccbc37b5ce2ad953537883c262d210320f201fc2ec4e85408b06a", size = 8661, upload-time = "2026-04-01T15:44:32.079Z" },
-]
-
-[[package]]
 name = "agent"
 version = "0.1.0"
 source = { editable = "." }
@@ -190,7 +179,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
     { name = "datarobot", extras = ["core"], specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.29.31" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.29.40" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
@@ -215,6 +204,18 @@ provides-extras = ["dev", "agentic-playground"]
 
 [package.metadata.requires-dev]
 extras = []
+
+[[package]]
+name = "ag-ui-protocol"
+version = "0.1.15"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/71/96c21ae7e2fb9b610c1a90d38bd2de8b6e5b2900a63001f3882f43e519af/ag_ui_protocol-0.1.15.tar.gz", hash = "sha256:5e23c1042c7d4e364d685e68d2fb74d37c16bc83c66d270102d8eaedce56ad82", size = 6269, upload-time = "2026-04-01T15:44:33.136Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/a0/a73398d30bb0f9ad70cd70426151a4a19527a7296e48a3a16a50e1d5db05/ag_ui_protocol-0.1.15-py3-none-any.whl", hash = "sha256:85cde077023ccbc37b5ce2ad953537883c262d210320f201fc2ec4e85408b06a", size = 8661, upload-time = "2026-04-01T15:44:32.079Z" },
+]
 
 [[package]]
 name = "aioboto3"
@@ -964,11 +965,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.29.31"
+version = "0.29.40"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/92/01/c0b71bda48739a04951f2262a1097da71163270da4af3c8fdedb63da837f/datarobot_genai-0.29.31.tar.gz", hash = "sha256:c77482e8d4de898932065d9c636e902015078af109b883b82e984eaa264203d0", size = 632427, upload-time = "2026-09-04T13:36:59.497Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/fc/09bd81c5a54db046734dda7a7ae02e887237ad8ff67982df8d6e658be48f/datarobot_genai-0.29.40.tar.gz", hash = "sha256:c7fcf9cd667537149d154c08e5cb9489109949e4ef99903ca05d4554ff9e39bb", size = 628780, upload-time = "2026-09-11T14:38:54.36Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/77/dd3457c6f444ea01716ab07cd19426a355bc0d793a27e4f36b29b412e658/datarobot_genai-0.29.31-py3-none-any.whl", hash = "sha256:d380b99b2567f0237229e5abbd1ad72b75ab2265db6208d090a7bcd21d1e7b23", size = 887315, upload-time = "2026-09-04T13:36:57.613Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/58/607e7203f2c1d2643b2e87e1854b88dc70868c683eeea1d31be23b33a0bf/datarobot_genai-0.29.40-py3-none-any.whl", hash = "sha256:280eccd3cf2788829ee8f698ddd776d51606fd85bc104ef031f49953b0d0faf4", size = 883597, upload-time = "2026-09-11T14:38:51.929Z" },
 ]
 
 [package.optional-dependencies]
@@ -1049,7 +1050,7 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.2.47"
+version = "11.3.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1069,11 +1070,12 @@ dependencies = [
     { name = "tiktoken" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/20/de8c6739e29a92afb28e686a465251cb989d1e405c26fccdb521f80c8540/datarobot_moderations-11.2.47-py3-none-any.whl", hash = "sha256:ae6a0ddb243704e99e27395f60b8025bfe6b0a72bd011372553fadabb81c8ecf", size = 177480, upload-time = "2026-07-24T13:14:03.425Z" },
+    { url = "https://files.pythonhosted.org/packages/31/31/4ff69bf7ac961cc3a51cff498c0057b24dd9bfb24b5e8366d558ca4007a7/datarobot_moderations-11.3.6-py3-none-any.whl", hash = "sha256:b1b97ebd724a64b6629a35a56f23055b212e6df561f9b3976770c6df046875c4", size = 183969, upload-time = "2026-09-09T16:07:15.348Z" },
 ]
 
 [package.optional-dependencies]
 all = [
+    { name = "ag-ui-protocol" },
     { name = "datarobot" },
     { name = "datarobot-predict" },
     { name = "deepeval" },

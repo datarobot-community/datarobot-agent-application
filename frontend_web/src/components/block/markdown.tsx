@@ -33,12 +33,12 @@ type MarkdownComponents = {
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export const MARKDOWN_COMPONENTS: MarkdownComponents = {
   ul: ({ children, node, ...props }) => (
-    <ul className="my-4 list-disc pl-8 leading-relaxed" {...props}>
+    <ul className="my-4 pl-8 leading-relaxed list-disc" {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, node, ...props }) => (
-    <ol className="my-4 list-decimal pl-8 leading-relaxed" {...props}>
+    <ol className="my-4 pl-8 leading-relaxed list-decimal" {...props}>
       {children}
     </ol>
   ),
@@ -73,16 +73,24 @@ export const MARKDOWN_COMPONENTS: MarkdownComponents = {
     </Heading>
   ),
   p: ({ children, node, ...props }) => (
-    <p className="body leading-relaxed" {...props}>
+    <p className="leading-relaxed body" {...props}>
       {children}
     </p>
   ),
   hr: ({ node, ...props }) => <hr className="mt-4 mb-2" {...props} />,
   table: ({ children, className, node, ...props }) => (
-    <div className="my-2 flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background">
+    <div
+      className={`
+              my-2 rounded-lg flex flex-1 flex-col overflow-hidden border
+              border-border bg-background
+            `}
+    >
       <table
         className={cn(
-          'h-fit w-full table-fixed border-separate border-spacing-0 overflow-auto rounded-lg',
+          `
+                      border-spacing-0 rounded-lg h-fit w-full table-fixed
+                      border-separate overflow-auto
+                    `,
           className
         )}
         {...props}
@@ -94,7 +102,10 @@ export const MARKDOWN_COMPONENTS: MarkdownComponents = {
   thead: ({ children, className, node, ...props }) => (
     <thead
       className={cn(
-        'border-sidebar-border bg-background p-0 font-normal text-secondary-foreground',
+        `
+                  p-0 font-normal border-sidebar-border bg-background
+                  text-secondary-foreground
+                `,
         className
       )}
       {...props}
@@ -106,9 +117,10 @@ export const MARKDOWN_COMPONENTS: MarkdownComponents = {
     <th
       className={cn(
         `
-          border-r border-b border-border bg-background p-3 pl-2 text-left font-normal text-secondary-foreground
-          last:border-r-0
-        `,
+                  p-3 pl-2 font-normal border-r border-b border-border
+                  bg-background text-left text-secondary-foreground
+                  last:border-r-0
+                `,
         className
       )}
       {...props}
@@ -120,10 +132,11 @@ export const MARKDOWN_COMPONENTS: MarkdownComponents = {
     <td
       className={cn(
         `
-          border-r border-b border-border bg-background p-3 pl-2 text-left leading-5 text-ellipsis whitespace-nowrap
-          last:border-r-0
-          [tr:last-child_&]:border-b-0
-        `,
+                  p-3 pl-2 leading-5 border-r border-b border-border
+                  bg-background text-left text-ellipsis whitespace-nowrap
+                  last:border-r-0
+                  [tr:last-child_&]:border-b-0
+                `,
         className
       )}
       {...props}

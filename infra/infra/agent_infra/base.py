@@ -16,9 +16,9 @@
 
 Owns everything that is identical regardless of ``ENABLE_AGENT_ON_WORKLOAD_API``:
 execution-environment resolution, LLM/MCP/memory/session/IDP runtime-parameter
-assembly, memory-space provisioning, and A2A detection. The only Pulumi
+assembly, memory-space provisioning (agent memory only), and A2A detection. The only Pulumi
 resources created here are credentials and (when memory is
-``datarobot_memory_service``) the ``MemorySpace`` — both runtime-agnostic.
+``datarobot_memory_service``) the agent-memory ``MemorySpace`` — both runtime-agnostic.
 Runtime-specific resources (``CustomModel``/``Playground``/``LlmBlueprint`` for
 Custom Models; ``Artifact``/``Workload`` for Workload API) live in
 ``deployment.py``/``workload.py`` respectively, which never check the runtime
@@ -37,7 +37,7 @@ from typing import Any, Final, Optional
 import pulumi
 import pulumi_datarobot
 import yaml  # type: ignore[import-untyped]
-from datarobot_pulumi_utils.pulumi import export, resolve_execution_environment_version
+from datarobot_pulumi_utils.pulumi import resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
@@ -64,8 +64,6 @@ ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() =
 # scenario's run_server.sh (see workload.py). Raised above gunicorn's 30s default so long
 # agent turns aren't killed mid-stream.
 DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT: Final[str] = "600"
-
-AGENT_CARD_REGISTRY_MEMORY_SPACE_ID: Final[str] = "AGENT_CARD_REGISTRY_MEMORY_SPACE_ID"
 
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
@@ -131,41 +129,97 @@ def _load_workflow_config() -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def check_a2a_server_enabled() -> bool:
+def _a2a_config() -> Any:
+    """The ``general.front_end.a2a`` block from ``workflow.yaml``, or None when absent."""
     workflow_config = _load_workflow_config()
-    a2a = ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a")
-    return a2a is not None
+    return ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a")
 
 
-def _check_a2a_remote_client_enabled() -> bool:
-    """Return whether workflow.yaml declares remote A2A agent clients."""
-    function_groups = _load_workflow_config().get("function_groups") or {}
-    for fg_config in function_groups.values():
-        if (
-            isinstance(fg_config, dict)
-            and fg_config.get("_type") == "authenticated_a2a_client"
-        ):
-            return True
-    return False
+def check_a2a_server_enabled() -> bool:
+    return _a2a_config() is not None
 
 
 def check_a2a_unauthenticated_well_known_route_enabled() -> bool:
-    workflow_yaml_path = _find_workflow_yaml()
-    if workflow_yaml_path is None:
-        return False
-    with open(workflow_yaml_path) as f:
-        workflow_config = yaml.safe_load(f) or {}
-    a2a = ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a")
+    a2a = _a2a_config()
     if not isinstance(a2a, dict):
         return False
     return _is_truthy_yaml_value(a2a.get("enable_unauthenticated_well_known_route"))
 
 
+# Suffix datarobot-genai mounts the A2A app under when `a2a.mount_path` is unset.
+# Mirrors datarobot_genai.dragent.constants.A2A_MOUNT_PATH -- duplicated rather than
+# imported because the infra venv deliberately does not depend on datarobot-genai.
+A2A_MOUNT_PATH_DEFAULT: Final[str] = "a2a"
+
+# RFC 3986 section 2.3 unreserved characters: the per-segment alphabet
+# datarobot_genai's DRAgentA2AConfig._normalize_mount_path accepts.
+_A2A_MOUNT_PATH_SEGMENT_RE: Final[re.Pattern[str]] = re.compile(r"[A-Za-z0-9\-._~]+")
+
+
+def get_a2a_mount_path() -> str:
+    """Path suffix the agent serves A2A from, per ``general.front_end.a2a.mount_path``.
+
+    ``directAccess`` (Custom Models) and the workload route both forward the full
+    prefixed path into the container, so the suffix the agent actually mounted A2A
+    under has to appear in the URLs we build here or they resolve nowhere.
+
+    Surrounding slashes are stripped so ``"/a2a/"`` and ``"a2a"`` agree; interior
+    slashes are kept for multi-segment mounts such as ``"api/a2a"``.
+
+    Validation is deliberately lenient. datarobot-genai rejects an invalid value at
+    container startup and is the authoritative validator; duplicating its full rule set
+    here would only risk blocking a deploy it would have accepted. So a suspect value is
+    warned about and passed through, and a missing or blank one falls back to the default.
+    """
+    a2a = _a2a_config()
+    if not isinstance(a2a, dict):
+        return A2A_MOUNT_PATH_DEFAULT
+
+    raw = a2a.get("mount_path")
+    if raw is None:
+        return A2A_MOUNT_PATH_DEFAULT
+
+    normalized = str(raw).strip().strip("/")
+    if not normalized:
+        pulumi.warn(
+            f"a2a.mount_path is {raw!r}, which is empty once slashes are stripped. "
+            f"datarobot-genai rejects mounting A2A at the application root, so the "
+            f"agent will fail to start. Falling back to {A2A_MOUNT_PATH_DEFAULT!r} "
+            f"for the URLs exported here."
+        )
+        return A2A_MOUNT_PATH_DEFAULT
+
+    for segment in normalized.split("/"):
+        if (
+            not segment
+            or segment.startswith(".")
+            or not _A2A_MOUNT_PATH_SEGMENT_RE.fullmatch(segment)
+        ):
+            pulumi.warn(
+                f"a2a.mount_path segment {segment!r} in {raw!r} is not one datarobot-genai "
+                f"accepts (letters, digits and - . _ ~, not starting with a dot). The agent "
+                f"will likely fail to start; exporting the URL as configured anyway."
+            )
+            break
+
+    return normalized
+
+
+def a2a_url(base_url: str) -> str:
+    """Append the configured A2A mount path to ``base_url``, with one trailing slash.
+
+    Local stand-in for ``datarobot_genai.dragent.deployment_urls.join_mount_path`` --
+    see :data:`A2A_MOUNT_PATH_DEFAULT` for why it is not imported. Both runtimes compose
+    their A2A URL through here so the trailing-slash convention lives in one place.
+    """
+    return f"{base_url.rstrip('/')}/{A2A_MOUNT_PATH}/"
+
+
 IS_A2A_SERVER_ENABLED = check_a2a_server_enabled()
-IS_A2A_REMOTE_CLIENT_ENABLED = _check_a2a_remote_client_enabled()
 IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED = (
     check_a2a_unauthenticated_well_known_route_enabled()
 )
+A2A_MOUNT_PATH = get_a2a_mount_path()
 
 
 def resolve_agent_execution_environment(
@@ -394,26 +448,6 @@ def build_shared_agent_runtime_parameters() -> list[
                 key=SESSION_SECRET_KEY,
                 value=session_secret_cred.id,
             ),
-        )
-
-    # Agent card registry L2 cache (shared across replicas via DataRobot MemorySpace)
-    if IS_A2A_REMOTE_CLIENT_ENABLED:
-        agent_registry_cache_memory_space = pulumi_datarobot.MemorySpace(
-            agent_asset_name + " Agent Card Registry Cache",
-        )
-        params.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key=AGENT_CARD_REGISTRY_MEMORY_SPACE_ID,
-                type="string",
-                value=agent_registry_cache_memory_space.id,
-            )
-        )
-        export(
-            AGENT_CARD_REGISTRY_MEMORY_SPACE_ID, agent_registry_cache_memory_space.id
-        )
-        pulumi.export(
-            "Agent Card Registry Cache Memory Space ID " + agent_asset_name,
-            agent_registry_cache_memory_space.id,
         )
 
     idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")

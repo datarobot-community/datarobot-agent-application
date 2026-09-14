@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import datarobot as dr
 import pulumi
 import pulumi_datarobot
+from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
 from dev_tools.lineage.pulumi_managers import (
     MCPPromptMetadataPulumiManager,
@@ -31,7 +33,10 @@ from dev_tools.lineage.pulumi_managers import (
 )
 
 from .. import use_case
-from ..mcp_server_user_params import MCP_USER_RUNTIME_PARAMETERS
+from ..mcp_server_user_params import (
+    MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS,
+    MCP_USER_RUNTIME_PARAMETERS,
+)
 from .mcp_api_keys import (
     SESSION_SECRET_KEY,
     auth_resolution_strategy,
@@ -50,7 +55,61 @@ from .mcp_oauth_configs import (
     mcp_enable_oauth_claim_validation_value,
     mcp_enable_unauthenticated_well_known_route_value,
     mcp_oauth_metadata_env_vars,
+    mcp_tag_scope_env_vars,
 )
+from .mcp_utils import MCPRuntimeParameter, MCPRuntimeParameterAPITokenCredential
+
+
+@dataclass
+class ServerlessRuntimeParameter:
+    key: str
+    value: str
+    type: str = "string"
+
+    @classmethod
+    def from_user_runtime_param(
+        cls, runtime_param: MCPRuntimeParameter
+    ) -> ServerlessRuntimeParameter:
+        return cls(
+            key=runtime_param.name,
+            value=runtime_param.value,
+            type=runtime_param.type,
+        )
+
+    def to_pulumi_object(self) -> pulumi_datarobot.CustomModelRuntimeParameterValueArgs:
+        return pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=self.key,
+            type=self.type,
+            value=self.value,
+        )
+
+
+@dataclass
+class ServerlessRuntimeCredentialParameter:
+    key: str
+    value: str | pulumi.output.Output[str]
+    type: str = "credential"
+
+    @classmethod
+    def from_user_runtime_param(
+        cls, runtime_param: MCPRuntimeParameterAPITokenCredential
+    ) -> ServerlessRuntimeCredentialParameter:
+        api_token_credential = pulumi_datarobot.ApiTokenCredential(
+            f"[{PROJECT_NAME}] {runtime_param.name}",
+            args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=runtime_param.value),
+        )
+        return cls(
+            key=runtime_param.name,
+            value=api_token_credential.id,
+            type=runtime_param.type,
+        )
+
+    def to_pulumi_object(self) -> pulumi_datarobot.CustomModelRuntimeParameterValueArgs:
+        return pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=self.key,
+            type=self.type,
+            value=self.value,
+        )
 
 
 def _enabled_tools_runtime_params(
@@ -198,7 +257,19 @@ def provision_deployment_mcp_server(
             )
         )
 
-    deployments_model_runtime_parameters.extend(MCP_USER_RUNTIME_PARAMETERS)
+    mcp_user_runtime_params = [
+        ServerlessRuntimeParameter.from_user_runtime_param(el).to_pulumi_object()
+        for el in MCP_USER_RUNTIME_PARAMETERS
+    ]
+    deployments_model_runtime_parameters.extend(mcp_user_runtime_params)
+    mcp_user_credential_runtime_params = [
+        ServerlessRuntimeCredentialParameter.from_user_runtime_param(
+            el
+        ).to_pulumi_object()
+        for el in MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS
+    ]
+    deployments_model_runtime_parameters.extend(mcp_user_credential_runtime_params)
+
     deployments_model_runtime_parameters.extend(api_keys_runtime_parameters)
     # The server reads each metadata setting by its own name; the runtime
     # parameter key is the lower-cased env var, as everywhere else here.
@@ -209,6 +280,14 @@ def provision_deployment_mcp_server(
             value=env_var["value"],
         )
         for env_var in mcp_oauth_metadata_env_vars()
+    )
+    deployments_model_runtime_parameters.extend(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=env_var["name"].lower(),
+            type="string",
+            value=env_var["value"],
+        )
+        for env_var in mcp_tag_scope_env_vars()
     )
     custom_model_files = get_deployments_app_files()
 

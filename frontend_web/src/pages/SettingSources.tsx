@@ -85,7 +85,7 @@ export const SettingsSources = () => {
 
   return (
     <div className="flex-0">
-      <div className="mb-6 border-b border-border pb-2">
+      <div className="mb-6 pb-2 border-b border-border">
         <Heading level={4}>{t('Data connections')}</Heading>
       </div>
 
@@ -112,10 +112,17 @@ export const SettingsSources = () => {
       )}
 
       {isLoading && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-40 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
+        <div
+          className={`
+                      gap-4
+                      sm:grid-cols-2
+                      lg:grid-cols-3
+                      grid grid-cols-1
+                    `}
+        >
+          <Skeleton className="h-40 rounded-lg w-full" />
+          <Skeleton className="h-40 rounded-lg w-full" />
+          <Skeleton className="h-40 rounded-lg w-full" />
         </div>
       )}
 
@@ -128,7 +135,14 @@ export const SettingsSources = () => {
       )}
 
       {!isLoading && providers.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={`
+                      gap-4
+                      sm:grid-cols-2
+                      lg:grid-cols-3
+                      grid grid-cols-1
+                    `}
+        >
           {providers.map(provider => (
             <ProviderTile
               key={provider.id}

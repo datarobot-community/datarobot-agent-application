@@ -32,10 +32,10 @@ function DialogOverlay({
       data-slot="dialog-overlay"
       className={cn(
         `
-          fixed inset-0 z-50 bg-black/50
-          data-[state=closed]:animate-out data-[state=closed]:fade-out-0
-          data-[state=open]:animate-in data-[state=open]:fade-in-0
-        `,
+                  data-[state=closed]:animate-out data-[state=closed]:fade-out-0
+                  data-[state=open]:animate-in data-[state=open]:fade-in-0
+                  inset-0 bg-black/50 fixed z-50
+                `,
         className
       )}
       {...props}
@@ -58,26 +58,29 @@ function DialogContent({
           // Background & Text
           'bg-input text-secondary-foreground',
           // Positioning & Layering
-          'fixed top-[50%] left-[50%] z-50 origin-(--radix-dialog-content-transform-origin)',
+          `
+                      fixed top-[50%] left-[50%] z-50
+                      origin-(--radix-dialog-content-transform-origin)
+                    `,
           // Transform
           '-translate-1/2',
           // Sizing
-          'w-full max-w-lg',
+          'max-w-lg w-full',
           // Overflow
           'overflow-hidden',
           // Shape & Border
-          'rounded-md border shadow-lg',
+          'shadow-lg rounded-md border',
           // Spacing
           'p-6',
           // Animations (open / close)
           `
-            data-[state=closed]:animate-out
-            data-[state=open]:animate-in
-          `,
+                      data-[state=closed]:animate-out
+                      data-[state=open]:animate-in
+                    `,
           `
-            data-[state=closed]:fade-out-0
-            data-[state=open]:fade-in-0
-          `,
+                      data-[state=closed]:fade-out-0
+                      data-[state=open]:fade-in-0
+                    `,
           className
         )}
         {...props}
@@ -86,12 +89,14 @@ function DialogContent({
         <DialogPrimitive.Close
           className={cn(
             `
-              absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity
-              hover:opacity-100
-              focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden
-              disabled:pointer-events-none
-              data-[state=open]:bg-secondary
-            `
+                          top-4 right-4 rounded-xs absolute opacity-70
+                          ring-offset-background transition-opacity
+                          hover:opacity-100
+                          focus:ring-2 focus:ring-ring focus:ring-offset-2
+                          focus:outline-hidden
+                          disabled:pointer-events-none
+                          data-[state=open]:bg-secondary
+                        `
           )}
         >
           <XIcon className="size-4" />
@@ -108,9 +113,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="dialog-header"
       className={cn(
         `
-          flex flex-col gap-1.5 text-center
-          sm:text-left
-        `,
+                  gap-1.5
+                  sm:text-left
+                  flex flex-col text-center
+                `,
         className
       )}
       {...props}
@@ -124,9 +130,10 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="dialog-footer"
       className={cn(
         `
-          flex flex-col-reverse gap-2
-          sm:flex-row sm:justify-end
-        `,
+                  gap-2
+                  sm:flex-row sm:justify-end
+                  flex flex-col-reverse
+                `,
         className
       )}
       {...props}

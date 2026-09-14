@@ -1,8 +1,8 @@
 ---
 name: datarobot-app-framework-agent-local-evaluation
 description: >-
-  Use this skill when a user asks how to evaluate their agent locally, how to write quality-gate tests for their 
-  agent, how to detect hallucinations, or how to configure batch evaluation with DataRobot moderation 
+  Use this skill when a user asks how to evaluate their agent locally, how to write quality-gate tests for their
+  agent, how to detect hallucinations, or how to configure batch evaluation with DataRobot moderation
   metrics (Faithfulness, Task Adherence, Agent Goal Accuracy, Agent Guideline Adherence).
 ---
 # Skill: DataRobot local agentic evaluation
@@ -15,7 +15,7 @@ description: >-
 
 Before generating any code, confirm the following with the user:
 
-1. Dependencies are installed — `datarobot-genai[nat, dragent]` (or the framework extra your agent uses) must be **0.26.10 or newer**, which ships `nat eval` plugins for DataRobot moderation metrics. Dev dependencies (including `pytest-timeout` for `@pytest.mark.timeout`) are installed via `dr task run agent:install`.
+1. Dependencies are installed — `datarobot-genai[nat, dragent]` (or the framework extra your agent uses) must be **0.26.10 or newer**, which ships `nat eval` plugins for DataRobot moderation metrics. Dev dependencies (including `pytest-timeout` for `@pytest.mark.timeout`) are installed via `dr run agent:install`.
 2. `DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` are set as environment variables. `dr start` creates the project-root `.env` file where the user configures these values.
 3. The agent has a `workflow.yaml` at the agent component root (standard for all DRAgent templates).
 
@@ -138,7 +138,7 @@ cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.y
 Or via Taskfile (if the `eval` task is present):
 
 ```sh
-dr task run agent:eval -- eval/eval-config-agent-goal-accuracy.yaml
+dr run agent:eval -- eval/eval-config-agent-goal-accuracy.yaml
 ```
 
 ### "How do I run only the evaluation tests?"

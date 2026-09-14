@@ -6,7 +6,7 @@ By default it ships a chat UI, but it can reimplemented to contain dashboards, m
 
 ## Frontend Development Guidelines
 
-IMPORTANT: Do NOT replace this stack with a different framework (e.g. Next.js, Vue, Angular, Svelte). If the user asks to switch frameworks, because deployment pipeline and infrastructure depend on the current stack. 
+IMPORTANT: Do NOT replace this stack with a different framework (e.g. Next.js, Vue, Angular, Svelte). If the user asks to switch frameworks, because deployment pipeline and infrastructure depend on the current stack.
 IMPORTANT: The frontend depends on backend API endpoints and agent tool outputs being in place.
 
 - You may modify files ONLY inside `frontend_web/` and `fastapi_server/` for the frontend work.
@@ -50,7 +50,7 @@ Including `/api` in the path will cause **double `/api/api/` URLs** and result i
 Before making any changes to the frontend code, install dependencies (npm packages) by running shell command:
 
 ```shell
-dr task run frontend_web:install
+dr run frontend_web:install
 ```
 
 - To install new npm packages, use shell to run `npm install <package>` from the `frontend_web/` directory.
@@ -69,10 +69,9 @@ dr task run frontend_web:install
 ## Frontend Testing
 
 ```shell
-dr task run frontend_web:lint
+dr run frontend_web:lint
 ```
 
 ```shell
-dr task run frontend_web:test
+dr run frontend_web:test
 ```
-

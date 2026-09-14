@@ -63,10 +63,10 @@ DEFAULT_WORKLOAD_CPU: Final[str] = "1"
 # 1.5 GiB: room for an agent process (LLM client libraries, framework deps)
 # without over-provisioning every deployment by default.
 DEFAULT_WORKLOAD_MEMORY_BYTES: Final[int] = 1536 * 1024 * 1024
-A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE: Final[dict[str, str]] = {
-    "path": "/a2a/.well-known/agent-card.json",
-    "auth": "optional",
-}
+# Agent card discovery path, relative to the A2A mount point. Fixed by the A2A protocol
+# (RFC 8615 well-known namespace); only the mount point in front of it is configurable.
+A2A_WELL_KNOWN_AGENT_CARD_RELATIVE_PATH: Final[str] = ".well-known/agent-card.json"
+A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_AUTH: Final[str] = "optional"
 # Entry-point group NAT resolves the agent's workflow through.
 NAT_PLUGIN_ENTRY_POINT_GROUP: Final[str] = "nat.plugins"
 # OTel collector base URL, forwarded from the deploy environment when set.
@@ -127,8 +127,23 @@ def _workload_artifact_routes() -> (
     """Workload artifact routes derived from ``workflow.yaml`` A2A settings.
 
     When ``enable_unauthenticated_well_known_route`` is truthy, the platform must
-    expose the well-known agent card path with optional auth so anonymous callers
-    can fetch a redacted card.
+    expose the well-known agent card paths with optional auth so anonymous callers
+    can fetch a redacted card. datarobot-genai serves the card at two places, so
+    both need a route or the container's answer never reaches the caller:
+
+    * ``/{mount_path}/.well-known/agent-card.json`` — the card under the mount
+      point. Follows ``a2a.mount_path``, so a custom mount path moves this route
+      with it; pointing it at a bare ``/a2a/`` would leave anonymous discovery
+      404ing with no error to show for it.
+    * ``/.well-known/agent-card.json`` — the root discovery fallback, which
+      datarobot-genai registers unconditionally for clients that do not know the
+      mount path. It delegates to the same handler, so redaction and the
+      unauthenticated-access policy are identical; without this route the
+      platform would refuse anonymous traffic to it and the fallback would be
+      pointless exactly when it is needed (a non-default ``mount_path``).
+
+    The two never collide: ``mount_path`` is never empty and its segments cannot
+    start with a dot, so it can never itself be ``.well-known``.
 
     Returns ``None`` — not ``[]`` — when the flag is off, so the ``routes`` key is
     omitted from the spec entirely. Clusters can have route configuration
@@ -141,8 +156,12 @@ def _workload_artifact_routes() -> (
     if base.IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED:
         return [
             pulumi_datarobot.ArtifactSpecContainerGroupContainerRouteArgs(
-                path=A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE["path"],
-                auth=A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE["auth"],
+                path=path,
+                auth=A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_AUTH,
+            )
+            for path in (
+                f"/{base.A2A_MOUNT_PATH}/{A2A_WELL_KNOWN_AGENT_CARD_RELATIVE_PATH}",
+                f"/{A2A_WELL_KNOWN_AGENT_CARD_RELATIVE_PATH}",
             )
         ]
     return None
@@ -400,12 +419,12 @@ def _export_workload_endpoints(
 
     a2a_endpoint: pulumi.Output[str] | None = None
     if base.IS_A2A_SERVER_ENABLED:
-        # Equivalent to the Custom Models path's `directAccess/a2a/` — no
+        # Equivalent to the Custom Models path's `directAccess/<mount path>/` — no
         # `.well-known/agent-card.json` suffix, that's a client-side discovery
-        # path under this route, not part of the endpoint we export.
-        a2a_endpoint = workload.endpoint.apply(
-            lambda endpoint: f"{endpoint.rstrip('/')}/a2a/"
-        )
+        # path under this route, not part of the endpoint we export. The suffix
+        # follows `a2a.mount_path` from workflow.yaml.
+        a2a_endpoint = workload.endpoint.apply(base.a2a_url)
+        pulumi.export("Agent Workload A2A Endpoint " + asset_name, a2a_endpoint)
 
     return completions_endpoint, a2a_endpoint
 

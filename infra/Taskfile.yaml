@@ -24,7 +24,7 @@ vars:
       if [ -n "${PULUMI_DATAROBOT_PLUGIN_VERSION:-}" ]; then
         echo "${PULUMI_DATAROBOT_PLUGIN_VERSION}"
       else
-        echo "v0.10.43"
+        echo "v0.11.3"
       fi
 
   PULUMI_DATAROBOT_DEFAULT_URL:
@@ -35,11 +35,9 @@ vars:
       if [ -n "${PULUMI_DATAROBOT_DEFAULT_URL:-}" ]; then
         echo "${PULUMI_DATAROBOT_DEFAULT_URL}"
       else
-        echo "https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.43"
+        echo "https://github.com/datarobot-community/pulumi-datarobot/releases/download/{{.PULUMI_DATAROBOT_PLUGIN_VERSION}}"
       fi
-
 tasks:
-
   auth-check:
     silent: true
     desc: "🔐 Check authentication prerequisites"
@@ -50,33 +48,6 @@ tasks:
           dr auth check
         else
           echo "ℹ️  Skipping auth check (not available)"
-        fi
-
-  pulumi-datarobot-plugin-check:
-    # Prevents github rate limiting issues when installing pulumi datarobot plugin.
-    # See https://github.com/datarobot-community/pulumi-datarobot?tab=readme-ov-file#rate-limited-by-github
-    # To use this task by default, set the environment variable PULUMI_SKIP_UPDATE_CHECK=1
-    silent: true
-    # desc: "⬇️ Install DataRobot Pulumi plugins"
-    cmds:
-      - |
-        if [ "{{.PULUMI_SKIP_UPDATE_CHECK}}" = "1" ]; then
-          {{.UV_CMD}} run pulumi plugin install resource datarobot {{.PULUMI_DATAROBOT_PLUGIN_VERSION}} \
-          --server {{.PULUMI_DATAROBOT_DEFAULT_URL}}
-        fi
-
-  dr-experimentation-plugin-check:
-    silent: true
-    desc: "⬇️ Ensure DataRobot experimentation plugin is installed"
-    cmds:
-      - |
-        if command -v dr &> /dev/null; then
-          if ! dr plugin list 2>/dev/null | grep -qE '(^|[[:space:]])xp([[:space:]]|$)'; then
-            echo "⬇️ Installing DataRobot experimentation plugin 'xp'"
-            dr plugin install xp || true
-          fi
-        else
-          echo "ℹ️  Skipping experimentation plugin check (dr CLI not available)"
         fi
 
   check-use-case-id:
@@ -108,7 +79,6 @@ tasks:
       - auth-check
     cmds:
       - task: deploy-dev
-      - task: dr-experimentation-plugin-check
       - |
         echo ""
         echo "✅ Infrastructure deployed."
@@ -178,7 +148,6 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - echo "🔨 Deploying the infrastructure.."
       - "{{.UV_CMD}} run pulumi up {{.CLI_ARGS}}"
 
@@ -188,7 +157,6 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - echo "🔨 Deploying the infrastructure (non-interactive).."
       - "{{.UV_CMD}} run pulumi up -y {{.CLI_ARGS}}"
 
@@ -198,7 +166,6 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - echo "🔄 Refreshing the infrastructure.."
       - "{{.UV_CMD}} run pulumi refresh {{.CLI_ARGS}}"
 
@@ -206,14 +173,12 @@ tasks:
     silent: true
     desc: "ℹ️ Show Pulumi stack info"
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - "{{.UV_CMD}} run pulumi stack {{.CLI_ARGS}}"
 
   pulumi:
     silent: true
     # desc: "ℹ🛠️ Execute a generic pulumi command"
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - "{{.UV_CMD}} run pulumi {{.CLI_ARGS}}"
 
   down:
@@ -224,7 +189,6 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - echo "💥 Destroying the infrastructure.."
       - "{{.UV_CMD}} run pulumi destroy {{.CLI_ARGS}}"
 
@@ -234,7 +198,6 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - echo "💥 Destroying the infrastructure (non-interactive).."
       - "{{.UV_CMD}} run pulumi destroy -y {{.CLI_ARGS}}"
 
@@ -263,7 +226,6 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: pulumi-datarobot-plugin-check
       - echo "🔨 Deploying the backend infrastructure.."
       - |
         export PULUMI_SKIP_UPDATE_CHECK=1 && {{.UV_CMD}} run pulumi up -y \

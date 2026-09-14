@@ -9,7 +9,7 @@ export type ChatProviderInput = {
   runInBackground?: boolean;
   isNewChat?: boolean;
   subscriber?: AgentSubscriber;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   forwardedProps?: any;
 };
 export type ChatProviderProps = ChatProviderInput & PropsWithChildren;

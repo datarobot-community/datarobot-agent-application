@@ -185,6 +185,22 @@ def _artifact_container(workload):
     return _artifact_kwargs(workload)["spec"].container_groups[0].containers[0]
 
 
+#: Agent card path the A2A protocol fixes at the app root, independent of the mount path.
+ROOT_AGENT_CARD_PATH = "/.well-known/agent-card.json"
+
+
+def _set_a2a_config(
+    monkeypatch, workload, *, mount_path="a2a", unauthenticated_card=True
+):
+    """Set the two `workflow.yaml`-derived A2A settings the route builder reads."""
+    monkeypatch.setattr(
+        workload.base,
+        "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+        unauthenticated_card,
+    )
+    monkeypatch.setattr(workload.base, "A2A_MOUNT_PATH", mount_path)
+
+
 class TestExplicitWorkloadEntrypoint:
     def test_unset_returns_none(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -279,25 +295,21 @@ class TestImageUriArtifactArgs:
         an artifact that carries the key at all (403 "Route configuration is
         disabled on this cluster")."""
         workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(
-            workload.base,
-            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
-            False,
-        )
+        _set_a2a_config(monkeypatch, workload, unauthenticated_card=False)
         _, container = self._container(workload)
         assert container.routes is None
 
-    def test_routes_include_well_known_when_enabled(self, monkeypatch):
+    @pytest.mark.parametrize("mount_path", ["a2a", "custom-a2a-mount-path"])
+    def test_routes_reach_the_container_spec(self, monkeypatch, mount_path):
+        """A custom `a2a.mount_path` moves the card; a route left on `/a2a/` would 404."""
         workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(
-            workload.base,
-            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
-            True,
-        )
+        _set_a2a_config(monkeypatch, workload, mount_path=mount_path)
         _, container = self._container(workload)
-        assert len(container.routes) == 1
-        assert container.routes[0].path == "/a2a/.well-known/agent-card.json"
-        assert container.routes[0].auth == "optional"
+        assert [r.path for r in container.routes] == [
+            f"/{mount_path}/.well-known/agent-card.json",
+            ROOT_AGENT_CARD_PATH,
+        ]
+        assert all(r.auth == "optional" for r in container.routes)
 
     def test_entrypoints_omitted_when_unset(self, monkeypatch):
         """Omitting the key keeps the image's own CMD/entrypoint."""
@@ -720,12 +732,24 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
 
 
 class TestProvisionWorkloadAgentExports:
+    @staticmethod
+    def _captured_exports(monkeypatch, workload) -> dict:
+        """Capture `pulumi.export` name -> value for the module under test."""
+        exports: dict = {}
+        monkeypatch.setattr(
+            workload.pulumi,
+            "export",
+            lambda name, value: exports.__setitem__(name, value),
+        )
+        return exports
+
     def test_a2a_endpoint_present_when_enabled(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         monkeypatch.setenv(
             "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
         )
         monkeypatch.setattr(workload.base, "IS_A2A_SERVER_ENABLED", True)
+        monkeypatch.setattr(workload.base, "A2A_MOUNT_PATH", "a2a")
 
         result = workload.provision_workload_agent([])
 
@@ -734,6 +758,59 @@ class TestProvisionWorkloadAgentExports:
         )
         param_keys = [p.key for p in result["agent_runtime_parameters"]]
         assert "AGENT_A2A_ENDPOINT" in param_keys
+
+    def test_a2a_endpoint_follows_custom_mount_path(self, monkeypatch):
+        """The exported URL must match where datarobot-genai actually mounted A2A."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setattr(workload.base, "IS_A2A_SERVER_ENABLED", True)
+        monkeypatch.setattr(workload.base, "A2A_MOUNT_PATH", "custom-a2a-mount-path")
+
+        result = workload.provision_workload_agent([])
+
+        assert result["agent_a2a_endpoint"] == FakeOutput(
+            "https://workload.example.com/custom-a2a-mount-path/"
+        )
+        a2a_param = next(
+            p
+            for p in result["agent_runtime_parameters"]
+            if p.key == "AGENT_A2A_ENDPOINT"
+        )
+        assert a2a_param.value == FakeOutput(
+            "https://workload.example.com/custom-a2a-mount-path/"
+        )
+
+    def test_a2a_endpoint_is_exported_when_enabled(self, monkeypatch):
+        """Exported so the operator can read the real A2A URL out of `pulumi up`."""
+        workload = _workload_module(monkeypatch)
+        exports = self._captured_exports(monkeypatch, workload)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setattr(workload.base, "IS_A2A_SERVER_ENABLED", True)
+        monkeypatch.setattr(workload.base, "A2A_MOUNT_PATH", "custom-a2a-mount-path")
+
+        workload.provision_workload_agent([])
+
+        key = "Agent Workload A2A Endpoint " + workload.base.agent_asset_name
+        assert key in exports
+        assert exports[key] == FakeOutput(
+            "https://workload.example.com/custom-a2a-mount-path/"
+        )
+
+    def test_a2a_endpoint_not_exported_when_disabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        exports = self._captured_exports(monkeypatch, workload)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setattr(workload.base, "IS_A2A_SERVER_ENABLED", False)
+
+        workload.provision_workload_agent([])
+
+        assert not any("A2A Endpoint" in name for name in exports)
 
     def test_a2a_endpoint_absent_when_disabled(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -781,37 +858,59 @@ class TestProvisionWorkloadAgentExports:
 
 
 class TestWorkloadArtifactRoutes:
-    def _opt_in(self, monkeypatch, workload, enabled):
-        monkeypatch.setattr(
-            workload.base,
-            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
-            enabled,
-        )
+    """The platform must route every path datarobot-genai serves the card on.
+
+    It serves the card under the A2A mount point *and* at the app root as a
+    discovery fallback; a path with no platform route is refused before the
+    container ever answers.
+    """
+
+    def _routes(self, monkeypatch, **a2a_config):
+        """Artifact routes for a given A2A configuration (see `_set_a2a_config`)."""
+        workload = _workload_module(monkeypatch)
+        _set_a2a_config(monkeypatch, workload, **a2a_config)
+        return workload._workload_artifact_routes()
+
+    def _generated_artifact_routes(self, monkeypatch, **a2a_config):
+        """The same routes, as they land on the generated-image artifact container."""
+        workload = _workload_module(monkeypatch)
+        _set_a2a_config(monkeypatch, workload, **a2a_config)
+        workload.provision_workload_agent([])
+        return _artifact_container(workload).routes
 
     def test_none_when_disabled(self, monkeypatch):
-        workload = _workload_module(monkeypatch)
-        self._opt_in(monkeypatch, workload, False)
-        assert workload._workload_artifact_routes() is None
+        assert self._routes(monkeypatch, unauthenticated_card=False) is None
 
-    def test_well_known_route_when_enabled(self, monkeypatch):
-        workload = _workload_module(monkeypatch)
-        self._opt_in(monkeypatch, workload, True)
-        routes = workload._workload_artifact_routes()
-        assert len(routes) == 1
-        assert routes[0].path == "/a2a/.well-known/agent-card.json"
-        assert routes[0].auth == "optional"
+    def test_none_when_disabled_even_with_custom_mount_path(self, monkeypatch):
+        """The opt-in flag, not the mount path, decides whether routes exist at all."""
+        assert (
+            self._routes(
+                monkeypatch,
+                unauthenticated_card=False,
+                mount_path="custom-a2a-mount-path",
+            )
+            is None
+        )
+
+    @pytest.mark.parametrize("mount_path", ["a2a", "custom-a2a-mount-path", "api/a2a"])
+    def test_mount_path_route_then_root_fallback(self, monkeypatch, mount_path):
+        routes = self._routes(monkeypatch, mount_path=mount_path)
+        assert [r.path for r in routes] == [
+            f"/{mount_path}/.well-known/agent-card.json",
+            ROOT_AGENT_CARD_PATH,
+        ]
+        assert all(r.auth == "optional" for r in routes)
 
     def test_generated_image_artifact_omits_routes_by_default(self, monkeypatch):
-        workload = _workload_module(monkeypatch)
-        self._opt_in(monkeypatch, workload, False)
-        workload.provision_workload_agent([])
-        assert _artifact_container(workload).routes is None
+        assert (
+            self._generated_artifact_routes(monkeypatch, unauthenticated_card=False)
+            is None
+        )
 
-    def test_well_known_route_passed_to_generated_image_artifact(self, monkeypatch):
-        workload = _workload_module(monkeypatch)
-        self._opt_in(monkeypatch, workload, True)
-        workload.provision_workload_agent([])
-        routes = _artifact_container(workload).routes
-        assert len(routes) == 1
-        assert routes[0].path == "/a2a/.well-known/agent-card.json"
-        assert routes[0].auth == "optional"
+    @pytest.mark.parametrize("mount_path", ["a2a", "custom-a2a-mount-path"])
+    def test_routes_reach_generated_image_artifact(self, monkeypatch, mount_path):
+        routes = self._generated_artifact_routes(monkeypatch, mount_path=mount_path)
+        assert [r.path for r in routes] == [
+            f"/{mount_path}/.well-known/agent-card.json",
+            ROOT_AGENT_CARD_PATH,
+        ]

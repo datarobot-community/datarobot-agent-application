@@ -15,7 +15,6 @@ import os
 import sys
 from collections import namedtuple
 from pathlib import Path
-from typing import Any, cast
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import pytest
@@ -35,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     # These tests exercise datarobot-serverless provisioning; override host .env.
-    monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "datarobot-serverless")
+    monkeypatch.setenv("ENABLE_MCP_ON_WORKLOAD_API", "false")
     monkeypatch.delenv("DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT", raising=False)
     monkeypatch.delenv(
         "DATAROBOT_DEFAULT_MCP_EXECUTION_ENVIRONMENT_VERSION_ID", raising=False
@@ -467,82 +466,52 @@ class TestGetDeploymentsAppFiles:
         assert expected not in actual
 
 
-class TestMcpDeploymentType:
-    def test_mcp_deployment_type_warns_when_unset(self, monkeypatch) -> None:
-        monkeypatch.delenv("MCP_DEPLOYMENT_TYPE", raising=False)
-        import importlib
-
+class TestInitialConfiguration:
+    def test_resolve_mcp_deployment_type__default(self) -> None:
         import infra.mcp_server as mcp_infra
 
-        warn_mock = cast(MagicMock, mcp_infra.pulumi.warn)
-        warn_mock.reset_mock()
-        importlib.reload(mcp_infra)
-        actual = any(
-            "MCP_DEPLOYMENT_TYPE not set" in str(call.args[0])
-            for call in warn_mock.call_args_list
+        configuration = mcp_infra.InitialConfiguration("")
+
+        assert (
+            configuration.resolve_mcp_deployment_type()
+            == mcp_infra.MCP_DEPLOYMENT_TYPE_SERVERLESS
         )
-        expected = True
-        assert actual == expected
 
-    def test_mcp_deployment_type_routes_to_workload_image_uri(
-        self, monkeypatch
+    @pytest.mark.parametrize("value", ["true", " TRUE ", "True"])
+    def test_resolve_mcp_deployment_type_truthy_values_enable_workload(
+        self, value: str
     ) -> None:
-        monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "datarobot-workload-preview")
-        monkeypatch.setenv("MCP_WORKLOAD_IMAGE_URI", "img:tag")
-        import importlib
-
         import infra.mcp_server as mcp_infra
 
-        return_value: dict[str, Any] = {
-            "execution_environment": None,
-            "deployment": None,
-            "mcp_server_mcp_endpoint": "ep",
-            "mcp_server_base_endpoint": "base",
-            "mcp_custom_model_runtime_parameters": [],
-        }
-        with patch(
-            "infra.mcp_server_infra.workload.provision_workload_mcp_server_from_image_uri",
-            return_value=return_value,
-        ) as mock_from_image:
-            importlib.reload(mcp_infra)
-            actual = mock_from_image.call_args.kwargs["workload_image_uri"]
-            expected = "img:tag"
-            assert actual == expected
+        configuration = mcp_infra.InitialConfiguration(value)
 
-    def test_mcp_deployment_type_routes_to_workload_build(self, monkeypatch) -> None:
-        monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "datarobot-workload-preview")
-        monkeypatch.delenv("MCP_WORKLOAD_IMAGE_URI", raising=False)
-        import importlib
+        assert (
+            configuration.resolve_mcp_deployment_type()
+            == mcp_infra.MCP_DEPLOYMENT_TYPE_WORKLOAD
+        )
 
+    @pytest.mark.parametrize("value", ["false", " FALSE ", "False"])
+    def test_resolve_mcp_deployment_type_falsy_values_enable_serverless(
+        self, value: str
+    ) -> None:
         import infra.mcp_server as mcp_infra
 
-        return_value: dict[str, Any] = {
-            "execution_environment": MagicMock(),
-            "deployment": None,
-            "mcp_server_mcp_endpoint": "ep",
-            "mcp_server_base_endpoint": "base",
-            "mcp_custom_model_runtime_parameters": [],
-        }
-        with patch(
-            "infra.mcp_server_infra.workload.provision_workload_mcp_server",
-            return_value=return_value,
-        ) as mock_build:
-            importlib.reload(mcp_infra)
-            actual = mock_build.called
-            expected = True
-            assert actual == expected
+        configuration = mcp_infra.InitialConfiguration(value)
 
-    def test_mcp_deployment_type_exits_when_invalid(self, monkeypatch) -> None:
-        monkeypatch.setenv("MCP_DEPLOYMENT_TYPE", "invalid-type")
-        import importlib
+        assert (
+            configuration.resolve_mcp_deployment_type()
+            == mcp_infra.MCP_DEPLOYMENT_TYPE_SERVERLESS
+        )
 
+    def test_resolve_mcp_deployment_type_exits_when_value_is_invalid(self) -> None:
         import infra.mcp_server as mcp_infra
 
+        configuration = mcp_infra.InitialConfiguration("invalid-type")
         with (
             patch.object(sys, "exit", side_effect=SystemExit(1)) as mock_exit,
             pytest.raises(SystemExit),
         ):
-            importlib.reload(mcp_infra)
+            configuration.resolve_mcp_deployment_type()
         actual = mock_exit.call_args.args[0]
         expected = 1
         assert actual == expected

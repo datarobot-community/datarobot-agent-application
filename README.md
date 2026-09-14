@@ -85,7 +85,7 @@ For example commands to install the tools, see the [Detailed installation comman
 
 | Tool         | Version    | Description                     | Installation guide            |
 |--------------|------------|---------------------------------|-------------------------------|
-| dr (DataRobot CLI) | >= 0.2.79  | The DataRobot CLI for templates, auth, and task execution. | [DataRobot CLI installation](https://github.com/datarobot-oss/cli#installation) |
+| dr (DataRobot CLI) | >= 0.5.1  | The DataRobot CLI for templates, auth, and task execution. | [DataRobot CLI installation](https://github.com/datarobot-oss/cli#installation) |
 | xp (DataRobot XP plugin) | >= 1.3.2 | A `dr` plugin for local experimentation tracing. | `dr plugin install xp` |
 | git      | >= 2.30.0  | A version control system.       | [git installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)      |
 | uv       | >= 0.10.3  | A Python package manager.        | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)       |
@@ -697,6 +697,23 @@ dr self version   # Verify the update.
 4. Check deployment logs:
    - Review Pulumi output for specific error messages.
    - Verify the DataRobot API token has deployment permissions.
+
+### Issue: Pulumi commands fail or hang with GitHub rate-limit errors
+
+The `pulumi-datarobot` resource plugin is distributed via GitHub releases rather than Pulumi's own registry, so by default Pulumi resolves and update-checks it through `api.github.com`, which enforces a strict anonymous rate limit (60 requests/hour).
+
+**Solutions**:
+
+1. `dr dependency install` (and `dr start`) install the plugin via a direct release-download URL (`github.com/.../releases/download/...`), not the GitHub API, so the initial install doesn't consume API rate limit.
+2. Set `PULUMI_SKIP_UPDATE_CHECK=1` in your environment to stop Pulumi from re-checking `api.github.com` for a newer plugin version on every `pulumi up`/`refresh`/etc. call.
+3. If you're hitting this on a **pre-existing stack**, its resources may still be pinned to an older `pulumi-datarobot` provider version from when they were deployed (visible via `pulumi stack export`, under `pulumi:providers:datarobot`). Pulumi needs that exact old version to read/diff those resources, independent of whichever version is currently required by `infra/pyproject.toml`, and will keep trying (and rate-limit-failing) to fetch it from `api.github.com` until it's installed locally. Install that specific version the same rate-limit-safe way, substituting the version Pulumi's error names:
+
+   ```sh
+   pulumi plugin install resource datarobot <VERSION> --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v<VERSION>
+   # e.g. pulumi plugin install resource datarobot 0.10.43 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.43
+   ```
+
+   A normal `pulumi up` should move unchanged resources onto the current provider version over time; there's no supported way to force it without an actual resource update, since this template doesn't pin an explicit provider version in code.
 
 ## Frontend build issues
 

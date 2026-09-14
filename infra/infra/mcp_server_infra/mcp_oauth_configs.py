@@ -28,7 +28,10 @@ from them; nothing here builds or parses that document.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from typing import Any
+
+import pulumi_datarobot
 
 OAUTH_PROTECTED_RESOURCE_WELL_KNOWN_PATH = "/.well-known/oauth-protected-resource"
 
@@ -85,6 +88,22 @@ XAA_REQUIRED_ENV_VARS = (
 TRUTHY_VALUES = frozenset({"true", "1", "yes", "on"})
 
 
+@dataclass
+class WorkloadArtifactContainerRoute:
+    path: str
+    auth: str
+
+    def to_pulumi_object(
+        self,
+    ) -> pulumi_datarobot.ArtifactSpecContainerGroupContainerRouteArgs:
+        return pulumi_datarobot.ArtifactSpecContainerGroupContainerRouteArgs(
+            path=self.path, auth=self.auth
+        )
+
+    def to_dict(self):
+        return {"path": self.path, "auth": self.auth}
+
+
 def coerce_bool(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in TRUTHY_VALUES
@@ -127,7 +146,9 @@ def mcp_tag_scope_env_vars() -> list[dict[str, str]]:
         if not name.upper().startswith(TAG_SCOPES_ENV_VAR_PREFIX):
             continue
         if stripped := (value or "").strip():
-            env_vars.append({"name": name.upper(), "value": stripped})
+            env_vars.append(
+                {"name": name.upper(), "value": stripped, "source": "string"}
+            )
     return env_vars
 
 
@@ -138,8 +159,7 @@ def mcp_oauth_metadata_env_vars() -> list[dict[str, str]]:
     for name in OAUTH_METADATA_ENV_VARS:
         value = _env(name)
         if value:
-            env_vars.append({"name": name, "value": value})
-    env_vars.extend(mcp_tag_scope_env_vars())
+            env_vars.append({"name": name, "value": value, "source": "string"})
     return env_vars
 
 
@@ -166,7 +186,7 @@ def mcp_enable_oauth_claim_validation_value() -> str:
     return str(coerce_bool(os.getenv(ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR))).lower()
 
 
-def get_workload_mcp_oauth_routes() -> list[dict[str, str]] | None:
+def get_workload_mcp_oauth_routes() -> list[WorkloadArtifactContainerRoute] | None:
     """Route auth overrides for the workload artifact, or None to keep defaults.
 
     The only override there is opens the well-known route to anonymous callers,
@@ -177,11 +197,15 @@ def get_workload_mcp_oauth_routes() -> list[dict[str, str]] | None:
     """
     if mcp_enable_unauthenticated_well_known_route_value() != "true":
         return None
-    return [
+    routes = [
         {
             "path": OAUTH_PROTECTED_RESOURCE_WELL_KNOWN_PATH,
             "auth": "disabled",
         },
+    ]
+    return [
+        WorkloadArtifactContainerRoute(path=el["path"], auth=el["auth"])
+        for el in routes
     ]
 
 
@@ -191,10 +215,13 @@ def oauth_and_well_known_env_vars() -> list[dict[str, str]]:
         {
             "name": ENABLE_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENV_VAR,
             "value": mcp_enable_unauthenticated_well_known_route_value(),
+            "source": "string",
         },
         {
             "name": ENABLE_OAUTH_CLAIM_VALIDATION_ENV_VAR,
             "value": mcp_enable_oauth_claim_validation_value(),
+            "source": "string",
         },
         *mcp_oauth_metadata_env_vars(),
+        *mcp_tag_scope_env_vars(),
     ]

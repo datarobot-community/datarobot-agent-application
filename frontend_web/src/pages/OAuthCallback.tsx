@@ -61,7 +61,7 @@ const OAuthCallback = () => {
     }
   }, [isSuccess, isError, navigate, queryClient, error]);
 
-  return <div className="flex items-center justify-center h-full">Finishing sign-in…</div>;
+  return <div className="flex h-full items-center justify-center">Finishing sign-in…</div>;
 };
 
 export default OAuthCallback;

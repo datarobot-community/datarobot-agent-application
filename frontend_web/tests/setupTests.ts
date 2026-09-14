@@ -1,15 +1,15 @@
 /// <reference types="vitest/globals" />
-import '@testing-library/jest-dom'
-import { server } from './__mocks__/node.js'
+import '@testing-library/jest-dom';
+import { server } from './__mocks__/node.js';
 
 beforeAll(() => {
-  server.listen()
-})
+  server.listen();
+});
 
 afterEach(() => {
-  server.resetHandlers()
-})
+  server.resetHandlers();
+});
 
 afterAll(() => {
-  server.close()
-})
+  server.close();
+});

@@ -1,7 +1,15 @@
 'use client';
 
 import { useCurrentUser } from '@/api/auth/hooks';
-import { useState, createContext, useContext, useLayoutEffect, useEffect, useMemo } from 'react';
+import {
+  type ReactNode,
+  useState,
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useEffect,
+  useMemo,
+} from 'react';
 
 export type Theme = 'light' | 'dark';
 export type UserTheme = Theme | 'system';
@@ -52,7 +60,7 @@ const getInitialTheme = (systemTheme: Theme): Theme => {
 export const ThemeProvider = ({
   children,
 }: {
-  children: React.ReactNode | ((props: { theme: Theme }) => React.ReactNode);
+  children: ReactNode | ((props: { theme: Theme }) => ReactNode);
 }) => {
   const { data: user } = useCurrentUser();
   const systemTheme = useSystemTheme();
