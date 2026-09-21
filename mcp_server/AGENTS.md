@@ -41,6 +41,7 @@ from typing import Annotated
 from datarobot_genai.drmcp import dr_mcp_tool
 from fastmcp.tools.tool import ToolResult
 
+
 @dr_mcp_tool(tags={"domain", "action"})
 async def tool_name(
     param: Annotated[str, "Parameter description for LLM"],

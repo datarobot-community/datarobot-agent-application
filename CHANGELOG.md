@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.12.4
+- Updated `agent` component from 11.11.76 to 11.11.85:
+  - Updated `datarobot-genai` from 0.29.40 to 0.29.45
+    - Use ORM from `datarobot>=3.19.0` for memory service KV store for L2 agent card cache
+    - Updated crewai to resolve CVE
+    - Added support for a custom mount path (`a2a.mount_path`) for the agent-to-agent (A2A) server
+    - User-mcp static discovery routes no longer gated on `ENABLE_MCP_TOOLS_GALLERY_SUPPORT`
+    - Behaviour-affecting: the caller's IdP access token for agent-to-agent (A2A) calls is now read only from `x-datarobot-external-access-token`, not `authorization`
+    - Fixed dragent crash-looping under `use_gunicorn: true` on Python 3.12+ (gunicorn's worker was silently landing on uvloop, incompatible with `nest_asyncio2`)
+  - Removed Pulumi provisioning of the MemorySpace behind the remote [A2A](docs/agent/agent2agent.md) agent-card cache, and the now-unused `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` runtime parameter
+  - Bumped lib dependency
+  - Updated CVE dependencies: gitpython, jupyter-server, pydantic-settings, soupsieve
+  - Stopped asking about low-code agent type during configuration
+- Updated `llm` component from 11.11.11 to 11.11.17:
+  - Restricted the E2E harness `mcp` dependency to versions `>=1.28.1,<2` to exclude known CVEs
+  - Enabled full automation for CVE-sync PRs
+  - Updated GitHub Actions dependencies
+  - Added CVE sync, dependabot, and automerge automation
+  - Updated CVE dependencies: pydantic-settings, soupsieve
+- Updated `base` component from 403c3b3 to e80aaa2:
+  - Bumped pulumi library dependency
+
 ## 11.12.3
 - Management of dependencies:
   - Declared the `dev` plugin (`drdev`) in `versions.yaml`; `task install` no longer installs `datarobot[core]` itself
