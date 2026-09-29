@@ -379,6 +379,80 @@ When you are finished with the MCP server, you can destroy the deployment:
 task destroy
 ```
 
+## Use cases and Compute Enclave placement
+
+Two independent things, and only one of them is conditional.
+
+**The workload is always linked to a use case.** `use_case_id` is sent on every
+cluster, whether or not Compute Enclaves exist there. The link is
+organisational — it groups the workload with the use case's other assets — and
+it costs nothing where there is no Enclave to place into. Making it conditional
+is what breaks multi-tenant clusters, which have no Enclaves at all and so would
+never be linked to anything.
+
+**Placement is requested only where the platform can honour it.**
+`runtime.enclave_selection_policy` is set to `availability` when the
+`ENABLE_COMPUTE_ENCLAVE` org entitlement is on, and omitted otherwise. The apply
+says which it chose:
+
+```
+Enclave placement selected.        # entitled
+Enclave placement disabled.        # not entitled
+```
+
+| Cluster | `use_case_id` | `enclave_selection_policy` |
+| --- | --- | --- |
+| Multi-tenant, no Enclaves | sent | omitted |
+| Enclaves enabled | sent | `availability` |
+
+### What placement actually asks for
+
+`availability` does not mean "put this workload on an Enclave". It means "let my
+use case choose the Enclave" — the platform restricts the workload to the
+Enclaves an administrator has granted to that use case. A use case with an empty
+grant list has nothing to choose from, and the create is refused:
+
+```
+NO_ELIGIBLE_ENCLAVE  The workload's use case has no Enclaves linked to it, so
+                     no eligible Enclave exists for this workload.
+```
+
+That failure is deliberate and there is no setting that works around it. An
+Enclave-capable cluster is meant to place its workloads, and a workload that
+cannot be placed is a configuration an administrator has to fix — by granting an
+Enclave to the use case — rather than something to deploy unconfined. Whether a
+grant exists is readable through no API, so it cannot be reported before the
+apply either.
+
+A use case Pulumi creates during the apply is worth calling out: it cannot have
+a grant, because it did not exist until that moment and only an administrator
+can grant one. On an Enclave cluster, point `DATAROBOT_DEFAULT_USE_CASE` at a
+long-lived use case that has been granted one. Only a long-lived use case can
+accumulate a grant; a stack-created one starts empty on every fresh stack, and
+`pulumi destroy` deletes it.
+
+### `MCP_WORKLOAD_ENCLAVE_SELECTION_POLICY`
+
+Normally unset — the entitlement decides. Setting it to `availability` forces
+placement and skips the entitlement lookup, which is useful where the flag and
+the cluster disagree. `availability` is the only accepted value; anything else
+fails before the apply rather than as a mid-apply 422, `manual` included, since
+that requires naming an Enclave through `runtime.enclaves` which this template
+does not expose.
+
+An empty value is read as unset, so a bare `=` changes nothing.
+
+The entitlement is consulted for one purpose: deciding whether the cluster can
+honour a placement request at all. It is not a statement about your use case.
+`ENABLE_COMPUTE_ENCLAVE` says this *org* may use Enclaves and says nothing about
+whether any Enclave has been granted to the use case in front of you — which is
+why an entitled cluster can still answer `NO_ELIGIBLE_ENCLAVE`.
+
+If the entitlement cannot be read, the apply stops. That fails closed on
+purpose: a wrong "not entitled" would silently place an entitled workload
+outside any Enclave, and a retry fixes a failed request where it cannot fix a
+misplaced workload.
+
 ## Connect to the deployed MCP server
 
 Use the `MCP_SERVER_MCP_ENDPOINT` URL (shown in the outputs section in the screenshot above) to connect your MCP clients to the deployed server.

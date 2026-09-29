@@ -36,13 +36,16 @@ import json
 import os
 import shutil
 import tomllib
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, NoReturn
 
 import pulumi
 import pulumi_datarobot
+from datarobot_pulumi_utils.common.feature_flags import fetch_flag_statuses
 from datarobot_pulumi_utils.pulumi import export
 
+from .. import use_case
 from . import base
 
 WORKLOAD_CONTAINER_NAME: Final[str] = "agent"
@@ -71,6 +74,42 @@ A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_AUTH: Final[str] = "optional"
 NAT_PLUGIN_ENTRY_POINT_GROUP: Final[str] = "nat.plugins"
 # OTel collector base URL, forwarded from the deploy environment when set.
 OTEL_ENDPOINT_ENV_VAR: Final[str] = "OTEL_EXPORTER_OTLP_ENDPOINT"
+# Org entitlement for Enclave placement.
+COMPUTE_ENCLAVE_ENTITLEMENT: Final[str] = "ENABLE_COMPUTE_ENCLAVE"
+
+
+def _fail(message: str, *, cause: Exception | None = None) -> NoReturn:
+    pulumi.error(message)
+    raise RuntimeError(message) from cause
+
+
+@lru_cache(maxsize=1)
+def _enclave_selection_policy() -> str | None:
+    """Placement policy to request, or None to stay off the Enclave path."""
+    override = os.getenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "").strip()
+    if override:
+        if override != "availability":
+            # "manual" also requires naming an Enclave via `runtime.enclaves`,
+            # which is not supported yet.
+            _fail(
+                "WORKLOAD_ENCLAVE_SELECTION_POLICY must be 'availability'; "
+                f"got {override!r}"
+            )
+        return override
+
+    try:
+        statuses = fetch_flag_statuses([COMPUTE_ENCLAVE_ENTITLEMENT])
+    except Exception as exc:
+        # Fails closed: a wrong "not entitled" would silently place an
+        # entitled workload outside any Enclave. A failed request can be
+        # retried; a misplaced workload cannot.
+        _fail(f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}", cause=exc)
+
+    entitled = statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) is True
+    pulumi.info(
+        "Enclave placement selected." if entitled else "Enclave placement disabled."
+    )
+    return "availability" if entitled else None
 
 
 def _require_env(name: str) -> str:
@@ -366,8 +405,10 @@ def _create_workload(
         asset_name + " Workload",
         name=asset_name,
         artifact_id=artifact_id,
+        use_case_id=use_case.id,
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
+            enclave_selection_policy=_enclave_selection_policy(),
             container_groups=[
                 pulumi_datarobot.WorkloadRuntimeContainerGroupArgs(
                     replica_count=int(os.getenv("WORKLOAD_REPLICA_COUNT", "1")),
@@ -391,7 +432,7 @@ def _create_workload(
                         )
                     ],
                 )
-            ]
+            ],
         ),
         opts=pulumi.ResourceOptions(
             depends_on=depends_on,

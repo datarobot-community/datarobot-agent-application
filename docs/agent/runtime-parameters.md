@@ -48,6 +48,7 @@ The following parameters are provisioned conditionally, depending on which optio
 | `SESSION_SECRET_KEY` | credential | `SESSION_SECRET_KEY` is set in the Pulumi environment | `infra/infra/<agent_app_name>_infra/base.py` |
 | `IDP_AGENT_ID` | string | `IDP_AGENT_ID` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
 | `IDP_AGENT_PRIVATE_KEY_JWK` | credential | `IDP_AGENT_PRIVATE_KEY_JWK` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
+| `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL` | string | `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL` is set in the Pulumi environment | [Agent-to-Agent: Registry environment variables](./agent2agent.md#registry-environment-variables) |
 
 Only parameters listed in the `SERVER_PARAMS_WITH_DEFAULTS` allowlist (`CUSTOM_MODEL_WORKERS` and `AGENT_GUNICORN_WORKER_TIMEOUT`) get a `defaultValue` written into `model-metadata.yaml`; all other parameters must have their value supplied at deploy time.
 
@@ -62,7 +63,7 @@ Some environment variables only control what `infra/infra/<agent_app_name>_infra
 Override the value of a runtime parameter depending on when the change needs to take effect:
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
-- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
+- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, `IDP_AGENT_PRIVATE_KEY_JWK`, and `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
 - **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change.
 
 ## Add a custom runtime parameter

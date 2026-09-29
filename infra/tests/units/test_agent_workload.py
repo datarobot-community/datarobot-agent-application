@@ -67,6 +67,7 @@ def workload_env_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
     monkeypatch.delenv("WORKLOAD_AGENT_IMAGE_URI", raising=False)
     monkeypatch.delenv("WORKLOAD_ENTRYPOINT", raising=False)
+    monkeypatch.delenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", raising=False)
     # A developer's own OTEL/execution-environment settings must not leak into
     # these assertions.
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
@@ -140,6 +141,17 @@ def _workload_module(monkeypatch, *, stub_ensure_entrypoint=True):
     """
     import infra.agent_infra.workload as workload
 
+    # _enclave_selection_policy is @lru_cache'd (one entitlement lookup per
+    # `pulumi up`, not per call); the module survives across tests, so clear it
+    # and re-stub fetch_flag_statuses every time or a previous test's cached
+    # answer/mock would leak into this one.
+    workload._enclave_selection_policy.cache_clear()
+    monkeypatch.setattr(
+        workload,
+        "fetch_flag_statuses",
+        MagicMock(return_value={workload.COMPUTE_ENCLAVE_ENTITLEMENT: False}),
+    )
+
     # Stubbed by default: most tests aim the application path at an empty tmp_path,
     # which has no pyproject.toml for the real thing to read.
     if stub_ensure_entrypoint:
@@ -183,6 +195,12 @@ def _artifact_kwargs(workload):
 def _artifact_container(workload):
     """The single container spec of the most recent ``Artifact`` call."""
     return _artifact_kwargs(workload)["spec"].container_groups[0].containers[0]
+
+
+def _workload_kwargs(workload):
+    """Keyword arguments of the most recent ``pulumi_datarobot.Workload`` call."""
+    _, kwargs = workload.pulumi_datarobot.Workload.call_args
+    return kwargs
 
 
 #: Agent card path the A2A protocol fixes at the app root, independent of the mount path.
@@ -447,6 +465,103 @@ class TestRuntimeParamEnvVars:
         env_vars = workload._workload_environment_vars([])
         assert env_vars[1].name == "WORKLOAD_CONTAINER_PORT"
         assert env_vars[1].value == "9090"
+
+
+class TestEnclavePlacement:
+    def _run(self, workload, *, image_uri=True):
+        if image_uri:
+            return workload._provision_from_image_uri(
+                "registry.example.com/agent:latest", []
+            )
+        return workload._provision_from_source_bundle([])
+
+    @pytest.mark.parametrize("image_uri", [True, False])
+    def test_policy_omitted_when_not_entitled(self, monkeypatch, tmp_path, image_uri):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+
+        self._run(workload, image_uri=image_uri)
+
+        kwargs = _workload_kwargs(workload)
+        assert kwargs["runtime"].enclave_selection_policy is None
+        assert kwargs["use_case_id"] == workload.use_case.id
+        workload.fetch_flag_statuses.assert_called_once_with(
+            [workload.COMPUTE_ENCLAVE_ENTITLEMENT]
+        )
+
+    @pytest.mark.parametrize("image_uri", [True, False])
+    def test_included_when_entitled(self, monkeypatch, tmp_path, image_uri):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+        workload.fetch_flag_statuses.return_value = {
+            workload.COMPUTE_ENCLAVE_ENTITLEMENT: True
+        }
+
+        self._run(workload, image_uri=image_uri)
+
+        kwargs = _workload_kwargs(workload)
+        assert kwargs["runtime"].enclave_selection_policy == "availability"
+        assert kwargs["use_case_id"] == workload.use_case.id
+
+    def test_truthy_non_bool_value_not_treated_as_entitled(self, monkeypatch, tmp_path):
+        """A stray "False" string from the API is truthy in Python but must
+        not be read as entitled."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+        workload.fetch_flag_statuses.return_value = {
+            workload.COMPUTE_ENCLAVE_ENTITLEMENT: "False"
+        }
+
+        self._run(workload)
+
+        kwargs = _workload_kwargs(workload)
+        assert kwargs["runtime"].enclave_selection_policy is None
+        assert kwargs["use_case_id"] == workload.use_case.id
+
+    def test_explicit_override_skips_entitlement_check(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+        monkeypatch.setenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "availability")
+
+        self._run(workload)
+
+        kwargs = _workload_kwargs(workload)
+        assert kwargs["runtime"].enclave_selection_policy == "availability"
+        assert kwargs["use_case_id"] == workload.use_case.id
+        workload.fetch_flag_statuses.assert_not_called()
+
+    @pytest.mark.parametrize("override", ["manual", "Availability", "true"])
+    def test_invalid_override_rejected(self, monkeypatch, tmp_path, override):
+        """`manual` requires naming an Enclave via `runtime.enclaves`, which this
+        template does not expose; anything else is a typo. Both must be caught
+        before an apply, not surfaced as a mid-apply 422."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+        monkeypatch.setenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", override)
+
+        with pytest.raises(RuntimeError, match="must be 'availability'"):
+            self._run(workload)
+
+    def test_entitlement_check_cached_across_calls_in_one_run(
+        self, monkeypatch, tmp_path
+    ):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+
+        workload._enclave_selection_policy()
+        self._run(workload)
+
+        workload.fetch_flag_statuses.assert_called_once()
+
+    def test_entitlement_check_failure_raises(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+        workload.fetch_flag_statuses.side_effect = RuntimeError(
+            "entitlements unreachable"
+        )
+
+        with pytest.raises(RuntimeError, match="Could not read"):
+            self._run(workload)
 
 
 class TestProvisionWorkloadAgentRequiredEnv:

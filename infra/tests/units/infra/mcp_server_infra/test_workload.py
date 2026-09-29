@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import ClassVar
@@ -125,6 +126,56 @@ def stub_provision(*, dockerfile: str | None):
         pulumi_stubs(),
     ):
         yield wl
+
+
+@pytest.fixture(autouse=True)
+def enclave_entitlement(monkeypatch: pytest.MonkeyPatch) -> Iterator[MagicMock]:
+    """Keep the entitlement lookup off the network, and out of the next test.
+
+    ``_enclave_selection_policy`` is ``@lru_cache``d — one lookup per
+    ``pulumi up``, not one per workload — and this module is imported once, so
+    without the clears a cached answer (and the stub behind it) would leak into
+    every later test. Every workload built here is checked against a real org
+    otherwise, which is both slow and answers differently per developer.
+    """
+    workload._enclave_selection_policy.cache_clear()
+    monkeypatch.delenv(workload.ENCLAVE_SELECTION_POLICY_ENV_VAR, raising=False)
+    flag_lookup = MagicMock(return_value={workload.COMPUTE_ENCLAVE_ENTITLEMENT: False})
+    monkeypatch.setattr(workload, "fetch_flag_statuses", flag_lookup)
+    monkeypatch.setattr(workload, "use_case", MagicMock(id="use-case-id"))
+    yield flag_lookup
+    workload._enclave_selection_policy.cache_clear()
+
+
+#: The two places a Workload is built. Both reach the same platform API, so a
+#: placement argument added to one and missed on the other is a deploy that
+#: works or fails depending on which build path the stack happens to take.
+WORKLOAD_PATHS = ("module", "builder")
+
+
+def workload_kwargs(path: str) -> dict:
+    """Keyword arguments the given construction path hands to ``Workload``."""
+    workload_cls = MagicMock()
+    # Spec'd: the builder path hands the artifact to `ResourceOptions`, which
+    # rejects a `depends_on` entry that is not a Resource.
+    artifact = Mock(spec=pulumi_datarobot.Artifact)
+    artifact.artifact_id = "art-id"
+    artifact_cls = MagicMock(return_value=artifact)
+    with (
+        patch.object(workload.pulumi_datarobot, "Workload", workload_cls),
+        patch.object(workload.pulumi_datarobot, "Artifact", artifact_cls),
+        pulumi_stubs(),
+    ):
+        if path == "module":
+            workload._create_workload(
+                mcp_server_asset_name="srv", artifact_id="art-id", depends_on=[]
+            )
+        else:
+            builder = WorkloadBuilder("srv", WorkloadConfiguration())
+            builder.build_from_artifact_image_build_config(
+                "artifact-name", "/tmp/src", Mock()
+            )
+    return dict(workload_cls.call_args.kwargs)
 
 
 class TestRequireEnv:
@@ -470,6 +521,94 @@ class TestCreateWorkload:
         expected = {"cpu": 2.5, "memory": "1200"}
         assert actual.cpu == expected["cpu"]
         assert actual.memory == expected["memory"]
+
+
+class TestEnclavePlacement:
+    """Linking and placement are independent. A workload is linked to a use
+    case on every cluster -- the link is organisational and costs nothing where
+    Enclaves do not exist -- while placement is requested only where the org
+    entitlement says the cluster can honour it.
+    """
+
+    @pytest.mark.parametrize("path", WORKLOAD_PATHS)
+    def test_placement_requested_when_entitled(
+        self, path: str, enclave_entitlement: MagicMock
+    ) -> None:
+        enclave_entitlement.return_value = {workload.COMPUTE_ENCLAVE_ENTITLEMENT: True}
+
+        kwargs = workload_kwargs(path)
+
+        assert kwargs["runtime"].enclave_selection_policy == "availability"
+        assert kwargs["use_case_id"] == "use-case-id"
+
+    @pytest.mark.parametrize("path", WORKLOAD_PATHS)
+    def test_use_case_is_linked_where_there_are_no_enclaves(
+        self, path: str, enclave_entitlement: MagicMock
+    ) -> None:
+        """The regression that matters. Multi-tenant clusters have no Enclaves
+        at all, so a link made conditional on placement is a link those
+        deployments never get -- and the link is the whole point.
+        """
+        kwargs = workload_kwargs(path)
+
+        assert kwargs["use_case_id"] == "use-case-id"
+        assert kwargs["runtime"].enclave_selection_policy is None
+        enclave_entitlement.assert_called_once_with(
+            [workload.COMPUTE_ENCLAVE_ENTITLEMENT]
+        )
+
+    def test_truthy_non_bool_value_not_treated_as_entitled(
+        self, enclave_entitlement: MagicMock
+    ) -> None:
+        """A stray "False" string from the API is truthy in Python but must not
+        be read as entitled."""
+        enclave_entitlement.return_value = {
+            workload.COMPUTE_ENCLAVE_ENTITLEMENT: "False"
+        }
+
+        kwargs = workload_kwargs("module")
+
+        assert kwargs["runtime"].enclave_selection_policy is None
+        assert kwargs["use_case_id"] == "use-case-id"
+
+    def test_explicit_override_skips_entitlement_check(
+        self, enclave_entitlement: MagicMock
+    ) -> None:
+        with env(MCP_WORKLOAD_ENCLAVE_SELECTION_POLICY="availability"):
+            kwargs = workload_kwargs("module")
+
+        assert kwargs["runtime"].enclave_selection_policy == "availability"
+        assert kwargs["use_case_id"] == "use-case-id"
+        enclave_entitlement.assert_not_called()
+
+    @pytest.mark.parametrize("override", ["manual", "disabled", "Availability", "true"])
+    def test_invalid_override_rejected(self, override: str) -> None:
+        """`manual` requires naming an Enclave via `runtime.enclaves`, which
+        this template does not expose; anything else is a typo. Both must be
+        caught before an apply, not surfaced as a mid-apply 422."""
+        with (
+            env(MCP_WORKLOAD_ENCLAVE_SELECTION_POLICY=override),
+            pytest.raises(RuntimeError, match="must be 'availability'"),
+        ):
+            workload_kwargs("module")
+
+    def test_entitlement_check_cached_across_calls_in_one_run(
+        self, enclave_entitlement: MagicMock
+    ) -> None:
+        workload_kwargs("module")
+        workload_kwargs("builder")
+
+        enclave_entitlement.assert_called_once()
+
+    def test_entitlement_check_failure_raises(
+        self, enclave_entitlement: MagicMock
+    ) -> None:
+        """Fails closed: a wrong "not entitled" silently places an entitled
+        workload outside any Enclave, which a retry cannot undo."""
+        enclave_entitlement.side_effect = RuntimeError("unreachable")
+
+        with pytest.raises(RuntimeError, match="Could not read"):
+            workload_kwargs("module")
 
 
 class TestExportWorkloadEndpoints:

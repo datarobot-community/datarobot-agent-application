@@ -78,6 +78,7 @@ Other components in the app receive `<AGENT_APP_NAME>_WORKLOAD_ID` and `<AGENT_A
 | `WORKLOAD_ENTRYPOINT` | C2W: `["sh", "workload/run_server.sh"]` | Container entrypoint, as a JSON array or a comma-separated list. |
 | `WORKLOAD_BUILD_TIMEOUT_S` | `9000` | How long to wait for the image build, in seconds. C2W only. |
 | `WORKLOAD_AGENT_IMAGE_URI` | unset | Set to run a pre-built image instead of building one. |
+| `WORKLOAD_ENCLAVE_SELECTION_POLICY` | unset (auto) | Set to `availability` to force Enclave placement instead of deciding it from the `ENABLE_COMPUTE_ENCLAVE` org entitlement. Leave unset to auto-detect: entitled orgs get scheduler-picked Enclave placement, everyone else gets an ordinary workload. No other value is accepted — `manual` placement requires naming an Enclave via `runtime.enclaves`, which is not supported yet. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | OTel collector base URL (for example `https://app.datarobot.com/otel`), forwarded into the container. A workload gets none from the platform, so set this when telemetry has to leave the container — [moderation](./moderation.md) guard metrics read it directly. Auth headers are not forwarded; the container builds its own. |
 
 ---

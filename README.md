@@ -260,7 +260,7 @@ For more details on the individual wizard steps, click the dropdown below.
    - If left blank, the wizard creates a new Use Case automatically.
 8. Specify your LLM integration and press `Enter`.
    - For additional information on LLM configuration, see the [LLM configuration documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-llm-providers-metadata.html).
-   - If you choose DataRobot Deployed LLM, you enter the deployment ID for your custom model LLM (`LLM_DEPLOYMENT_ID`). The template sets `USE_DATAROBOT_LLM_GATEWAY=0` automatically so traffic goes to that deployment rather than the LLM Gateway.
+   - If you choose DataRobot Deployed LLM, you enter the deployment ID for your custom model LLM (`LLM_DEPLOYMENT_ID`). The template sets `LLM_USE_DATAROBOT_LLM_GATEWAY=0` automatically so traffic goes to that deployment rather than the LLM Gateway.
 9. Review the `.env` configuration summary displayed and press `Enter` to confirm.
 
    > [!NOTE]
@@ -420,8 +420,8 @@ Outputs:
     DATAROBOT_OAUTH_PROVIDERS                         : (json) []
 
     LLM_DEFAULT_MODEL                                 : "azure/gpt-4o-2024-11-20"
+    LLM_USE_DATAROBOT_LLM_GATEWAY                     : "1"
     SESSION_SECRET_KEY                                : "secretkey123"
-    USE_DATAROBOT_LLM_GATEWAY                         : "1"
     [apptest] [mcp_server] Custom Model Id            : "69331eebb49131d3d5430ac7"
     [apptest] [mcp_server] Deployment Id              : "69331f1f30548f83b668d9dc"
     [apptest] [mcp_server] MCP Server Base Endpoint   : "https://datarobot.com/api/v2/deployments/69331f1f30548f83b668d9dc/directAccess/"

@@ -68,6 +68,7 @@ DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT: Final[str] = "600"
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
+AGENT_CARD_REGISTRY_SOFT_CACHE_TTL: Final[str] = "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL"
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -460,6 +461,19 @@ def build_shared_agent_runtime_parameters() -> list[
             ),
         )
         pulumi.info(f"Configured with IDP_AGENT_ID: {idp_agent_id}")
+
+    soft_cache_ttl = os.environ.get(AGENT_CARD_REGISTRY_SOFT_CACHE_TTL, "").strip()
+    if soft_cache_ttl:
+        params.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key=AGENT_CARD_REGISTRY_SOFT_CACHE_TTL,
+                type="string",  # numeric is not compatible with DataRobotAppFrameworkBaseSettings
+                value=soft_cache_ttl,
+            ),
+        )
+        pulumi.info(
+            f"Configured with AGENT_CARD_REGISTRY_SOFT_CACHE_TTL: {soft_cache_ttl}"
+        )
 
     private_jwk = os.environ.get(PRIVATE_JWK_PARAM)
     if private_jwk:

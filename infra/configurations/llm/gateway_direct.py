@@ -82,7 +82,7 @@ verify_llm(f"{default_model}", use_llm_gateway=True)
 
 app_runtime_parameters = [
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
-        key="USE_DATAROBOT_LLM_GATEWAY",
+        key="LLM_USE_DATAROBOT_LLM_GATEWAY",
         type="string",
         value="1",
     ),
@@ -94,7 +94,7 @@ app_runtime_parameters = [
 ]
 custom_model_runtime_parameters = [
     datarobot.CustomModelRuntimeParameterValueArgs(
-        key="USE_DATAROBOT_LLM_GATEWAY",
+        key="LLM_USE_DATAROBOT_LLM_GATEWAY",
         type="string",
         value="1",
     ),
@@ -104,5 +104,5 @@ custom_model_runtime_parameters = [
         value=default_model,
     ),
 ]
-export("USE_DATAROBOT_LLM_GATEWAY", "1")
+export("LLM_USE_DATAROBOT_LLM_GATEWAY", "1")
 export("LLM_DEFAULT_MODEL", default_model)

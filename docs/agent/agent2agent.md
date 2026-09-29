@@ -97,7 +97,7 @@ When testing locally and the URL points at the dev server (for example, `http://
 
 Use this when calling a DataRobot-hosted agent protected by Okta XAA or any other flow where the card endpoint requires auth that is not yet available before the card is read. The central agent card registry exposes all agent cards in the tenant at a single endpoint that requires only a standard `DATAROBOT_API_TOKEN`, bypassing the per-agent auth requirement for card discovery.
 
-The RPC base URL is derived from the `url` advertised on the card; specifying it separately is not necessary. When a workflow has many registry-backed function groups, all cards are resolved in a maximum of two HTTP calls (one for deployment IDs, one for external IDs) and cached in-memory until the TTL expires.
+The RPC base URL is derived from the `url` advertised on the card; specifying it separately is not necessary. When a workflow has many registry-backed function groups, all cards are resolved in a maximum of two HTTP calls (one for deployment IDs, one for external IDs) and cached in-memory until the soft TTL expires.
 
 Registry lookups use a cache. For an agent deployed to a workload on an enclave there is a second tier cache:
 
@@ -110,7 +110,7 @@ The L2 cache uses the MemorySpace Session API, which is covered by `ENABLE_GENAI
 
 When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), `datarobot-genai` creates or adopts a MemorySpace for the registry L2 cache at startup for agents deployed to a workload on an enclave. The space is scoped to the deployment or workload via a `deduplication_key`, so replicas share one cache without Pulumi wiring. Agents that do not declare remote A2A clients never provision this space. Locally, only in-process L1 caching is used.
 
-When configured, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
+When configured, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. Entries within `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL` are returned without contacting the registry; older entries are refreshed on demand and by a background refresh loop (half the soft TTL, minimum 60 seconds). If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
 
 Lookup by deployment ID — use when the DataRobot deployment ID of the remote agent is known:
 
@@ -144,7 +144,8 @@ The registry lookup honors the following environment variables:
 |----------|----------|-------------|
 | `DATAROBOT_API_TOKEN` | Yes | DataRobot API token for registry authentication. |
 | `DATAROBOT_ENDPOINT` | Yes | DataRobot API base URL, for example, `https://app.datarobot.com/api/v2`. |
-| `AGENT_CARD_REGISTRY_CACHE_TTL` | No | Cache TTL in seconds. Default `86400` (24 hours). Set to `0` to disable caching. |
+| `AGENT_CARD_REGISTRY_CACHE_TTL` | No | Hard cache TTL in seconds — maximum age for stale-if-error when the registry is unreachable. Default `86400` (24 hours). Set to `0` to disable caching. |
+| `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL` | No | Soft cache TTL in seconds — entries within this age skip registry fetches. Must not exceed the hard TTL. Defaults to the hard TTL when unset. When set in `.env` at deploy time, infra registers it as a runtime parameter so the deployed agent receives the value. |
 | `AGENT_CARD_REGISTRY_TIMEOUT` | No | HTTP timeout in seconds for registry requests. Default `30`. |
 | `AGENT_CARD_REGISTRY_ON_DUPLICATE` | No | Resolution strategy when multiple cards share the same external ID: `first` (default) keeps the earliest registered card, `last` keeps the most recently registered card, `error` raises an exception. `first` is recommended for stability — `last` and `error` may alter agent behavior if a duplicate is introduced later. |
 

@@ -21,11 +21,13 @@ import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 import pulumi
 import pulumi_datarobot
+from datarobot_pulumi_utils.common.feature_flags import fetch_flag_statuses
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
 # The trailing commas below are load-bearing: this file is a copier template and
@@ -44,7 +46,7 @@ from mcp_server_clients.workload_artifact_pulumi import (
     WorkloadImageArtifact,
 )
 
-from .. import project_dir
+from .. import project_dir, use_case
 from ..mcp_server_user_params import (
     MCP_USER_CREDENTIAL_RUNTIME_PARAMETERS,
     MCP_USER_RUNTIME_PARAMETERS,
@@ -83,6 +85,43 @@ DEFAULT_DOCKERFILE_RELATIVE_PATH = "Dockerfile"
 DEFAULT_BUILD_TIMEOUT_S = 6000
 DEFAULT_ENTRYPOINT = ["python", "-m", "app.main"]
 DEFAULT_WORKLOAD_MEMORY_BYTES = 512 * 1024 * 1024  # 512 MiB in bytes
+# Org entitlement for Enclave placement.
+COMPUTE_ENCLAVE_ENTITLEMENT = "ENABLE_COMPUTE_ENCLAVE"
+ENCLAVE_SELECTION_POLICY_ENV_VAR = "MCP_WORKLOAD_ENCLAVE_SELECTION_POLICY"
+
+
+def _fail(message: str, *, cause: Exception | None = None) -> NoReturn:
+    pulumi.error(message)
+    raise RuntimeError(message) from cause
+
+
+@lru_cache(maxsize=1)
+def _enclave_selection_policy() -> str | None:
+    """Placement policy to request, or None to stay off the Enclave path."""
+    override = os.getenv(ENCLAVE_SELECTION_POLICY_ENV_VAR, "").strip()
+    if override:
+        if override != "availability":
+            # "manual" also requires naming an Enclave via `runtime.enclaves`,
+            # which is not supported yet.
+            _fail(
+                f"{ENCLAVE_SELECTION_POLICY_ENV_VAR} must be 'availability'; "
+                f"got {override!r}"
+            )
+        return override
+
+    try:
+        statuses = fetch_flag_statuses([COMPUTE_ENCLAVE_ENTITLEMENT])
+    except Exception as exc:  # noqa: BLE001
+        # Fails closed: a wrong "not entitled" would silently place an
+        # entitled workload outside any Enclave. A failed request can be
+        # retried; a misplaced workload cannot.
+        _fail(f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}", cause=exc)
+
+    entitled = statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) is True
+    pulumi.info(
+        "Enclave placement selected." if entitled else "Enclave placement disabled."
+    )
+    return "availability" if entitled else None
 
 
 def _require_env(name: str) -> str:
@@ -264,8 +303,10 @@ def _create_workload(
         mcp_server_asset_name + " Workload",
         name=mcp_server_asset_name,
         artifact_id=artifact_id,
+        use_case_id=use_case.id,
         importance=os.getenv("MCP_WORKLOAD_IMPORTANCE", "high"),
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
+            enclave_selection_policy=_enclave_selection_policy(),
             container_groups=[
                 pulumi_datarobot.WorkloadRuntimeContainerGroupArgs(
                     replica_count=int(os.getenv("MCP_WORKLOAD_REPLICA_COUNT", "1")),
@@ -1008,7 +1049,9 @@ class WorkloadBuilder:
             description="Workload serving the DataRobot MCP server artifact",
             importance=self._workload_config.workload_importance,
             artifact_id=artifact.artifact_id,
+            use_case_id=use_case.id,
             runtime=pulumi_datarobot.WorkloadRuntimeArgs(
+                enclave_selection_policy=_enclave_selection_policy(),
                 container_groups=[
                     pulumi_datarobot.WorkloadRuntimeContainerGroupArgs(
                         replica_count=self._workload_config.container_group_replica_count,

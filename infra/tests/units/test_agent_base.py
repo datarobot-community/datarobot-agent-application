@@ -750,6 +750,31 @@ class TestBuildSharedAgentRuntimeParameters:
         assert idp_param.type == "string"
         assert idp_param.value == "idp-agent-123"
 
+    def test_soft_cache_ttl_included_when_set(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setenv("AGENT_CARD_REGISTRY_SOFT_CACHE_TTL", "300")
+        params = base.build_shared_agent_runtime_parameters()
+        ttl_param = next(
+            p for p in params if p.key == "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL"
+        )
+        assert ttl_param.type == "string"
+        assert ttl_param.value == "300"
+
+    def test_soft_cache_ttl_absent_when_unset(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.delenv("AGENT_CARD_REGISTRY_SOFT_CACHE_TTL", raising=False)
+        params = base.build_shared_agent_runtime_parameters()
+        assert not any(p.key == "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL" for p in params)
+
+    def test_soft_cache_ttl_absent_when_blank(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setenv("AGENT_CARD_REGISTRY_SOFT_CACHE_TTL", "  ")
+        params = base.build_shared_agent_runtime_parameters()
+        assert not any(p.key == "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL" for p in params)
+
     def test_private_jwk_becomes_credential(self, monkeypatch):
         import infra.agent_infra.base as base
 

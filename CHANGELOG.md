@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.12.5
+- Updated `agent` component from 11.11.85 to 11.11.93:
+  - Updated `datarobot-genai` from 0.29.45 to 0.29.53
+    - Fixed agents seeing only unscoped tools on user MCP servers; MCP servers now publish their XAA scopes
+    - Fixed agent card background refresh never starting with a shared card cache; it now runs every soft TTL / 2 (min 60s)
+    - Updated `nemoguardrails` from 0.21.0 to 0.24.1
+  - Enabled use case / enclaves placement support (`WORKLOAD_ENCLAVE_SELECTION_POLICY`); deploy fails if the entitlement check errors
+  - Added `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL` to refresh agent cards sooner without shortening the stale-card fallback
+  - Updated CVE dependency: anyio
+  - Excluded pip (vendored msgpack/setuptools)
+- Updated `mcp_server` component from 0.0.66 to 0.0.69
+  - Added OAuth resource server authentication documentation
+  - Documented the MCP Workload API deployment mode (opt-in preview)
+  - Fixed workload use case linking bug
+- Updated `base` component from e80aaa2 to dcc1ce0: `dr` now requires `pulumi-datarobot` plugin 0.12.3 or later
+- Updated `llm` component from 11.11.17 to 11.11.19:
+  - *Breaking changes*: `USE_DATAROBOT_LLM_GATEWAY` and `NIM_DEPLOYMENT_ID` are no longer exported. LLM options now export `<LLM>_USE_DATAROBOT_LLM_GATEWAY` and/or `<LLM>_NIM_DEPLOYMENT_ID` (`LLM_…` for the default app name). Consumers need datarobot-genai 0.28.0 or later. Older versions read the old names, find nothing, and route through the LLM Gateway without raising an error.
+
 ## 11.12.4
 - Updated `agent` component from 11.11.76 to 11.11.85:
   - Updated `datarobot-genai` from 0.29.40 to 0.29.45

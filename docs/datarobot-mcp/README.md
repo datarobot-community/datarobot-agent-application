@@ -54,12 +54,15 @@ See [MCP client setup](mcp_client_setup.md) for step-by-step instructions for Cu
 task deploy
 ```
 
+Deploys as a DataRobot serverless Custom Model by default. To deploy to the Workload API (Preview) instead, see [deployment modes](mcp_server_architecture.md#deployment-modes).
+
 ## MCP endpoint
 
 | Environment | URL |
 |---|---|
 | Local | `http://localhost:8080/mcp/` |
-| DataRobot | `https://<datarobot-endpoint>/deployments/<deployment-id>/directAccess/mcp/` |
+| DataRobot (serverless) | `https://<datarobot-endpoint>/deployments/<deployment-id>/directAccess/mcp/` |
+| DataRobot (Workload API) | `<workload-endpoint>/mcp`&mdash;read the workload's endpoint from the `<app name> MCP Server MCP Endpoint` Pulumi stack output after `task deploy` |
 
 ## API keys
 
@@ -80,6 +83,7 @@ See [DataRobot API key documentation](https://docs.datarobot.com/en/docs/get-sta
 | [Dynamic tool registration](dynamic_tool_registration.md) | Turn DataRobot deployments into tools automatically |
 | [Custom tools](custom_tools.md) | Author domain-specific tools |
 | [Deployment info tools](deployment_info_tools.md) | Query deployment features and build prediction datasets |
+| [OAuth authentication](oauth_authentication.md) | Configure resource-server OAuth, scopes, and Cross-Application Access |
 
 ## Development
 

@@ -82,11 +82,11 @@ pulumi:
     windows: winget install Pulumi.Pulumi
 pulumi-datarobot:
   name: DataRobot Pulumi resource plugin
-  minimum-version: 0.11.3
+  minimum-version: 0.12.3
   # Windows compatible check version
   command: uv run python .datarobot/cli/scripts/pulumi-plugin-version.py datarobot
   url: https://github.com/datarobot-community/pulumi-datarobot
   install:
-    macos: pulumi plugin install resource datarobot 0.11.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.11.3
-    linux: pulumi plugin install resource datarobot 0.11.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.11.3
-    windows: pulumi plugin install resource datarobot 0.11.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.11.3
+    macos: pulumi plugin install resource datarobot 0.12.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.12.3
+    linux: pulumi plugin install resource datarobot 0.12.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.12.3
+    windows: pulumi plugin install resource datarobot 0.12.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.12.3

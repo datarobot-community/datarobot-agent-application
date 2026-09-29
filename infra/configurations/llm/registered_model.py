@@ -174,7 +174,7 @@ app_runtime_parameters = [
         value=llm_deployment.id,
     ),
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
-        key="USE_DATAROBOT_LLM_GATEWAY",
+        key="LLM_USE_DATAROBOT_LLM_GATEWAY",
         type="string",
         value="0",
     ),
@@ -198,7 +198,7 @@ custom_model_runtime_parameters = [
         value=proxy_llm_deployment.id,
     ),
     datarobot.CustomModelRuntimeParameterValueArgs(
-        key="USE_DATAROBOT_LLM_GATEWAY",
+        key="LLM_USE_DATAROBOT_LLM_GATEWAY",
         type="string",
         value="0",
     ),
@@ -213,6 +213,6 @@ custom_model_runtime_parameters = [
 # app_runtime_parameters above.
 pulumi.export("Deployment ID " + llm_resource_name, llm_deployment.id)
 export("LLM_DEPLOYMENT_ID", llm_deployment.id)
-export("USE_DATAROBOT_LLM_GATEWAY", "0")
+export("LLM_USE_DATAROBOT_LLM_GATEWAY", "0")
 export("LLM_DEFAULT_MODEL", default_model)
 export("LLM_DEFAULT_MODEL_FRIENDLY_NAME", proxy_llm_registered_model.name)

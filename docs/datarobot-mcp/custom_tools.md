@@ -48,6 +48,21 @@ async def my_custom_tool(
 - Return structured results when possible so downstream consumers can parse them easily.
 - Use descriptive tags to group related tools.
 
+### Restrict a tool with OAuth scopes
+
+Require OAuth scopes on a tool with `require_scopes` on its `@dr_mcp_tool` decorator:
+
+```python
+from datarobot_genai.drmcp import dr_mcp_tool, require_scopes
+
+
+@dr_mcp_tool(tags={"custom", "example"}, auth=require_scopes("mcp:tools:write"))
+async def my_custom_tool(...):
+    ...
+```
+
+All listed scopes are required, not any one of them. Enforcement only runs when the server has OAuth claim validation enabled; see [OAuth resource-server authentication](oauth_authentication.md) for the full configuration, including the equivalent `MCP_OAUTH_TAG_SCOPES_<TAG>` configuration-only alternative.
+
 ### Work with prompts and resources
 
 The server also loads modules from:
