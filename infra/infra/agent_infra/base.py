@@ -46,7 +46,18 @@ from ..llm import custom_model_runtime_parameters as llm_custom_model_runtime_pa
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
+DEFAULT_EXECUTION_ENVIRONMENT = "Python 3 GenAI Agents"
+# Canonical DataRobot agent environments, matched by substring against
+# DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT. Each name lists the environments to try in
+# order; the default falls back to the 3.11 environment on DataRobot installations that
+# do not have the Python 3 environment yet.
+CANONICAL_EXECUTION_ENVIRONMENTS = {
+    "Python 3.11 GenAI Agents": [RuntimeEnvironments.PYTHON_311_GENAI_AGENTS],
+    DEFAULT_EXECUTION_ENVIRONMENT: [
+        RuntimeEnvironments.PYTHON_3_GENAI_AGENTS,
+        RuntimeEnvironments.PYTHON_311_GENAI_AGENTS,
+    ],
+}
 
 agent_application_name: str = "agent"
 agent_asset_name: str = f"[{PROJECT_NAME}] [agent]"
@@ -223,6 +234,38 @@ IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED = (
 A2A_MOUNT_PATH = get_a2a_mount_path()
 
 
+def resolve_canonical_execution_environment_id(
+    requested: str,
+) -> Optional[tuple[str, bool]]:
+    """Return ``(id, fell_back)`` for the first available environment behind the
+    canonical name in ``requested``, or None when ``requested`` names no canonical
+    environment. ``fell_back`` is True when an environment later in the list was used.
+
+    Each lookup is a live API call, so an environment missing from this DataRobot
+    installation is skipped and the next one in the list is tried.
+    """
+    for name, runtime_environments in CANONICAL_EXECUTION_ENVIRONMENTS.items():
+        if name not in requested:
+            continue
+        for position, runtime_environment in enumerate(runtime_environments):
+            try:
+                execution_environment_id = runtime_environment.value.id
+            except ValueError:
+                pulumi.info(
+                    f"Execution environment {runtime_environment.value.name} not found "
+                    "on this DataRobot installation."
+                )
+                continue
+            pulumi.info(
+                f"Using DataRobot execution environment: {runtime_environment.value.name}."
+            )
+            return execution_environment_id, position > 0
+        raise ValueError(
+            f"No execution environment for {name} exists on this DataRobot installation."
+        )
+    return None
+
+
 def resolve_agent_execution_environment(
     *,
     asset_name: str,
@@ -236,11 +279,13 @@ def resolve_agent_execution_environment(
     - **unset** (default): build a new ``ExecutionEnvironment`` from
       ``docker_context.tar.gz`` when present under ``application_path``, otherwise
       from the ``docker_context`` folder.
-    - **set to the GenAI default name** (containing
-      ``"Python 3.11 GenAI Agents"``): normalized to
-      ``RuntimeEnvironments.PYTHON_311_GENAI_AGENTS`` and referenced via
+    - **set to a DataRobot agent environment name** (one of
+      ``CANONICAL_EXECUTION_ENVIRONMENTS``): resolved to the first available
+      ``RuntimeEnvironments`` entry listed for that name and referenced via
       ``ExecutionEnvironment.get`` (optionally pinned with
-      ``DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID``).
+      ``DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID``; the pin is ignored
+      when a later entry in the list was used, see
+      ``resolve_canonical_execution_environment_id``).
     - **set to any other value**: treated as a pre-existing execution environment
       ID and referenced via ``ExecutionEnvironment.get`` (same version pinning).
 
@@ -253,16 +298,20 @@ def resolve_agent_execution_environment(
     """
     dr_exec_env = os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "").strip()
     if len(dr_exec_env) > 0:
-        execution_environment_id = dr_exec_env
-        if DEFAULT_EXECUTION_ENVIRONMENT in execution_environment_id:
-            pulumi.info("Using default GenAI Agentic Execution Environment.")
-            execution_environment_id = (
-                RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id
-            )
+        execution_environment_id, fell_back = (
+            resolve_canonical_execution_environment_id(dr_exec_env)
+            or (dr_exec_env, False)
+        )
 
-        execution_environment_version_id = resolve_execution_environment_version(
-            execution_environment_id,
-            "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+        # A version pin belongs to the environment it was taken from, so it does not
+        # apply to a fallback environment: use its latest version.
+        execution_environment_version_id = (
+            None
+            if fell_back
+            else resolve_execution_environment_version(
+                execution_environment_id,
+                "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+            )
         )
 
         pulumi.info(

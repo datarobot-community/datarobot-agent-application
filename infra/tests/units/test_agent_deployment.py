@@ -81,7 +81,7 @@ def deployment_mocks(monkeypatch, tmp_path):
         RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.__class__,
         "id",
         new_callable=PropertyMock,
-        return_value="python-311-genai-agents-id",
+        return_value="genai-agents-id",
     )
     patcher.start()
 

@@ -6,12 +6,12 @@ root:
 
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT
     type: string
-    default: "[DataRobot] Python 3.11 GenAI Agents"
+    default: "[DataRobot] Python 3 GenAI Agents"
     optional: true
     help: "Enter the default execution environment for the agent's custom model."
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID
     type: string
-    default: "6a9fb32921f948ad7a24631b"
+    default: "6abb9193002cae16c3001296"
     optional: true
     help: |
       Enter the default execution environment version ID for the agent's

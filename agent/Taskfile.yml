@@ -156,8 +156,8 @@ tasks:
       - |
         TOP_FOLDER=$(unzip -qql datarobot-user-models.zip | head -n1 | awk '{print $4}' | cut -d/ -f1)
         echo "Downloaded docker context branch name: $TOP_FOLDER"
-        unzip -q datarobot-user-models.zip "$TOP_FOLDER/public_dropin_environments/python311_genai_agents/*"
-        cp -r "$TOP_FOLDER/public_dropin_environments/python311_genai_agents" ./docker_context
+        unzip -q datarobot-user-models.zip "$TOP_FOLDER/public_dropin_environments/python3_genai_agents/*"
+        cp -r "$TOP_FOLDER/public_dropin_environments/python3_genai_agents" ./docker_context
         rm -rf "$TOP_FOLDER" datarobot-user-models.zip
       # We need to rename these from their production variants to their local variants
       - rm ./docker_context/env_info.json

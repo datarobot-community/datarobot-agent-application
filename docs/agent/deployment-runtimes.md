@@ -64,11 +64,11 @@ Other components in the app receive `<AGENT_APP_NAME>_WORKLOAD_ID` and `<AGENT_A
 ## Configuration
 
 > [!WARNING]
-> `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` dominates deploy time. Leaving it unset while a `docker_context/` folder or `docker_context.tar.gz` sits in the agent app builds a **new execution environment on every dependency change — 10–20 minutes**. Pointing it at the built-in Python 3.11 GenAI Agents drop-in avoids that build entirely.
+> `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` dominates deploy time. Leaving it unset while a `docker_context/` folder or `docker_context.tar.gz` sits in the agent app builds a **new execution environment on every dependency change — 10–20 minutes**. Pointing it at the built-in Python 3 GenAI Agents drop-in avoids that build entirely.
 
 | Variable | Default | Effect |
 |---|---|---|
-| `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` | unset | Unset + a `docker_context/` or `docker_context.tar.gz` in the agent app → builds a new execution environment (10–20 min). A value containing `Python 3.11 GenAI Agents` → the built-in drop-in, no build. Any other value → treated as an existing execution-environment ID. C2W only. |
+| `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` | unset | Unset + a `docker_context/` or `docker_context.tar.gz` in the agent app → builds a new execution environment (10–20 min). A value containing `Python 3 GenAI Agents` → the built-in drop-in, no build. Any other value → treated as an existing execution-environment ID. C2W only. |
 | `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID` | unset | Pins the version when referencing an existing execution environment. |
 | `WORKLOAD_CPU` | `1` | Cores per container (float). |
 | `WORKLOAD_MEMORY` | `1610612736` (1536 MiB) | Memory per container, in **integer bytes**. 2 GiB is `2147483648`; `2Gi` raises an error. |
@@ -152,7 +152,7 @@ Two things to plan for either way:
 
 | Symptom | Fix |
 |---|---|
-| First deploy is unexpectedly slow | An execution environment is being built. Set `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` to a value containing `Python 3.11 GenAI Agents` to use the drop-in instead. |
+| First deploy is unexpectedly slow | An execution environment is being built. Set `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` to a value containing `Python 3 GenAI Agents` to use the drop-in instead. |
 | Deploy fails waiting on the image build | The build exceeded `WORKLOAD_BUILD_TIMEOUT_S` (default `9000`). Raise it, or trim dependencies in `pyproject.toml`. |
 | Replicas never become ready | The container is not answering `/health` on `WORKLOAD_CONTAINER_PORT`. With your own image, confirm it serves that path on that port; with C2W, check the workload logs for a startup error. |
 | Deploy fails with `Could not read a [nat.plugins] entry point` | The container resolves the agent's workflow through that entry point, and the deploy generates the metadata carrying it from `pyproject.toml`. Declare one under `[project.entry-points.'nat.plugins']`. |

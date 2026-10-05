@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+- Updated `agent` component from 11.11.93 to 11.11.103:
+  - Moved the default execution environment to `[DataRobot] Python 3 GenAI Agents` (Python 3.13, no pre-installed agent framework; the agent installs its own `uv.lock` at start). `[DataRobot] Python 3.11 GenAI Agents` still resolves when set explicitly.
+  - Added a fallback to `[DataRobot] Python 3.11 GenAI Agents` when the DataRobot installation does not have the Python 3 environment yet; the version pin is ignored on fallback
+  - Updated `datarobot-genai` from 0.29.53 to 0.29.54
+  - Updated CVE dependency: langchain-nvidia-ai-endpoints
+  - Updated CVE dependency: tornado
+  - Updated CVE dependency: pyjwt, urllib3
+  - Updated CVE dependency: jupyterlab, litellm, notebook, pypdf
+  - Updated CVE dependency: openai, pytest, requests
+- Updated `mcp_server` component from 0.0.69 to 0.0.70
+  - Made enclave entitlement test fixture mypy-clean and type-check infra in CI
 
 ## 11.12.5
 - Updated `agent` component from 11.11.85 to 11.11.93:
