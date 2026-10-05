@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+
+## 11.12.6
 - Updated `agent` component from 11.11.93 to 11.11.103:
   - Moved the default execution environment to `[DataRobot] Python 3 GenAI Agents` (Python 3.13, no pre-installed agent framework; the agent installs its own `uv.lock` at start). `[DataRobot] Python 3.11 GenAI Agents` still resolves when set explicitly.
   - Added a fallback to `[DataRobot] Python 3.11 GenAI Agents` when the DataRobot installation does not have the Python 3 environment yet; the version pin is ignored on fallback
