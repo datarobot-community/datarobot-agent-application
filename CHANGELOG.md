@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.12.7
+- Updated `agent` component from 11.11.103 to 11.11.105:
+  - Updated CVE dependencies: fsspec, langgraph-sdk, multidict, pymongo, virtualenv, werkzeug
+  - Set application traces `ALWAYS_ON`
+
 ## 11.12.6
 - Updated `agent` component from 11.11.93 to 11.11.103:
   - Moved the default execution environment to `[DataRobot] Python 3 GenAI Agents` (Python 3.13, no pre-installed agent framework; the agent installs its own `uv.lock` at start). `[DataRobot] Python 3.11 GenAI Agents` still resolves when set explicitly.

@@ -55,6 +55,7 @@ from opentelemetry.sdk.metrics.view import ExponentialBucketHistogramAggregation
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import ALWAYS_ON, ParentBased
 from opentelemetry.trace import Span
 from typing_extensions import ParamSpec, Self, TypeVar
 
@@ -491,8 +492,17 @@ class OTel:
         if self._tracer_provider:
             return self._tracer_provider
 
-        # Create tracer provider
-        tracer_provider = TracerProvider(resource=self._get_resource())
+        # Default ParentBased drops spans when a remote parent is unsampled
+        # (traceparent …-00). Custom-app ingress can inject those parents while
+        # agent deployments still sample — which leaves application roots
+        # non-recording (otelTraceSampled: false) and missing from DataVolt.
+        # Keep parent linkage for sampled parents; always record for unsampled
+        # inbound ones so the app remains the authority for its own traces.
+        sampler = ParentBased(
+            root=ALWAYS_ON,
+            remote_parent_not_sampled=ALWAYS_ON,
+        )
+        tracer_provider = TracerProvider(resource=self._get_resource(), sampler=sampler)
         trace.set_tracer_provider(tracer_provider)
 
         # Create OTLP exporter
