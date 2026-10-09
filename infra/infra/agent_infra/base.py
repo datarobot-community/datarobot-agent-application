@@ -94,6 +94,9 @@ EXCLUDE_PATTERNS = [
         r".*__pycache__/.*",
         r".*\.pytest_cache/.*",
         r".*\.uv/.*",
+        # Tensile's project dir (trajectories, extracted prompts, sessions; its
+        # config.yaml would also make the deployed agent write trajectory files).
+        r".*\.tensile/.*",
         r".*docker_context/.*",
         r".*\.env(?:\.[A-Za-z0-9_-]+)*$",
     ]
