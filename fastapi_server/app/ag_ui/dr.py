@@ -19,6 +19,9 @@ from typing import AsyncGenerator
 from ag_ui.core import (
     BaseEvent,
     CustomEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,13 +32,13 @@ async def _merge_async_generators(
     heartbeat_gen: AsyncGenerator[BaseEvent, None],
     main_finished_ref: list[bool],
 ) -> AsyncGenerator[BaseEvent, None]:
-    """Merge main stream with heartbeat, stopping heartbeat when main stream finishes."""
-    queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
+    """Merge main stream with heartbeat, passing heartbeats only while a run is active."""
+    queue: asyncio.Queue[tuple[bool, BaseEvent] | None] = asyncio.Queue()
 
     async def _run_main() -> None:
         try:
             async for event in main_gen:
-                await queue.put(event)
+                await queue.put((False, event))
         except Exception as e:
             logger.exception("Error in main generator", extra={"error": str(e)})
         finally:
@@ -45,7 +48,7 @@ async def _merge_async_generators(
     async def _run_heartbeat() -> None:
         try:
             async for event in heartbeat_gen:
-                await queue.put(event)
+                await queue.put((True, event))
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -55,14 +58,24 @@ async def _merge_async_generators(
     main_task = asyncio.create_task(_run_main())
     heartbeat_task = asyncio.create_task(_run_heartbeat())
 
+    # AG-UI clients accept custom events only between RUN_STARTED and
+    # RUN_FINISHED/RUN_ERROR.
+    run_active = False
     try:
         while True:
-            event = await queue.get()
-            if event is None:
+            item = await queue.get()
+            if item is None:
                 # Main stream finished, cancel heartbeat and wait for it
                 if not heartbeat_task.done():
                     heartbeat_task.cancel()
                 break
+            is_heartbeat, event = item
+            if is_heartbeat and not run_active:
+                continue
+            if isinstance(event, RunStartedEvent):
+                run_active = True
+            elif isinstance(event, (RunFinishedEvent, RunErrorEvent)):
+                run_active = False
             yield event
     finally:
         # Cancel heartbeat if still running

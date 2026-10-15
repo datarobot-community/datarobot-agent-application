@@ -31,6 +31,9 @@ from app.ag_ui.dr import _heartbeat_generator, _merge_async_generators
 from app.config import Config
 
 _DEFAULT_STREAM_TIMEOUT_SECONDS = 600
+# An agent cold start delays the response, not the connect to the DataRobot proxy, so
+# a short connect timeout only cuts off an unreachable agent endpoint.
+_CONNECT_TIMEOUT_SECONDS = 30
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +95,9 @@ class DRAgentAGUIAgent(AGUIAgent):
 
             events_yielded = False
             async with httpx.AsyncClient(
-                timeout=_DEFAULT_STREAM_TIMEOUT_SECONDS
+                timeout=httpx.Timeout(
+                    _DEFAULT_STREAM_TIMEOUT_SECONDS, connect=_CONNECT_TIMEOUT_SECONDS
+                )
             ) as client:
                 async with httpx_sse.aconnect_sse(
                     client,
@@ -136,6 +141,9 @@ class DRAgentAGUIAgent(AGUIAgent):
 
         except Exception as e:
             logger.exception("Error during DRAgent agent run")
+            # httpx timeouts stringify to "", which would show an empty error.
             yield RunErrorEvent(
-                message=str(e), thread_id=input.thread_id, run_id=input.run_id
+                message=str(e) or type(e).__name__,
+                thread_id=input.thread_id,
+                run_id=input.run_id,
             )

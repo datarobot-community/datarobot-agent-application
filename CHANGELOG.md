@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.2.8
+- Fixed the chat showing no response when an agent took more than 15 seconds to send its first event; keep-alive activity is now sent only while a run is in progress, and no longer after a run has finished or failed
+- Fixed chat failures that appeared with a blank message; an error that carries no text now shows the error type instead
+- Fixed the chat waiting on an agent endpoint it cannot reach; it now reports the failure after 30 seconds instead of holding the connection open
+- Updated `agent` component from 11.11.105 to 11.11.107:
+  - Updated CVE dependencies: banks, hydra-core
+
 ## 11.12.7
 - Updated `agent` component from 11.11.103 to 11.11.105:
   - Updated CVE dependencies: fsspec, langgraph-sdk, multidict, pymongo, virtualenv, werkzeug

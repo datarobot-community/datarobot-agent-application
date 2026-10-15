@@ -14,8 +14,17 @@
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, AsyncIterator, Callable, Dict, Iterator, List
+from typing import (
+    AsyncGenerator,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    NoReturn,
+)
 
+import httpx
 import pytest
 from ag_ui.core import (
     BaseEvent,
@@ -29,6 +38,7 @@ from ag_ui.core import (
     TextMessageStartEvent,
 )
 
+from app.ag_ui.dr import _heartbeat_generator, _merge_async_generators
 from app.ag_ui.dragent import DRAgentAGUIAgent, DRAgentEventResponse
 from app.config import Config
 from tests.ag_ui.conftest import run_input
@@ -44,7 +54,7 @@ def dragent_agui_agent(config: Config) -> Iterator[DRAgentAGUIAgent]:
 @pytest.fixture
 def dragent_agui_agent_heartbeat(config: Config) -> Iterator[DRAgentAGUIAgent]:
     yield DRAgentAGUIAgent(
-        _TEST_AGENT_NAME, config, heartbeat_interval=0.1, check_interval=0.02
+        _TEST_AGENT_NAME, config, heartbeat_interval=0.05, check_interval=0.02
     )
 
 
@@ -293,6 +303,28 @@ async def test_run_strips_none_fields_in_events(
     ]
 
 
+async def test_run_error_message_falls_back_to_exception_type(
+    monkeypatch: pytest.MonkeyPatch,
+    dragent_agui_agent: DRAgentAGUIAgent,
+) -> None:
+    """An unreachable agent endpoint must fail at the connect timeout, not the stream
+    timeout, and name the exception even though httpx timeouts have an empty message."""
+    captured: Dict[str, httpx.Timeout] = {}
+
+    def mock_aconnect_sse(
+        client: httpx.AsyncClient, *args: object, **kwargs: object
+    ) -> NoReturn:
+        captured["timeout"] = client.timeout
+        raise httpx.ConnectTimeout("")
+
+    monkeypatch.setattr("httpx_sse.aconnect_sse", mock_aconnect_sse)
+    result = await run(dragent_agui_agent)
+    assert captured["timeout"] == httpx.Timeout(600, connect=30)
+    assert result == [
+        RunErrorEvent(message="ConnectTimeout", thread_id="thread", run_id="run")
+    ]
+
+
 async def test_run_custom_headers_are_sent(
     monkeypatch: pytest.MonkeyPatch,
     config: Config,
@@ -358,9 +390,38 @@ async def test_run_heartbeat(
         ]
     )
     result = await run(dragent_agui_agent_heartbeat)
-    assert RunStartedEvent(thread_id="thread", run_id="run") in result
+    # AG-UI clients reject a run whose first event is not RUN_STARTED or RUN_ERROR.
+    assert result[0] == RunStartedEvent(thread_id="thread", run_id="run")
     assert (
         CustomEvent(name="Heartbeat", value={"thread_id": "thread", "run_id": "run"})
         in result
     )
     assert RunFinishedEvent(thread_id="thread", run_id="run") in result
+
+
+@pytest.mark.parametrize(
+    "run_end",
+    [
+        RunFinishedEvent(thread_id="thread", run_id="run"),
+        RunErrorEvent(message="Agent failed"),
+    ],
+    ids=["finished", "error"],
+)
+async def test_merge_drops_heartbeat_after_run_end(run_end: BaseEvent) -> None:
+    """A stream held open after the run ends must not send heartbeats, which AG-UI
+    clients reject once the run has finished or errored."""
+    main_finished_ref = [False]
+
+    async def main_gen() -> AsyncGenerator[BaseEvent, None]:
+        yield RunStartedEvent(thread_id="thread", run_id="run")
+        yield run_end
+        await asyncio.sleep(0.15)
+
+    heartbeat_gen = _heartbeat_generator("thread", "run", main_finished_ref, 0.05, 0.01)
+    result = [
+        event
+        async for event in _merge_async_generators(
+            main_gen(), heartbeat_gen, main_finished_ref
+        )
+    ]
+    assert result == [RunStartedEvent(thread_id="thread", run_id="run"), run_end]
