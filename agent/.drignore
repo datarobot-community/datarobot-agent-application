@@ -30,6 +30,9 @@ node_modules
 .pytest_cache
 .ruff_cache
 
+# Tensile project dir (local trajectories, extracted prompts, sessions)
+.tensile
+
 # Terraform: source.dir can be the directory holding the configuration that
 # declares it. State files, the provider cache and *.tfvars are system
 # excludes -- they carry credentials, so deleting a line here cannot bring

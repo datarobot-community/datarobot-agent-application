@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+- Exclude `.tensile/` (Tensile's project dir: local trajectories, extracted prompts, sessions, and the config that enables trajectory writing) from the agent custom model bundle and from `agent/.drignore`.
 
 ## 11.2.8
 - Fixed the chat showing no response when an agent took more than 15 seconds to send its first event; keep-alive activity is now sent only while a run is in progress, and no longer after a run has finished or failed
