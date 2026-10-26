@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/datarobot-community-datarobot-agent-application-badge.png)](https://mseep.ai/app/datarobot-community-datarobot-agent-application)
+
 <p align="center">
   <a href="https://github.com/datarobot-community/datarobot-agent-application">
     <img src="./.github/datarobot_logo.avif" width="600px" alt="DataRobot Logo"/>
