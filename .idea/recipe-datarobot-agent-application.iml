@@ -8,7 +8,6 @@
       <sourceFolder url="file://$MODULE_DIR$/fastapi_server" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/infra/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/agent/.venv" />
-      <excludeFolder url="file://$MODULE_DIR$/mcp_server/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/tests/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/core/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/core/htmlcov" />

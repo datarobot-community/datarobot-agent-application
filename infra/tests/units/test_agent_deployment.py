@@ -172,6 +172,27 @@ def _reload_deployment():
     return deployment
 
 
+class TestCustomModelFiles:
+    def test_tensile_project_dir_is_not_bundled(self, tmp_path):
+        """A .tensile/ left under the agent folder (tensile init, dr-xp) holds
+        local trajectories and a config that turns on trajectory writing; none
+        of it belongs in the custom model."""
+        deployment = _reload_deployment()
+        (tmp_path / "myagent.py").write_text("x = 1\n")
+        tensile_dir = tmp_path / ".tensile"
+        (tensile_dir / "trajectories").mkdir(parents=True)
+        (tensile_dir / "config.yaml").write_text(
+            "trajectory_logging:\n  enabled: true\n"
+        )
+        (tensile_dir / "trajectories" / "trace-abc.jsonl.gz").write_bytes(b"")
+
+        files = deployment.get_custom_model_files(str(tmp_path), [])
+
+        names = sorted(name for _, name in files)
+        assert "myagent.py" in names
+        assert not any(name.startswith(".tensile/") for name in names), names
+
+
 class TestProvisionDeploymentAgent:
     def test_custom_model_created(self, monkeypatch):
         deployment = _reload_deployment()

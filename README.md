@@ -39,13 +39,15 @@
   </a>
 </p>
 
-This template gives you a ready-to-use application for building and deploying agentic workflows with multi-agent frameworks, a FastAPI backend server, a React frontend, and an MCP server.
+This template gives you a ready-to-use application for building and deploying agentic workflows with multi-agent frameworks, a FastAPI backend server, and a React frontend.
+Agents use tools from any MCP server you connect.
 The template streamlines setup for new agentic applications with minimal configuration.
 It supports local development and testing on macOS, Linux, and Windows, as well as one-command deployments to production environments within DataRobot.
 
 > [!CAUTION]
 > This repository updates frequently.
 > Make sure to update your local branch regularly to obtain the latest changes.
+> The Agentic Starter no longer includes the MCP server that earlier versions bundled in `mcp_server/`. This is a breaking change: if your project still has one, read [Move your MCP server out of the Agentic Starter](docs/mcp-migration.md) before you update.
 
 # Table of contents
 
@@ -59,7 +61,7 @@ It supports local development and testing on macOS, Linux, and Windows, as well 
   - [Component documentation](#component-documentation)
   - [DataRobot documentation](#datarobot-documentation)
 - [Deploy your agent](#deploy-your-agent)
-- [MCP server](#mcp-server)
+- [MCP tools](#mcp-tools)
 - [OAuth applications](#oauth-applications)
 - [Agent-to-agent](#agent-to-agent)
 - [Troubleshooting](#troubleshooting)
@@ -301,12 +303,11 @@ Run the following command to start all components of the application:
 dr run dev
 ```
 
-This starts five processes in parallel:
+This starts four processes in parallel:
 
 - Application frontend (Vite)
 - Application backend (FastAPI)
 - Agent
-- MCP server
 - Local tracing dashboard (`dr xp` on port 8090)
 
 Once all services are running:
@@ -357,7 +358,8 @@ The `docs/` directory contains detailed documentation for each component of this
 | [Agent](docs/agent/README.md) | Agent architecture, file structure, framework-specific guides, tool integration, front servers, debugging, and [multi-turn chat history](docs/agent/chat-history.md). |
 | [FastAPI backend](docs/fastapi_server/README.md) | Chat API, persistence (SQLite or Memory Space), OAuth, and AG-UI integration. |
 | [LLM component](docs/llm.md) | Configuring LLM providers, DataRobot gateway, deployments, and external APIs. |
-| [MCP server](docs/mcp-server.md) | MCP server architecture, optional co-deployment, custom tools, and deployment. |
+| [MCP tools](docs/mcp-server.md) | Connecting the agent to an MCP server: DataRobot deployments, external URLs, and local development. |
+| [MCP migration](docs/mcp-migration.md) | Moving the MCP server that earlier versions bundled in `mcp_server/`. |
 | [OAuth applications](docs/oauth-applications.md) | OAuth provider setup for external service authentication. |
 
 The agent documentation includes per-framework guides with tool integration and prompt modification examples:
@@ -422,16 +424,16 @@ Outputs:
     LLM_DEFAULT_MODEL                                 : "azure/gpt-4o-2024-11-20"
     LLM_USE_DATAROBOT_LLM_GATEWAY                     : "1"
     SESSION_SECRET_KEY                                : "secretkey123"
-    [apptest] [mcp_server] Custom Model Id            : "69331eebb49131d3d5430ac7"
-    [apptest] [mcp_server] Deployment Id              : "69331f1f30548f83b668d9dc"
-    [apptest] [mcp_server] MCP Server Base Endpoint   : "https://datarobot.com/api/v2/deployments/69331f1f30548f83b668d9dc/directAccess/"
-    [apptest] [mcp_server] MCP Server MCP Endpoint    : "https://datarobot.com/api/v2/deployments/69331f1f30548f83b668d9dc/directAccess/mcp"
 ```
 
-# MCP server
+# MCP tools
 
 The Model Context Protocol (MCP) is an open standard that allows AI agents, such as large language models (LLMs), to discover and interact with external data sources, applications, and services in a secure and structured way.
-For detailed information about the MCP server, see [MCP server documentation](docs/mcp-server.md).
+This template does not include an MCP server. Point the agent at one with `MCP_DEPLOYMENT_ID`, `MCP_WORKLOAD_ID`, or `EXTERNAL_MCP_URL` in `.env`; see [Connect your agent to MCP tools](docs/mcp-server.md).
+To build your own server, start from the [DataRobot MCP template](https://github.com/datarobot-community/datarobot-mcp-template).
+
+> [!IMPORTANT]
+> Earlier versions of this template included an MCP server in `mcp_server/`. When a deployed app that has one pulls a newer version, every deploy stops until you confirm, because it would delete the old server. See [Move your MCP server out of the Agentic Starter](docs/mcp-migration.md).
 
 # OAuth applications
 
@@ -455,10 +457,9 @@ The following ports are used by the application components during local developm
 | 5173  | Vite dev server              | Frontend development server                    | No           |
 | 8090  | Tracing dashboard            | Local `dr xp` experimentation UI               | No           |
 | 8842  | Agent endpoint               | Local agent service endpoint                   | Yes (in wizard) |
-| 9000  | MCP server                   | Model Context Protocol server                  | Yes (via `MCP_SERVER_PORT`) |
 
 > [!NOTE]
-> Ports 8080, 5173, and 8090 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard, and the MCP server port (9000) can be changed by setting the `MCP_SERVER_PORT` environment variable in your `.env` file.
+> Ports 8080, 5173, and 8090 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard. If you run an MCP server locally, use a free port such as 9000 and set `MCP_SERVER_PORT` in your `.env` file.
 
 ### DataRobot codespace port configuration
 
@@ -513,9 +514,6 @@ dr self version   # Verify the update.
    # Check port 8080 (web application).
    lsof -i :8080
 
-   # Check port 9000 (MCP server).
-   lsof -i :9000
-
    # Check port 5173 (Vite dev server).
    lsof -i :5173
 
@@ -530,7 +528,6 @@ dr self version   # Verify the update.
    ```
 
 3. Or change the port:
-   - **MCP server**&mdash;set `MCP_SERVER_PORT` in your `.env` file.
    - **Agent endpoint**&mdash;configure during the `dr start` wizard (default is 8842).
 
 ## Service startup issues
@@ -617,32 +614,37 @@ dr self version   # Verify the update.
    - Ensure you can access your DataRobot instance.
    - Verify firewall settings allow connections.
 
-## MCP server connection issues
+## MCP tools issues
 
-### Issue: Agent can't connect to MCP server
+### Issue: The agent has no MCP tools
 
-**Symptoms**: Agent errors mention MCP connection failures or tools not available.
+**Symptoms**: The agent answers but does not use tools. The agent logs show `Failed to connect to MCP server ... Continuing without MCP tools` or `No MCP server configured`.
 
 **Solutions**:
 
-1. Verify MCP server is running:
+1. Check which server the agent uses. The first setting found wins: `MCP_WORKLOAD_ID`, then `MCP_DEPLOYMENT_ID`, then `EXTERNAL_MCP_URL`, then `MCP_SERVER_PORT`. Workload and deployment IDs must be 24 hexadecimal characters.
+2. Remove a leftover `MCP_SERVER_PORT` from `.env`, unless an MCP server listens on that port.
+3. For `EXTERNAL_MCP_URL`, DataRobot credentials are not forwarded; set `EXTERNAL_MCP_HEADERS`.
+4. Ensure `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT` are set correctly.
 
-   ```sh
-   # Check whether the MCP server process is running.
-   curl http://localhost:9000/
-   ```
+If you just pulled the update that removed `mcp_server/`, that server's tools are in git history: see [Move your MCP server out of the Agentic Starter](docs/mcp-migration.md).
 
-2. Check MCP server logs:
-   - Review the terminal where `dr run mcp_server:dev` is running.
-   - Look for connection or authentication errors.
+For details, see [MCP tools](docs/agent/mcp.md) in the agent documentation.
 
-3. Verify port configuration:
-   - Check that `MCP_SERVER_PORT` in `.env` matches the port the server is using.
-   - See [Ports reference](#ports-reference) for default ports.
+### Issue: Messages after pulling the update that removed `mcp_server/`
 
-4. Check environment variables:
-   - Ensure `DATAROBOT_API_TOKEN` is set correctly.
-   - Verify `DATAROBOT_ENDPOINT` is correct.
+This template no longer bundles the MCP server that earlier versions had in `mcp_server/`.
+If your app is deployed, every deploy stops until you confirm, because it would delete the old server.
+Git history keeps your MCP code. [Troubleshooting](docs/mcp-migration.md#troubleshooting) in the migration guide has more.
+
+| Message | Fix |
+|---|---|
+| `git pull`: `CONFLICT (modify/delete): mcp_server/...` | For each file, keep the deletion (`git rm <file>`), then `git commit --no-edit`. Git history keeps your version. |
+| `git pull`: `Your local changes to the following files would be overwritten by merge` | Commit your changes, then pull again. |
+| `git status` still shows `mcp_server/` after the pull, or `dr component update` says `Destination repository is dirty` | It holds files git didn't track: the old server's `.venv`, its generated tool lists, and files you added. Delete the folder once you have what you need from it. |
+| `MCP migration: deploy stopped. Nothing changed.` | Move your tools to a standalone MCP server, or decide you don't need them. Then add `MCP_MIGRATION_CONFIRMED=1` to `.env` (in CI, to the environment) and run `dr run deploy` once. See [What to do](docs/mcp-migration.md#what-to-do). |
+| After confirming, `dr start` keeps showing `MCP migration: MCP_MIGRATION_CONFIRMED is set` | `dr start` doesn't delete the old server. Run one full `dr run deploy`. |
+| `task: No Taskfile found at ".../mcp_server/Taskfile.yaml"` | Run `dr task compose`. |
 
 ## OAuth configuration issues
 

@@ -7,12 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
-## 11.2.8
+## 11.12.9
+- *Breaking changes*: Removed the bundled MCP server (`mcp_server/`) from the template. The agent still uses MCP tools, but now loads them from the DataRobot Global MCP (for the built-in DataRobot tools) or from a standalone MCP server that you set in `.env` with `MCP_DEPLOYMENT_ID`, `MCP_WORKLOAD_ID` or `EXTERNAL_MCP_URL`. See [Connect your agent to MCP tools](docs/mcp-server.md).
+  - Pulling this version deletes `mcp_server/` from existing apps, and the agent loses the old server's tools until you point it at a new MCP server.
+  - For an app that is already deployed, `dr run deploy` stops and lists the old MCP server resources it would delete, until you confirm with `MCP_MIGRATION_CONFIRMED=1` (in `.env` or in your CI environment). See [Move your MCP server out of the Agentic Starter](docs/mcp-migration.md).
+  - Removed the MCP server questions from `dr start` and `dr dotenv setup`, its settings from `.env.template`, and the `mcp_server` tasks. `dr run dev` no longer starts an MCP server, and port 9000 is no longer used.
+- Raised the minimum DataRobot Pulumi provider (`pulumi-datarobot`) to 0.13.0. Run `task infra:install` in existing apps.
+- Updated `agent` component from 11.11.107 to 11.11.115:
+  - Added `MCP_WORKLOAD_ID` to connect a deployed agent to an MCP server on the Workload API. When no MCP server is set, the deploy now says that the agent runs without MCP tools. See [MCP tools](docs/agent/mcp.md).
+  - Added workload tags: when you deploy the agent on the Workload API runtime (experimental), you can tag the workload in `infra/infra/<agent_app_name>_infra/workload.py`. See [Tagging the workload](docs/agent/deployment-runtimes.md#tagging-the-workload).
+  - Updated dependencies with security fixes: aiohttp, certifi, gitpython, hpack, mako, mcp, oauthlib, pillow, sentence-transformers, tinytag, uv.
+- Updated `react-frontend` component from 95792e1 to dc87270:
+  - Declared the supported Node.js versions (20.19+, 22.12+, 24) and pinned `.nvmrc` to Node 22.
+
+## 11.12.8
 - Fixed the chat showing no response when an agent took more than 15 seconds to send its first event; keep-alive activity is now sent only while a run is in progress, and no longer after a run has finished or failed
 - Fixed chat failures that appeared with a blank message; an error that carries no text now shows the error type instead
 - Fixed the chat waiting on an agent endpoint it cannot reach; it now reports the failure after 30 seconds instead of holding the connection open
 - Updated `agent` component from 11.11.105 to 11.11.107:
   - Updated CVE dependencies: banks, hydra-core
+- Updated `mcp_server` component from 0.0.70 to 0.0.72:
+  - Defaulted the MCP server to the Python 3 MCP environment
 
 ## 11.12.7
 - Updated `agent` component from 11.11.103 to 11.11.105:

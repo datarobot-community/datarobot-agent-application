@@ -125,7 +125,7 @@ Agents can combine tools from multiple sources. LangGraph, CrewAI, and LlamaInde
 
 ### MCP tools
 
-MCP tools are loaded in `register.py` by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (for example, `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens outside `MyAgent`, not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration and optional co-deployment behavior.
+MCP tools are loaded in `register.py` by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (for example, `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens outside `MyAgent`, not inside `invoke()`. See [MCP tools](./mcp.md) for how the agent finds its MCP server, locally and when deployed.
 
 ```python
 async with mcp_tools_context(mcp_config) as mcp_tools:
@@ -171,8 +171,9 @@ Runtime parameters are the deploy-time mechanism behind the "environment variabl
 | `LLM_DEFAULT_MODEL` | Default LLM model identifier. | `datarobot/azure/gpt-5-mini-2025-08-07` |
 | `LLM_NIM_DEPLOYMENT_ID` | DataRobot NIM deployment ID. | `None` |
 | `LLM_USE_DATAROBOT_LLM_GATEWAY` | Route LLM calls through the DataRobot LLM Gateway. Takes precedence over both deployment IDs. | `true` |
-| `MCP_DEPLOYMENT_ID` | Deployed MCP server ID. | `None` |
-| `EXTERNAL_MCP_URL` | External MCP server URL. | `None` |
+| `MCP_WORKLOAD_ID` | MCP server on the DataRobot Workload API. See [MCP tools](./mcp.md). | `None` |
+| `MCP_DEPLOYMENT_ID` | Deployed MCP server ID. See [MCP tools](./mcp.md). | `None` |
+| `EXTERNAL_MCP_URL` | External MCP server URL. See [MCP tools](./mcp.md). | `None` |
 | `DATAROBOT_GENAI_MAX_HISTORY_MESSAGES` | Conversation history messages replayed to the agent. `0` disables history. | `20` |
 | `ASSUME_NATIVE_TOOL_CALLING_WHEN_UNMAPPED` | CrewAI only. Report native tool-calling support for NIM models LiteLLM has no catalog entry for. | `false` |
 | `AGENT_PORT` | Local agent server port. | `8842` |
@@ -271,6 +272,7 @@ The following topics are covered in the official DataRobot documentation:
 | [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install modular skill packages for coding agents (Cursor, Claude Code, Codex, and others). |
 | [A2A authentication](./agent2agent-auth.md) | DataRobot API key and Okta cross-application access (XAA) for agent-to-agent authentication. |
 | [Chat history](./chat-history.md) | Multi-turn conversation context across LangGraph, CrewAI, LlamaIndex, and NAT. |
+| [MCP tools](./mcp.md) | Point the agent at an MCP server, locally and when deployed. |
 | [Agent authentication](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-authentication.html) | API tokens, OAuth 2.0, authorization context, and MCP server authentication. |
 | [Add Python packages](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-python-packages.html) | Add dependencies via `uv`, runtime dependencies for fast iteration, and custom Docker images. |
 | [Access request headers](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-request-headers.html) | Extract `X-Untrusted-*` headers in deployed agents for auth forwarding and request tracking. |

@@ -29,6 +29,7 @@ node_modules
 .mypy_cache
 .pytest_cache
 .ruff_cache
+.tensile
 
 # Terraform: source.dir can be the directory holding the configuration that
 # declares it. State files, the provider cache and *.tfvars are system

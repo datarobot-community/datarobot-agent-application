@@ -77,6 +77,10 @@ OTEL_ENDPOINT_ENV_VAR: Final[str] = "OTEL_EXPORTER_OTLP_ENDPOINT"
 # Org entitlement for Enclave placement.
 COMPUTE_ENCLAVE_ENTITLEMENT: Final[str] = "ENABLE_COMPUTE_ENCLAVE"
 
+# Workload tags, e.g. pulumi_datarobot.WorkloadTagArgs(name="team", value="agents").
+# Empty = tags unmanaged. See docs/agent/deployment-runtimes.md#tagging-the-workload.
+WORKLOAD_TAGS: Final[list[pulumi_datarobot.WorkloadTagArgs]] = []
+
 
 def _fail(message: str, *, cause: Exception | None = None) -> NoReturn:
     pulumi.error(message)
@@ -407,6 +411,8 @@ def _create_workload(
         artifact_id=artifact_id,
         use_case_id=use_case.id,
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
+        # None, not []: an empty list makes the provider delete every tag on the workload.
+        tags=WORKLOAD_TAGS or None,
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
             enclave_selection_policy=_enclave_selection_policy(),
             container_groups=[

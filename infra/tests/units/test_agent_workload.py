@@ -564,6 +564,43 @@ class TestEnclavePlacement:
             self._run(workload)
 
 
+class TestWorkloadTags:
+    def _run(self, workload, *, image_uri=True):
+        if image_uri:
+            return workload._provision_from_image_uri(
+                "registry.example.com/agent:latest", []
+            )
+        return workload._provision_from_source_bundle([])
+
+    def test_placeholder_ships_empty(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+
+        assert workload.WORKLOAD_TAGS == []
+
+    @pytest.mark.parametrize("image_uri", [True, False])
+    def test_tags_omitted_when_placeholder_empty(
+        self, monkeypatch, tmp_path, image_uri
+    ):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+
+        self._run(workload, image_uri=image_uri)
+
+        # None, not []: an empty list would make the provider delete existing tags.
+        assert _workload_kwargs(workload)["tags"] is None
+
+    @pytest.mark.parametrize("image_uri", [True, False])
+    def test_placeholder_tags_reach_workload(self, monkeypatch, tmp_path, image_uri):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "agent_application_path", tmp_path)
+        tags = [workload.pulumi_datarobot.WorkloadTagArgs(name="team", value="agents")]
+        monkeypatch.setattr(workload, "WORKLOAD_TAGS", tags)
+
+        self._run(workload, image_uri=image_uri)
+
+        assert _workload_kwargs(workload)["tags"] == tags
+
+
 class TestProvisionWorkloadAgentRequiredEnv:
     def test_missing_api_token_raises(self, monkeypatch):
         workload = _workload_module(monkeypatch)

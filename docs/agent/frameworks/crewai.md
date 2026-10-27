@@ -135,7 +135,7 @@ CrewAI agents receive tools through three channels:
 
 ### MCP tools
 
-MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)&mdash;outside `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
+MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)&mdash;outside `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP tools](../mcp.md).
 
 ### Workflow tools
 

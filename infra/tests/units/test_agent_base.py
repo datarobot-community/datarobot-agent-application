@@ -526,12 +526,24 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert calls["module"] == base.MCP_MODULE_NAME == "mcp_server"
         assert calls["object_name"] == "mcp_custom_model_runtime_parameters"
 
-    def test_present_but_empty_module_does_not_fall_back_to_env(self, monkeypatch):
+    def test_present_but_empty_module_falls_back_to_env(self, monkeypatch):
+        """An MCP server on the Workload API exports no parameters: .env decides.
+
+        A deployment ID left in .env is forwarded too; MCP_WORKLOAD_ID takes
+        precedence over it in datarobot-genai.
+        """
         import infra.agent_infra.base as base
 
-        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "stale-deployment-id")
+        monkeypatch.setenv("MCP_WORKLOAD_ID", "0123456789abcdef01234567")
+        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210")
         monkeypatch.setattr(base, "maybe_import_from_module", lambda m, o: [])
-        assert base.get_mcp_custom_model_runtime_parameters() == []
+
+        result = base.get_mcp_custom_model_runtime_parameters()
+
+        assert [(p.key, p.value) for p in result] == [
+            ("MCP_WORKLOAD_ID", "0123456789abcdef01234567"),
+            ("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210"),
+        ]
 
     def test_fallback_to_env(self, monkeypatch):
         import infra.agent_infra.base as base
@@ -555,6 +567,61 @@ class TestGetMcpCustomModelRuntimeParameters:
             == '{"Authorization": "Bearer token123"}'
         )
         assert by_key["EXTERNAL_MCP_TRANSPORT"].value == "sse"
+
+    def test_without_mcp_module_forwards_env(self, monkeypatch):
+        """A project with no co-deployed MCP server sends the agent to the server in .env."""
+        import infra.agent_infra.base as base
+
+        # None in sys.modules makes the import fail, as when infra/mcp_server.py is absent.
+        monkeypatch.setitem(sys.modules, "infra.mcp_server", None)
+        monkeypatch.setenv("MCP_WORKLOAD_ID", "0123456789abcdef01234567")
+        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210")
+        monkeypatch.setenv("EXTERNAL_MCP_URL", "https://example.com/mcp/")
+        monkeypatch.setenv("EXTERNAL_MCP_HEADERS", '{"X-Api-Key": "key123"}')
+        monkeypatch.setenv("EXTERNAL_MCP_TRANSPORT", "sse")
+
+        result = base.get_mcp_custom_model_runtime_parameters()
+
+        assert [(p.key, p.type, p.value) for p in result] == [
+            ("MCP_WORKLOAD_ID", "string", "0123456789abcdef01234567"),
+            ("MCP_DEPLOYMENT_ID", "string", "76543210fedcba9876543210"),
+            ("EXTERNAL_MCP_URL", "string", "https://example.com/mcp"),
+            ("EXTERNAL_MCP_HEADERS", "string", '{"X-Api-Key": "key123"}'),
+            ("EXTERNAL_MCP_TRANSPORT", "string", "sse"),
+        ]
+        assert not any(
+            "MCP not configured" in str(call)
+            for call in base.pulumi.info.call_args_list
+        )
+
+    def test_without_mcp_module_or_env_forwards_nothing(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setitem(sys.modules, "infra.mcp_server", None)
+        for key in (
+            "MCP_WORKLOAD_ID",
+            "MCP_DEPLOYMENT_ID",
+            "EXTERNAL_MCP_URL",
+            "EXTERNAL_MCP_HEADERS",
+            "EXTERNAL_MCP_TRANSPORT",
+        ):
+            monkeypatch.delenv(key, raising=False)
+
+        base.pulumi.info.reset_mock()
+        assert base.get_mcp_custom_model_runtime_parameters() == []
+        base.pulumi.info.assert_any_call(
+            "MCP not configured: the agent deploys without MCP tools. To add some, set "
+            "MCP_WORKLOAD_ID, MCP_DEPLOYMENT_ID or EXTERNAL_MCP_URL (docs/agent/mcp.md)."
+        )
+
+    def test_module_present_ignores_workload_id(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setenv("MCP_WORKLOAD_ID", "0123456789abcdef01234567")
+        sentinel = ["co-deployed-mcp-param"]
+        monkeypatch.setattr(base, "maybe_import_from_module", lambda m, o: sentinel)
+
+        assert base.get_mcp_custom_model_runtime_parameters() == sentinel
 
 
 # --- A2A workflow.yaml helpers ----------------------------------------------

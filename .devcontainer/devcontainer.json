@@ -20,7 +20,7 @@
             ]
         }
     },
-    "forwardPorts": [51164, 8083, 8080, 8842, 5173, 9000],
+    "forwardPorts": [51164, 8083, 8080, 8842, 5173],
     "mounts": [
         "type=volume,source=agentic-devcontainer-pulumi,target=/home/vscode/.pulumi",
         "type=volume,source=agentic-devcontainer-cache,target=/home/vscode/.cache",

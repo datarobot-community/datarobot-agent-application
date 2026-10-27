@@ -94,6 +94,7 @@ EXCLUDE_PATTERNS = [
         r".*__pycache__/.*",
         r".*\.pytest_cache/.*",
         r".*\.uv/.*",
+        r".*\.tensile/.*",
         r".*docker_context/.*",
         r".*\.env(?:\.[A-Za-z0-9_-]+)*$",
     ]
@@ -376,12 +377,29 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         return None
 
 
+# The settings that point the agent at an MCP server, in datarobot-genai's precedence.
+MCP_SERVER_SETTINGS = ("MCP_WORKLOAD_ID", "MCP_DEPLOYMENT_ID", "EXTERNAL_MCP_URL")
+
+
 def get_mcp_runtime_parameters_from_env() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ]:
     mcp_runtime_parameters: list[
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs
     ] = []
+
+    # MCP server on the DataRobot Workload API. datarobot-genai looks up the workload's
+    # endpoint and prefers it over every setting below.
+    if os.environ.get("MCP_WORKLOAD_ID"):
+        mcp_workload_id = os.environ["MCP_WORKLOAD_ID"]
+        mcp_runtime_parameters.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key="MCP_WORKLOAD_ID",
+                type="string",
+                value=mcp_workload_id,
+            )
+        )
+        pulumi.info(f"MCP configured with DataRobot workload: {mcp_workload_id}")
 
     # Add MCP runtime parameters if configured
     if os.environ.get("MCP_DEPLOYMENT_ID"):
@@ -395,8 +413,8 @@ def get_mcp_runtime_parameters_from_env() -> list[
         )
         pulumi.info(f"MCP configured with DataRobot MCP Server: {mcp_deployment_id}")
 
-    # Allow external mcp server. Currently, code will use MCP_DEPLOYMENT_ID first and if that is empty
-    # then use the EXTERNAL_MCP_URL
+    # Allow external mcp server. Currently, code will use MCP_WORKLOAD_ID or MCP_DEPLOYMENT_ID first
+    # and if those are empty then use the EXTERNAL_MCP_URL
     if os.environ.get("EXTERNAL_MCP_URL"):
         external_mcp_url = os.environ["EXTERNAL_MCP_URL"].rstrip("/")
         mcp_runtime_parameters.append(
@@ -433,6 +451,13 @@ def get_mcp_runtime_parameters_from_env() -> list[
         )
         pulumi.info(f"External MCP configured with transport: {external_mcp_transport}")
 
+    if not any(os.environ.get(key) for key in MCP_SERVER_SETTINGS):
+        pulumi.info(
+            "MCP not configured: the agent deploys without MCP tools. To add some, set "
+            + ", ".join(MCP_SERVER_SETTINGS[:-1])
+            + f" or {MCP_SERVER_SETTINGS[-1]} (docs/agent/mcp.md)."
+        )
+
     return mcp_runtime_parameters
 
 
@@ -441,12 +466,15 @@ def get_mcp_custom_model_runtime_parameters() -> list[
 ]:
     """
     Load MCP runtime parameters from the conventionally-named MCP module when it
-    is present in the project, otherwise fall back to environment variables.
+    is present in the project and passes some, otherwise fall back to environment
+    variables. Older versions of the MCP component pass none when their server
+    runs on the Workload API (newer ones pass MCP_WORKLOAD_ID), so the agent then
+    uses the settings in .env, such as MCP_WORKLOAD_ID.
     """
     mcp_params = maybe_import_from_module(
         MCP_MODULE_NAME, "mcp_custom_model_runtime_parameters"
     )
-    if mcp_params is not None:
+    if mcp_params:
         return mcp_params
     return get_mcp_runtime_parameters_from_env()
 

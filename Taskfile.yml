@@ -37,9 +37,6 @@ includes:
   infra:
     taskfile: ./infra/Taskfile.yaml
     dir: ./infra
-  mcp_server:
-    taskfile: ./mcp_server/Taskfile.yaml
-    dir: ./mcp_server
 
 tasks:
   default:
@@ -67,7 +64,6 @@ tasks:
         --data agent_app_name=agent \
         --data agent_development_port=8842 \
         --data include_taskfile_infra=no \
-        --data mcp_answers_file=.datarobot/answers/drmcp-mcp_server.yml \
         --data llm_answers_file=.datarobot/answers/llm-llm.yml \
         {{.COPIER_FLAGS}} -w --quiet
       - task build-agents-md

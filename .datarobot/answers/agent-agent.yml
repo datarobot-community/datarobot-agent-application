@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 11.11.107
+_commit: 11.11.115
 _src_path: https://github.com/datarobot-community/af-component-agent.git
 agent_app_name: agent
 agent_template_framework: langgraph

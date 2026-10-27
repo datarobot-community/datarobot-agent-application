@@ -10,8 +10,6 @@ ports:
     print_url: true
   - name: agent
     port: 8842
-  - name: mcp_server
-    port: 9000
   - name: fastapi_server
     port: 8080
   - name: frontend_web

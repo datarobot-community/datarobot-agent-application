@@ -14,3 +14,7 @@ Run the following shell commands to run the project locally (agent + backend + f
 dr run dev
 ```
 
+## MCP migration messages
+
+Older versions of this template bundled an MCP server in `mcp_server/`. If a deploy stops with a message that starts with `MCP migration:`, show the message to the user. Don't continue the deploy: it would delete the user's old MCP server. Never set `MCP_MIGRATION_CONFIRMED` without the user's explicit answer. See `docs/mcp-migration.md`.
+

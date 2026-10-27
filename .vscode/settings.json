@@ -33,11 +33,6 @@
     {
       "envManager": "ms-python.python:venv",
       "packageManager": "ms-python.python:pip",
-      "path": "${workspaceFolder}/mcp_server/.venv/bin/python"
-    },
-    {
-      "envManager": "ms-python.python:venv",
-      "packageManager": "ms-python.python:pip",
       "path": "${workspaceFolder}/tests/.venv/bin/python"
     }
   ]
