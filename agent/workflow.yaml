@@ -101,6 +101,10 @@ middleware:
     # If there is no inline configuration then moderation_config.yaml will be loaded, if present.
     # If no guards are configured then the middleware is a no-op.
     _type: datarobot_moderation
+    # Uncomment to let guards authenticate with the caller's external access token from the
+    # request, or set MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true in .env
+    # (see docs/agent/moderation.md):
+    # allow_external_access_tokens: true
   datarobot_otel_conventions:
     _type: datarobot_otel_conventions
 authentication:

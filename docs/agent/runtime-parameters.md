@@ -21,6 +21,7 @@ Each entry has a `type` that determines how it is exposed to the running deploym
 |---|---|
 | `string` | A plain text value, exposed to the running deployment as an environment variable named after the runtime parameter key. |
 | `numeric` | A numeric value, also exposed as an environment variable named after the runtime parameter key. |
+| `boolean` | A `true`/`false` value, also exposed as an environment variable named after the runtime parameter key. |
 | `credential` | A value backed by a DataRobot credential object (for example, an `ApiTokenCredential`) rather than a plain string. Used for secrets so they aren't stored as raw text on the custom model. At runtime, DataRobot injects a single-field credential such as an API token under the runtime parameter's environment-variable name; multi-field credentials are unpacked into suffixed environment variables. |
 
 Once deployed, the value of a runtime parameter can be viewed and edited directly on the registered model or deployment in DataRobot — no redeploy of code is required to change it. This is what distinguishes a runtime parameter from a plain environment variable that only exists in the local shell or `.env` file, or a Python-level default baked into the build.
@@ -35,6 +36,7 @@ This component provisions the following runtime parameters automatically during 
 |---|---|---|---|
 | `CUSTOM_MODEL_WORKERS` | numeric | `infra/infra/<agent_app_name>_infra/deployment.py` | Number of Gunicorn workers for the deployed agent. `2` by default, `5` when `ENABLE_AGENT_HA_MODE=true` is set at deploy time (see [Deploy-time infra variables are not runtime parameters](#deploy-time-infra-variables-are-not-runtime-parameters)). |
 | `AGENT_GUNICORN_WORKER_TIMEOUT` | string | `infra/infra/<agent_app_name>_infra/base.py` | Gunicorn worker timeout in seconds. Defaults to `600`, raised above Gunicorn's 30s default so long agent turns aren't killed mid-stream. |
+| `DISABLE_MODERATION`, `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` | boolean | `infra/infra/<agent_app_name>_infra/base.py` | Moderation toggles, set from `.env` (`false` when unset). `DISABLE_MODERATION` turns every guard off; `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` lets guards authenticate with the caller's access token. See [Moderation](./moderation.md#environment-variables). |
 | `LLM_DEPLOYMENT_ID`, `LLM_DEFAULT_MODEL`, `LLM_NIM_DEPLOYMENT_ID`, `LLM_USE_DATAROBOT_LLM_GATEWAY` (namespaced per LLM component) | string | The `llm` component's own infra module | LLM routing configuration. See [Configuration](./README.md#configuration) for the full variable table and [LLM component](../llm.md) for details. |
 | `MCP_WORKLOAD_ID`, `MCP_DEPLOYMENT_ID`, `EXTERNAL_MCP_URL`, `EXTERNAL_MCP_HEADERS`, `EXTERNAL_MCP_TRANSPORT` | string | The MCP component's infra module when present; otherwise `get_mcp_runtime_parameters_from_env()` in `infra/infra/<agent_app_name>_infra/base.py` | MCP server connection details, provisioned only when an MCP workload, MCP deployment, or external MCP URL is configured. See [MCP tools](./mcp.md). |
 
@@ -63,7 +65,7 @@ Some environment variables only control what `infra/infra/<agent_app_name>_infra
 Override the value of a runtime parameter depending on when the change needs to take effect:
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
-- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, `IDP_AGENT_PRIVATE_KEY_JWK`, and `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
+- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `DISABLE_MODERATION`, `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, `IDP_AGENT_PRIVATE_KEY_JWK`, and `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
 - **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change.
 
 ## Add a custom runtime parameter

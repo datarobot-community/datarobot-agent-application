@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 from unittest.mock import AsyncMock
 
 import pytest
@@ -375,3 +376,57 @@ async def test_session_not_updated_when_switching_between_api_key_and_email(
         "Session data should have changed when switching from API key to email auth, "
         "but it remained the same (indicates stale session bug)"
     )
+
+
+async def test_session_does_not_store_the_api_key(
+    db_deps: Deps, dr_user: DRUser
+) -> None:
+    """
+    The session cookie is signed but not encrypted, so the visitor's API key must not
+    be stored in it. The session is still reused while the same key is presented.
+    """
+    req = AsyncMock(spec=Request)
+    req.session = {}
+    req.app.state.deps = db_deps
+    db_deps.api_key_validator.validate.return_value = dr_user  # type: ignore[attr-defined]
+
+    dr_ctx = DRAppCtx(api_key="visitor-scoped-api-key")
+    first_auth_ctx = await get_auth_ctx(req, dr_ctx)
+
+    assert first_auth_ctx is not None
+    assert "visitor-scoped-api-key" not in json.dumps(req.session)
+
+    # The same key reuses the session without validating the key again
+    db_deps.api_key_validator.validate.reset_mock()  # type: ignore[attr-defined]
+    second_auth_ctx = await get_auth_ctx(
+        req, DRAppCtx(api_key="visitor-scoped-api-key")
+    )
+
+    assert second_auth_ctx is not None
+    assert second_auth_ctx.user.id == first_auth_ctx.user.id
+    db_deps.api_key_validator.validate.assert_not_called()  # type: ignore[attr-defined]
+
+
+async def test_session_with_the_api_key_is_rebuilt_without_it(
+    db_deps: Deps, dr_user: DRUser
+) -> None:
+    """
+    Sessions created before the key was removed from the cookie hold the key in plain
+    text. They are not reused, and are rebuilt once without the key.
+    """
+    req = AsyncMock(spec=Request)
+    req.session = {}
+    req.app.state.deps = db_deps
+    db_deps.api_key_validator.validate.return_value = dr_user  # type: ignore[attr-defined]
+
+    dr_ctx = DRAppCtx(api_key="visitor-scoped-api-key")
+    await get_auth_ctx(req, dr_ctx)
+    # Simulate a session written by the previous version
+    req.session[AUTH_SESS_KEY]["metadata"]["dr_ctx"] = dr_ctx.model_dump()
+    db_deps.api_key_validator.validate.reset_mock()  # type: ignore[attr-defined]
+
+    auth_ctx = await get_auth_ctx(req, dr_ctx)
+
+    assert auth_ctx is not None
+    db_deps.api_key_validator.validate.assert_called_once()  # type: ignore[attr-defined]
+    assert "visitor-scoped-api-key" not in json.dumps(req.session)

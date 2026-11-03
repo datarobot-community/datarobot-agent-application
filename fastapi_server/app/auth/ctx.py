@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
+import hmac
 import logging
 from typing import TYPE_CHECKING, Awaitable, Callable, Final
 
@@ -62,6 +64,25 @@ def get_datarobot_ctx(request: Request) -> DRAppCtx:
     return DRAppCtx(api_key=scoped_api_key, email=ext_email)
 
 
+def session_dr_ctx(config: "Config", dr_ctx: DRAppCtx) -> dict[str, str | None]:
+    """
+    Returns the DataRobot context to keep in the session, without the API key itself.
+
+    The session cookie is signed but not encrypted, so anything stored in it can be
+    read by decoding the cookie. The session only needs to tell whether the visitor's
+    API key changed, so it keeps an HMAC of the key instead. Code that needs the key
+    reads it from the request headers (get_datarobot_ctx).
+    """
+    api_key_hmac = None
+    if dr_ctx.api_key:
+        api_key_hmac = hmac.new(
+            b"dr-app-session-api-key:" + config.session_secret_key.encode("utf-8"),
+            dr_ctx.api_key.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+    return {"email": dr_ctx.email, "api_key_hmac": api_key_hmac}
+
+
 async def get_existing_session(
     request: Request, dr_ctx: DRAppCtx
 ) -> AuthCtx[Metadata] | None:
@@ -75,7 +96,6 @@ async def get_existing_session(
     try:
         auth_ctx = AuthCtx[Metadata](**auth_sess)
         metadata = auth_ctx.metadata or {}
-        stored_dr_ctx: DRAppCtx = DRAppCtx(**metadata.get("dr_ctx", {}))
     except (KeyError, ValueError, TypeError) as e:
         # Session data is corrupted, clear it
         logger.warning(
@@ -98,8 +118,11 @@ async def get_existing_session(
         request.session.clear()
         return None
 
-    # User exists, try to match the stored context with the current context
-    if stored_dr_ctx != dr_ctx:
+    # User exists, try to match the stored context with the current context.
+    # Sessions created before the API key was removed from the cookie never match,
+    # so they are rebuilt once without the key.
+    config: Config = request.app.state.deps.config
+    if metadata.get("dr_ctx") != session_dr_ctx(config, dr_ctx):
         return None
     return auth_ctx
 
@@ -213,7 +236,7 @@ async def get_auth_ctx(
 
     config: Config = request.app.state.deps.config
     auth_ctx.metadata = {
-        "dr_ctx": dr_ctx.model_dump(),
+        "dr_ctx": session_dr_ctx(config, dr_ctx),
         "oauth_implementation": config.oauth_impl,
         "application_endpoint": config.application_endpoint,
     }
@@ -302,6 +325,8 @@ def get_agent_headers(
     auth_ctx: AuthCtx[Metadata],
     session_secret_key: str,
     algorithm: str = DEFAULT_JWT_ALGORITHM,
+    *,
+    default_api_key: str | None = None,
 ) -> dict[str, str]:
     """
     Compose headers for calls to the agent service.
@@ -314,13 +339,16 @@ def get_agent_headers(
         auth_ctx: The authentication context to encode.
         session_secret_key: The secret key used for JWT signing.
         algorithm: The JWT algorithm to use (default: HS256).
+        default_api_key: API key to forward when the request has no visitor API key
+            header, such as the test user API key during local development. The auth
+            context no longer carries the API key, so the agent cannot read it from there.
 
     Returns:
         A dictionary of headers to be forwarded to the agent service.
     """
     headers = get_auth_ctx_header(auth_ctx, session_secret_key, algorithm)
 
-    if api_key := request.headers.get(VISITOR_SCOPED_API_KEY_HEADER):
+    if api_key := request.headers.get(VISITOR_SCOPED_API_KEY_HEADER, default_api_key):
         headers[VISITOR_SCOPED_API_KEY_HEADER] = api_key
 
     if identity_token := request.headers.get(DATAROBOT_IDENTITY_HEADER_NAME):

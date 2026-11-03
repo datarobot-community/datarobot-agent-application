@@ -365,6 +365,36 @@ def test_get_agent_headers_without_headers(
     assert len(headers) == 1, "Unexpected extra headers returned"
 
 
+def test_get_agent_headers_uses_default_api_key_without_header(
+    sample_auth_ctx: AuthCtx[Metadata], session_secret_key: str
+) -> None:
+    """The default API key (the local test user key) is forwarded when the header is absent."""
+
+    request = Request({"type": "http", "headers": []})
+
+    headers = get_agent_headers(
+        request, sample_auth_ctx, session_secret_key, default_api_key="test-user-key"
+    )
+
+    assert headers[VISITOR_SCOPED_API_KEY_HEADER] == "test-user-key"
+
+
+def test_get_agent_headers_prefers_visitor_api_key_over_default(
+    sample_auth_ctx: AuthCtx[Metadata], session_secret_key: str
+) -> None:
+    """The visitor API key header wins over the default API key."""
+
+    request = Request(
+        {"type": "http", "headers": [(b"x-datarobot-api-key", b"visitor-key")]}
+    )
+
+    headers = get_agent_headers(
+        request, sample_auth_ctx, session_secret_key, default_api_key="test-user-key"
+    )
+
+    assert headers[VISITOR_SCOPED_API_KEY_HEADER] == "visitor-key"
+
+
 def test_get_agent_headers_with_empty_api_key(
     sample_auth_ctx: AuthCtx[Metadata], session_secret_key: str
 ) -> None:

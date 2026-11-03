@@ -863,6 +863,46 @@ class TestBuildSharedAgentRuntimeParameters:
         assert timeout_param.type == "string"
         assert timeout_param.value == "600"
 
+    @pytest.mark.parametrize(
+        "name", ["DISABLE_MODERATION", "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"]
+    )
+    def test_moderation_flag_declared_off_by_default(self, monkeypatch, name):
+        import infra.agent_infra.base as base
+
+        monkeypatch.delenv(name, raising=False)
+        params = base.build_shared_agent_runtime_parameters()
+        param = next(p for p in params if p.key == name)
+        assert param.type == "boolean"
+        assert param.value == "false"
+
+    @pytest.mark.parametrize(
+        "name", ["DISABLE_MODERATION", "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"]
+    )
+    @pytest.mark.parametrize(
+        ("env_value", "expected"),
+        [
+            ("true", "true"),
+            ("TRUE", "true"),
+            ("1", "true"),
+            ("false", "false"),
+            ("", "false"),
+        ],
+    )
+    def test_moderation_flag_follows_env(self, monkeypatch, name, env_value, expected):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setenv(name, env_value)
+        params = base.build_shared_agent_runtime_parameters()
+        param = next(p for p in params if p.key == name)
+        assert param.value == expected
+
+    def test_moderation_flag_rejects_non_boolean(self, monkeypatch):
+        import infra.agent_infra.base as base
+
+        monkeypatch.setenv("DISABLE_MODERATION", "maybe")
+        with pytest.raises(ValueError, match="DISABLE_MODERATION"):
+            base.build_shared_agent_runtime_parameters()
+
     def test_includes_llm_and_mcp_params(self, monkeypatch):
         import infra.agent_infra.base as base
 

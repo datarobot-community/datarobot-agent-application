@@ -192,7 +192,12 @@ async def create_chat_messages(
 
     # Create an event encoder to properly format SSE events
     encoder = EventEncoder(accept=request.headers.get("accept") or "")
-    agent_headers = get_agent_headers(request, auth_ctx, deps.config.session_secret_key)
+    agent_headers = get_agent_headers(
+        request,
+        auth_ctx,
+        deps.config.session_secret_key,
+        default_api_key=deps.config.test_user_api_key,
+    )
 
     stream = deps.stream_manager.run(run_input, current_user.uuid, agent_headers)
 

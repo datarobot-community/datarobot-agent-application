@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.12.10
+- Stopped storing the visitor's DataRobot API key in the FastAPI session cookie. The cookie is signed but not encrypted, so the key could be read by decoding the cookie. The session now keeps an HMAC of the key to detect a changed key. Existing sessions are rebuilt once on the next request, and visitors do not need to sign in again. Copies of cookies issued by earlier versions still contain the key, so if you think cookies from your application were exposed (for example in shared HAR files or logs), ask the affected users to rotate their DataRobot API keys.
+- The FastAPI server now forwards `TEST_USER_API_KEY` to the agent as `X-DATAROBOT-API-KEY` during local development when the request has no visitor API key, because the agent can no longer read the key from the authorization context.
+- Updated `llm` component from 11.11.24 to 11.11.25:
+  - Moved the LLM custom model execution environment from `[GenAI] Python 3.12 with Moderations` to `[GenAI] Python 3.14 with Moderations` for the blueprint and registered model LLM options. On existing stacks, the next deploy rebuilds the LLM custom model on the new environment.
+  - Updated CVE dependencies: hpack, oauthlib, uv, mcp, tinytag, banks, fsspec, h2, langgraph-sdk, litellm, multidict, pypdf, pytest
+- Updated `agent` component from 11.11.115 to 11.11.118:
+  - Updated `datarobot-genai` to 0.31.x and loosened its pin to `>=0.31.2,<0.32.0`, so CVE fixes can be picked up without a template update. Moderation guards can now authenticate with the request's access token.
+  - Added the DISABLE_MODERATION and MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS runtime parameters, set from .env (false when unset). DISABLE_MODERATION was documented before but had no effect from .env; it now turns every guard off locally and on deployments. If your .env already sets DISABLE_MODERATION=true, guards are disabled after you upgrade and redeploy. MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS lets guards authenticate with the caller’s access token.
+  - Agent runs now automatically record every LLM call's request and response as an OpenTelemetry trace (via `tensile`), with no agent code changes required. Set `TENSILE_OTEL_DISABLED=1` to turn this off.
+  - Updated CVE dependencies: pypdf, virtualenv
+
 ## 11.12.9
 - *Breaking changes*: Removed the bundled MCP server (`mcp_server/`) from the template. The agent still uses MCP tools, but now loads them from the DataRobot Global MCP (for the built-in DataRobot tools) or from a standalone MCP server that you set in `.env` with `MCP_DEPLOYMENT_ID`, `MCP_WORKLOAD_ID` or `EXTERNAL_MCP_URL`. See [Connect your agent to MCP tools](docs/mcp-server.md).
   - Pulling this version deletes `mcp_server/` from existing apps, and the agent loses the old server's tools until you point it at a new MCP server.

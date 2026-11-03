@@ -80,6 +80,30 @@ SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
 AGENT_CARD_REGISTRY_SOFT_CACHE_TTL: Final[str] = "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL"
+# Toggles for the ``datarobot_moderation`` middleware (datarobot-genai >= 0.31.2 reads
+# the plain env var), carried from .env to the deployment. Always declared, so they can
+# be changed on a Custom Models deployment without redeploying.
+#   DISABLE_MODERATION: turn every guard off without removing the configuration.
+#   MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS: when ``allow_external_access_tokens`` is
+#     not set in workflow.yaml, authenticate guard calls with the caller's
+#     ``x-datarobot-external-access-token``.
+MODERATION_FLAG_PARAMS: Final[tuple[str, ...]] = (
+    "DISABLE_MODERATION",
+    "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS",
+)
+_TRUE_ENV_VALUES: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+_FALSE_ENV_VALUES: Final[frozenset[str]] = frozenset({"", "0", "false", "no", "off"})
+
+
+def _env_flag(name: str) -> bool:
+    """Return env var ``name`` as a bool (unset/blank is False); reject anything else."""
+    value = os.environ.get(name, "").strip().lower()
+    if value in _TRUE_ENV_VALUES:
+        return True
+    if value in _FALSE_ENV_VALUES:
+        return False
+    raise ValueError(f"{name} must be true or false, got {os.environ[name]!r}")
+
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -509,6 +533,14 @@ def build_shared_agent_runtime_parameters() -> list[
             type="string",  # string is type-agnostic; numeric fails str settings fields
             value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
         )
+    )
+    params.extend(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=name,
+            type="boolean",
+            value=str(_env_flag(name)).lower(),
+        )
+        for name in MODERATION_FLAG_PARAMS
     )
 
     # Handle session secret key credential
